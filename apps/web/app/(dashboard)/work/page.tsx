@@ -20,6 +20,7 @@ import {
   FileCode2,
   Eye,
   ShieldCheck,
+  XCircle,
   Sparkles,
   SlidersHorizontal,
   Maximize2,
@@ -556,10 +557,15 @@ function WorkStudioInner() {
                   style={{ borderBottom: "1px solid var(--wb-line)", backgroundColor: "var(--wb-sidebar)" }}
                 >
                   {[
-                    { id: "preview" as const, label: "Live Deliverable Preview", Icon: Eye },
-                    { id: "diff" as const, label: "Code & Git Diff (+132 -6)", Icon: FileCode2 },
-                    { id: "terminal" as const, label: "Container Terminal", Icon: Terminal },
-                    { id: "verify" as const, label: "Verification Report (5/5)", Icon: ShieldCheck },
+                    { id: "preview" as const, label: `Deliverables (${(((activeTask as any).deliverables as any[]) || []).length})`, Icon: Eye },
+                    { id: "terminal" as const, label: "Container", Icon: Terminal },
+                    {
+                      id: "verify" as const,
+                      label: activeTask.verification
+                        ? `Verification (${activeTask.verification.checks.filter((c: any) => c.passed).length}/${activeTask.verification.checks.length})`
+                        : "Verification",
+                      Icon: ShieldCheck,
+                    },
                   ].map((tb) => (
                     <button
                       key={tb.id}
@@ -580,67 +586,63 @@ function WorkStudioInner() {
                 {/* Tab Body */}
                 <div className="p-4 flex-1">
                   {codeRightTab === "preview" && (
-                    <div className="space-y-4">
-                      {/* Interactive Simulated Built CRM Application */}
-                      <div
-                        className="overflow-hidden rounded-[10px]"
-                        style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
-                      >
-                        <div className="flex items-center justify-between px-3.5 py-2 text-[11.5px] border-b border-[var(--wb-line)]">
-                          <span className="font-mono text-[var(--wb-muted)]">
-                            https://preview-{activeTask.traceId}.woibot.run/pipeline
-                          </span>
-                          <span className="text-emerald-400 font-mono">HTTP 200 · Interactive Preview</span>
-                        </div>
-                        <div className="p-4 space-y-4">
-                          <div className="grid gap-3 sm:grid-cols-4 tabular-nums">
-                            {[
-                              { label: "Q4 Pipeline ARR", val: "฿14,820,000", delta: "+18.4%" },
-                              { label: "Qualified Deals", val: "28 Deals", delta: "+6 this week" },
-                              { label: "Win Rate (Verified)", val: "64.2%", delta: "+4.1%" },
-                              { label: "Avg Deal Cycle", val: "14 Days", delta: "-3 days" },
-                            ].map((k, idx) => (
-                              <div
-                                key={idx}
-                                className="rounded-lg p-3"
-                                style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
-                              >
-                                <div className="text-[11px] text-[var(--wb-muted)]">{k.label}</div>
-                                <div className="mt-1 text-[16px] font-bold">{k.val}</div>
-                                <div className="mt-0.5 text-[10.5px] text-emerald-400">{k.delta}</div>
-                              </div>
-                            ))}
+                    <div className="space-y-3">
+                      {((((activeTask as any).deliverables as any[]) || []).length === 0) ? (
+                        <div
+                          className="rounded-[10px] p-6 text-center space-y-1.5"
+                          style={{ backgroundColor: "var(--wb-panel)", border: "1px dashed var(--wb-line-strong)" }}
+                        >
+                          <div className="text-[13px] font-semibold">ยังไม่มีไฟล์ส่งมอบ</div>
+                          <div className="text-[11.5px] text-[var(--wb-muted)]">
+                            เมื่อ Work รันงานเสร็จ ไฟล์จริงจะปรากฏที่นี่พร้อมลิงก์ดาวน์โหลด —
+                            หน้านี้ไม่แสดงตัวอย่างที่สร้างขึ้นเอง
                           </div>
+                        </div>
+                      ) : (
+                        (((activeTask as any).deliverables as any[]) || []).map((d: any) => (
+                          <a
+                            key={d.id || d.fileName}
+                            href={d.fileUrl || "#"}
+                            className="flex items-center justify-between gap-3 rounded-[9px] px-3.5 py-2.5 transition-colors hover:brightness-110"
+                            style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
+                          >
+                            <div className="flex min-w-0 items-center gap-2.5">
+                              <FileCode2 className="h-4 w-4 shrink-0 text-[#7cb0ff]" />
+                              <div className="min-w-0">
+                                <div className="truncate text-[12.5px] font-medium">{d.fileName || "deliverable"}</div>
+                                <div className="text-[10.5px] text-[var(--wb-muted)]">
+                                  {d.kind || "file"} · {d.mimeType || "application/octet-stream"}
+                                </div>
+                              </div>
+                            </div>
+                            <Download className="h-3.5 w-3.5 shrink-0 text-[var(--wb-muted)]" />
+                          </a>
+                        ))
+                      )}
 
-                          <div className="grid gap-3 sm:grid-cols-3">
-                            {[
-                              { stage: "Discovery & Brief", count: 4, total: "฿3,200,000", deal: "ACME Corp — Enterprise AI Suite" },
-                              { stage: "Proposal & Redline", count: 3, total: "฿6,450,000", deal: "Siam Financial — Compliance Copilot" },
-                              { stage: "Closed Won (Q4)", count: 5, total: "฿5,170,000", deal: "Pacific Logistics — Fleet Automation" },
-                            ].map((col, idx) => (
-                              <div
-                                key={idx}
-                                className="rounded-lg p-3 space-y-2"
-                                style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
-                              >
-                                <div className="flex items-center justify-between text-[11.5px] font-semibold">
-                                  <span>{col.stage}</span>
-                                  <span className="font-mono text-[#7cb0ff] tabular-nums">{col.total}</span>
-                                </div>
-                                <div
-                                  className="rounded p-2.5 text-[12px]"
-                                  style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
-                                >
-                                  <div className="font-medium">{col.deal}</div>
-                                  <div className="mt-1 text-[10.5px] text-[var(--wb-muted)]">
-                                    Verified deliverable · Editable schema
-                                  </div>
-                                </div>
+                      {activeTask.verification && (
+                        <div
+                          className="flex items-center justify-between rounded-[9px] px-3.5 py-2.5"
+                          style={{ backgroundColor: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.28)" }}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                            <div>
+                              <div className="text-[12.5px] font-medium">verification_report.json</div>
+                              <div className="text-[10.5px] text-[var(--wb-muted)]">
+                                mode: {activeTask.verification.mode || "live"} · {activeTask.verification.checks.length} checks
                               </div>
-                            ))}
+                            </div>
                           </div>
+                          <a
+                            href={`/api/tasks/${activeTask.id}`}
+                            className="rounded-[6px] px-2.5 py-1 text-[11px] font-medium text-emerald-300"
+                            style={{ border: "1px solid rgba(16,185,129,0.4)" }}
+                          >
+                            ดูรายงาน
+                          </a>
                         </div>
-                      </div>
+                      )}
                     </div>
                   )}
 
@@ -674,65 +676,92 @@ function WorkStudioInner() {
 
                   {codeRightTab === "terminal" && (
                     <div
-                      className="rounded-[10px] p-4 font-mono text-[12px] leading-relaxed space-y-1.5"
-                      style={{ backgroundColor: "#090a0f", border: "1px solid var(--wb-line)", color: "#d2d3d8" }}
+                      className="rounded-[10px] p-5 space-y-2 text-center"
+                      style={{ backgroundColor: "#090a0f", border: "1px solid var(--wb-line)" }}
                     >
-                      <div className="text-[#7cb0ff]">$ pnpm --filter @crm/web tsc --noEmit</div>
-                      <div className="text-emerald-400">✓ Typecheck passed (0 errors in 1.9s)</div>
-                      <div className="text-[#7cb0ff] pt-2">$ pnpm --filter @crm/web vitest run</div>
-                      <div> PASS  src/__tests__/pipeline.test.ts (8 tests) 412ms</div>
-                      <div> PASS  src/__tests__/forecast-model.test.ts (6 tests) 289ms</div>
-                      <div className="text-emerald-400">✓ Test Files 2 passed (14/14 tests, coverage 86.4%)</div>
-                      <div className="text-[#7cb0ff] pt-2">$ npx playwright test crm.spec.ts</div>
-                      <div>  1 passed (3.4s) — Screenshot & DOM verified at 1440px and 390px</div>
-                      <div className="text-emerald-400">✓ verification_report.json written and signed</div>
+                      <div className="text-[13px] font-semibold text-[var(--wb-fg)]">Container terminal</div>
+                      <div className="text-[11.5px] text-[var(--wb-muted)]">
+                        ทุกคำสั่งรันใน Cloud Computer ของคุณจริง เปิดหน้า Computer เพื่อใช้ terminal แบบเต็ม
+                        หรือกด Verify เพื่อดูผลคำสั่งที่ระบบรันให้
+                      </div>
+                      <a
+                        href="/computer"
+                        className="inline-flex items-center gap-1.5 rounded-[7px] bg-[#2b66e0] px-3 py-1.5 text-[11.5px] font-medium text-white"
+                      >
+                        <Terminal className="h-3.5 w-3.5" /> เปิด Cloud Computer
+                      </a>
                     </div>
                   )}
 
                   {codeRightTab === "verify" && (
                     <div className="space-y-3">
-                      <div
-                        className="flex items-center justify-between rounded-[10px] p-3.5"
-                        style={{ backgroundColor: "rgba(16, 185, 129, 0.1)", border: "1px solid rgba(16, 185, 129, 0.3)" }}
-                      >
-                        <div>
-                          <div className="text-[13.5px] font-semibold text-emerald-400">
-                            Definition of Done — All 5 Automated Verification Gates Passed
-                          </div>
+                      {!activeTask.verification ? (
+                        <div
+                          className="rounded-[10px] p-6 text-center space-y-1.5"
+                          style={{ backgroundColor: "var(--wb-panel)", border: "1px dashed var(--wb-line-strong)" }}
+                        >
+                          <div className="text-[13px] font-semibold">ยังไม่ได้ตรวจสอบงานนี้</div>
                           <div className="text-[11.5px] text-[var(--wb-muted)]">
-                            {activeTask.verification?.summary || "Deliverable verified openable, tested, and ready for production"}
+                            กด Re-Verify ระบบจะรันเครื่องมือจริงใน Cloud Computer ของคุณ
+                            (ffprobe / LibreOffice / pandas / tsc) แล้วบันทึกผลเป็น verification_report.json
                           </div>
                         </div>
-                        <a
-                          href="/api/artifacts?download=del_crm_report"
-                          className="rounded-[7px] bg-emerald-600 px-3 py-1.5 text-[11.5px] font-medium text-white"
-                        >
-                          Download JSON Report
-                        </a>
-                      </div>
-
-                      <div className="space-y-2">
-                        {(
-                          activeTask.verification?.checks || [
-                            { name: "typecheck", passed: true, detail: "tsc --noEmit 0 errors" },
-                            { name: "unit_tests", passed: true, detail: "vitest 14/14 passed" },
-                            { name: "playwright_e2e", passed: true, detail: "Login -> Pipeline -> Deal creation verified" },
-                            { name: "deliverable_openable", passed: true, detail: "ZIP archive contains runnable project + README" },
-                          ]
-                        ).map((chk: any, idx: number) => (
+                      ) : (
+                        <>
                           <div
-                            key={idx}
-                            className="flex items-center justify-between rounded-[8px] px-3.5 py-2.5 text-[12.5px]"
-                            style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
+                            className="flex items-center justify-between gap-3 rounded-[10px] p-3.5"
+                            style={{
+                              backgroundColor: activeTask.verification.passed ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)",
+                              border: `1px solid ${activeTask.verification.passed ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`,
+                            }}
                           >
-                            <div className="flex items-center gap-2.5">
-                              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                              <span className="font-mono font-semibold">{chk.name}</span>
+                            <div className="min-w-0">
+                              <div className={`text-[13px] font-semibold ${activeTask.verification.passed ? "text-emerald-400" : "text-red-400"}`}>
+                                {activeTask.verification.passed ? "ผ่านการตรวจสอบ" : "ไม่ผ่านการตรวจสอบ"} · mode {activeTask.verification.mode || "live"}
+                              </div>
+                              <div className="text-[11.5px] text-[var(--wb-muted)]">{activeTask.verification.summary}</div>
                             </div>
-                            <span className="text-[var(--wb-muted)]">{chk.detail}</span>
+                            <a
+                              href={`/api/tasks/${activeTask.id}`}
+                              className="shrink-0 rounded-[7px] bg-emerald-600 px-3 py-1.5 text-[11.5px] font-medium text-white"
+                            >
+                              Download JSON
+                            </a>
                           </div>
-                        ))}
-                      </div>
+
+                          <div className="space-y-2">
+                            {activeTask.verification.checks.map((chk: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className="flex items-center justify-between gap-3 rounded-[8px] px-3.5 py-2.5 text-[12.5px]"
+                                style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
+                              >
+                                <div className="flex min-w-0 items-center gap-2.5">
+                                  {chk.passed ? (
+                                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                                  ) : (
+                                    <XCircle className="h-4 w-4 shrink-0 text-red-400" />
+                                  )}
+                                  <span className="font-mono font-semibold">{chk.name}</span>
+                                  {chk.severity && (
+                                    <span className="rounded px-1.5 py-0.5 text-[9.5px] uppercase tracking-wide text-[var(--wb-muted)]" style={{ border: "1px solid var(--wb-line)" }}>
+                                      {chk.severity}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="truncate text-right text-[11.5px] text-[var(--wb-muted)]">{chk.detail}</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {activeTask.verification.limitations?.length ? (
+                            <div className="rounded-[8px] px-3.5 py-2.5 text-[11.5px] text-[var(--wb-muted)]" style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}>
+                              <span className="font-semibold text-[var(--wb-fg)]">ข้อจำกัด: </span>
+                              {activeTask.verification.limitations.join(" · ")}
+                            </div>
+                          ) : null}
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

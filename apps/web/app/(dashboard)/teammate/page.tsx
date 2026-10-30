@@ -118,6 +118,8 @@ function TeammateWorkspaceInner() {
   const [attachedFiles, setAttachedFiles] = useState<{ fileName: string; fileUrl: string; mimeType: string }[]>([]);
   const [expandedTraces, setExpandedTraces] = useState<Record<string, boolean>>({});
   const [briefingOpen, setBriefingOpen] = useState(true);
+  const [briefing, setBriefing] = useState<any>(null);
+  const [computer, setComputer] = useState<any>(null);
 
   // Right Inspector state (Grok Bot Bot-Details + Cursor Panel)
   const [inspectorOpen, setInspectorOpen] = useState(true);
@@ -165,6 +167,14 @@ function TeammateWorkspaceInner() {
       .then((r) => r.json())
       .then((res) => setRoutines(res?.data?.routines || res?.routines || []))
       .catch(() => {});
+    fetch("/api/briefing")
+      .then((r) => r.json())
+      .then((res) => setBriefing(res?.ok ? res : null))
+      .catch(() => setBriefing(null));
+    fetch("/api/computer")
+      .then((r) => r.json())
+      .then((res) => setComputer(res?.computer || null))
+      .catch(() => setComputer(null));
   }, []);
 
   const toggleTrace = (msgId: string) => {
@@ -418,7 +428,9 @@ function TeammateWorkspaceInner() {
                   <span className="h-2 w-2 rounded-full bg-[#3b82f6]" />
                   <span className="text-[12.5px] font-semibold">08:00 Daily Briefing & Proactive Queue</span>
                   <span className="rounded bg-[#2b66e0]/20 px-1.5 py-0 text-[10.5px] font-medium text-[#7cb0ff] tabular-nums">
-                    3 VIP Emails · 2 Meetings · 1 Work Approval
+                    {briefing
+                      ? `${briefing.stats.tasks} งานค้าง · ${briefing.stats.completed} เสร็จ · ${briefing.stats.apps} แอปเชื่อมต่อ`
+                      : "กำลังโหลดข้อมูลจริง…"}
                   </span>
                 </div>
                 {briefingOpen ? (
@@ -431,36 +443,40 @@ function TeammateWorkspaceInner() {
               {briefingOpen && (
                 <div className="px-4 pb-3.5 pt-1 space-y-2.5" style={{ borderTop: "1px solid var(--wb-line)" }}>
                   <div className="grid gap-2 sm:grid-cols-3 pt-1.5">
-                    <div className="rounded-lg p-2.5" style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}>
-                      <div className="flex items-center justify-between text-[11px] text-[var(--wb-muted)]">
-                        <span>VIP Inbox (Gmail)</span>
-                        <Mail className="h-3.5 w-3.5 text-[#3b82f6]" />
-                      </div>
-                      <div className="mt-1 text-[12.5px] font-semibold">ACME Corp ขอใบเสนอราคา</div>
-                      <div className="mt-0.5 text-[11px] text-[var(--wb-muted)]">ร่างคำตอบรอคุณกดอนุมัติด้านล่าง</div>
-                    </div>
-                    <div className="rounded-lg p-2.5" style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}>
-                      <div className="flex items-center justify-between text-[11px] text-[var(--wb-muted)]">
-                        <span>Calendar (10:00)</span>
-                        <Calendar className="h-3.5 w-3.5 text-emerald-400" />
-                      </div>
-                      <div className="mt-1 text-[12.5px] font-semibold">Sprint & Architecture Sync</div>
-                      <div className="mt-0.5 text-[11px] text-[var(--wb-muted)]">เตรียมสไลด์ 10 หน้าไว้ใน Library แล้ว</div>
-                    </div>
-                    <div className="rounded-lg p-2.5" style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}>
-                      <div className="flex items-center justify-between text-[11px] text-[var(--wb-muted)]">
-                        <span>Pending in Work</span>
-                        <Clock className="h-3.5 w-3.5 text-amber-400" />
-                      </div>
-                      <div className="mt-1 text-[12.5px] font-semibold">Q4 Board Strategy Report</div>
-                      <button
-                        type="button"
-                        onClick={() => router.push("/work/tsk_doc_q4")}
-                        className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-[#7cb0ff] hover:underline"
+                    {(briefing?.items || []).slice(0, 3).map((it: any) => {
+                      const Icon = it.type === "calendar" ? Calendar : it.type === "email" ? Mail : Clock;
+                      return (
+                        <button
+                          key={it.id}
+                          type="button"
+                          onClick={() => it.taskId && router.push(`/work/${it.taskId}`)}
+                          className="rounded-lg p-2.5 text-left transition-all hover:brightness-110"
+                          style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
+                        >
+                          <div className="flex items-center justify-between text-[11px] text-[var(--wb-muted)]">
+                            <span className="uppercase tracking-wide">{it.type}</span>
+                            <Icon className="h-3.5 w-3.5 text-[#3b82f6]" />
+                          </div>
+                          <div className="mt-1 line-clamp-2 text-[12.5px] font-semibold">{it.title}</div>
+                          <div className="mt-0.5 line-clamp-2 text-[11px] text-[var(--wb-muted)]">{it.detail}</div>
+                        </button>
+                      );
+                    })}
+                    {briefing && (briefing.items || []).length === 0 && (
+                      <div
+                        className="rounded-lg p-3 text-[12px] text-[var(--wb-muted)] sm:col-span-3"
+                        style={{ backgroundColor: "var(--wb-panel)", border: "1px dashed var(--wb-line-strong)" }}
                       >
-                        Approve $1.15 in Work <ArrowUpRight className="h-3 w-3" />
-                      </button>
-                    </div>
+                        ยังไม่มีงานค้างหรือข้อมูลให้สรุป — สั่งงาน Teammate หรือเชื่อม Connected Apps
+                        เพื่อให้สรุปนี้มาจากข้อมูลจริงของคุณ
+                      </div>
+                    )}
+                    {!briefing && (
+                      <div className="rounded-lg p-3 text-[12px] text-[var(--wb-muted)] sm:col-span-3"
+                        style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}>
+                        กำลังโหลดสรุปจากงานของคุณ…
+                      </div>
+                    )}
                   </div>
 
                   {/* Quick Proactive Action Pills */}
@@ -1103,29 +1119,40 @@ function TeammateWorkspaceInner() {
                   style={{ backgroundColor: "#090a0f", border: "1px solid var(--wb-line-strong)" }}
                 >
                   <div className="flex items-center justify-between bg-[#14151c] px-3 py-1.5 text-[11px] text-[#8f929a] border-b border-[#25262c]">
-                    <span className="font-mono truncate">chromium --display=:99 · mail.google.com</span>
-                    <span className="font-mono text-[10px] text-emerald-400">60 FPS · noVNC</span>
+                    <span className="truncate font-mono">{computer?.name || "cloud computer"} · Ubuntu 24.04</span>
+                    <span
+                      className={`font-mono text-[10px] ${
+                        computer?.status === "running" ? "text-emerald-400" : "text-amber-400"
+                      }`}
+                    >
+                      {computer?.status || "not started"}
+                    </span>
                   </div>
-                  <div className="p-3 space-y-2.5 text-[11.5px] font-mono text-[#d2d3d8]">
-                    <div className="rounded bg-[#12141d] p-2.5 border border-[#232634]">
-                      <div className="text-[#7cb0ff] font-semibold">[Browser CDP :9222] Active Session</div>
+                  <div className="space-y-2.5 p-3 font-mono text-[11.5px] text-[#d2d3d8]">
+                    <div className="rounded border border-[#232634] bg-[#12141d] p-2.5">
+                      <div className="font-semibold text-[#7cb0ff]">
+                        Browser CDP :{computer?.cdpPort || 9222} · noVNC
+                      </div>
                       <div className="mt-1 text-[11px] text-[#8f929a]">
-                        • Tab 1: Gmail Inbox (takin@woxacorp.com) — 3 VIP threads parsed
-                      </div>
-                      <div className="text-[11px] text-[#8f929a]">
-                        • Tab 2: Google Calendar — Week view synced
-                      </div>
-                      <div className="text-[11px] text-[#8f929a]">
-                        • Tab 3: ACME Vendor Portal — Logged in via Vault autofill
+                        {computer?.status === "running"
+                          ? "นี่คือเครื่องจริงที่แยกของคุณ (1 container ต่อบัญชี) — เปิดหน้าจอเพื่อดูหรือสั่งงานต่อได้"
+                          : "ยังไม่มี container ที่รันอยู่ — เปิดหน้า Computer แล้วกด Start"}
                       </div>
                     </div>
-                    <div className="rounded bg-[#0d0e14] p-2.5 border border-[#1e202b] text-[11px] text-emerald-400/90">
-                      <div>woibot@cloud-vm:~/workspace$ ls -la</div>
-                      <div className="text-[#8f929a]">drwxr-xr-x deliverables/ routines/ memory-index/</div>
-                      <div>
-                        woibot@cloud-vm:~/workspace$ {computerTakeover ? "USER_TAKEOVER_ACTIVE (You have mouse/keyboard)" : "agent_loop --watch-inbox"}
+                    <div className="rounded border border-[#1e202b] bg-[#0d0e14] p-2.5 text-[11px] text-emerald-400/90">
+                      <div>woibot@cloud-vm:~/workspace$ {computer?.status === "running" ? "docker ps --filter name=woibot-u" : "waiting for container"}</div>
+                      <div className="text-[#8f929a]">
+                        {computer?.status === "running"
+                          ? `container ${computer?.name} · port ${computer?.port} · CDP ${computer?.cdpPort}`
+                          : "no running container"}
                       </div>
                     </div>
+                    <a
+                      href="/computer"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-[7px] bg-[#2b66e0] px-3 py-1.5 text-[11.5px] font-medium text-white"
+                    >
+                      <Monitor className="h-3.5 w-3.5" /> เปิดหน้าจอ Cloud Computer
+                    </a>
                   </div>
                 </div>
 

@@ -1,19 +1,87 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { getUserId } from "@/lib/auth";
 
-export async function GET() {
+/**
+ * Daily briefing — derived ONLY from what the user actually has: their tasks,
+ * routines and connected apps. Nothing is invented; if no app is connected the
+ * briefing says so instead of showing fake emails or meetings.
+ */
+export async function GET(req: NextRequest) {
+  const userId = await getUserId(req);
+  if (!userId) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+
+  const [tasks, routines, apps] = await Promise.all([
+    prisma.task.findMany({ where: { userId } }),
+    prisma.routine.findMany({ where: { userId } }),
+    prisma.connectedApp.findMany({ where: { userId } }),
+  ]);
+
+  const connected = apps.filter((a: any) => a.connected);
+  const needsAction = tasks.filter((t: any) =>
+    ["waiting_for_user", "queued", "reviewing", "paused", "in_progress"].includes(t.status),
+  );
+  const completed = tasks.filter((t: any) => t.status === "completed");
+  const failed = tasks.filter((t: any) => t.status === "failed" || t.status === "partially_completed");
+
+  const items = needsAction.slice(0, 5).map((t: any) => ({
+    id: t.id,
+    type: "task" as const,
+    title: `${t.title} — ${String(t.status).replace(/_/g, " ")}`,
+    detail:
+      t.status === "waiting_for_user"
+        ? `รออนุมัติ · ประเมิน $${(t.estimate?.cost ?? 0).toFixed(2)}${t.estimate?.minutes ? ` (~${t.estimate.minutes} นาที)` : ""}`
+        : t.status === "reviewing"
+          ? "อยู่ระหว่างตรวจสอบผลงาน — เปิดแท็บ Verification เพื่อดูหลักฐาน"
+          : `ความคืบหน้า ${t.progress ?? 0}% · ${t.workKind || "work"}`,
+    priority: t.status === "waiting_for_user" ? "high" : "medium",
+    taskId: t.id,
+  }));
+
+  const proactive: { id: string; title: string; detail: string; action: string }[] = [];
+
+  if (connected.length === 0) {
+    proactive.push({
+      id: "p-connect",
+      title: "ยังไม่ได้เชื่อมต่ออีเมลหรือปฏิทิน",
+      detail: "Teammate จะสรุปอีเมลและเตรียมนัดหมายได้ก็ต่อเมื่อคุณเชื่อมบัญชีในหน้า Apps",
+      action: "พาฉันไปเชื่อมต่อ Gmail และ Google Calendar",
+    });
+  }
+  if (failed.length > 0) {
+    proactive.push({
+      id: "p-failed",
+      title: `มี ${failed.length} งานที่ยังไม่ผ่าน`,
+      detail: failed.slice(0, 3).map((t: any) => t.title).join(" · "),
+      action: "ช่วยตรวจงานที่ไม่ผ่านและเสนอวิธีแก้",
+    });
+  }
+  if (completed.length > 0 && routines.length === 0) {
+    proactive.push({
+      id: "p-routine",
+      title: `คุณมีงานที่เสร็จแล้ว ${completed.length} งาน`,
+      detail: "ถ้างานนี้ต้องทำซ้ำ เปลี่ยนเป็น Routine ได้เพื่อให้ Teammate ทำเองทุกครั้ง",
+      action: "สร้าง Routine จากงานที่เพิ่งเสร็จ",
+    });
+  }
+
+  const now = new Date();
+  const dateLabel = now.toLocaleDateString("th-TH", {
+    weekday: "long", day: "numeric", month: "short", year: "numeric",
+  });
+
   return NextResponse.json({
     ok: true,
-    date: "Saturday, 31 Oct 2026 · 08:00",
-    greeting: "Daily Executive Briefing · Cloud Computer (:99)",
-    stats: { emails: 3, meetings: 2, tasks: 4 },
-    items: [
-      { id: "b1", type: "email", title: "ACME Corp ขอใบเสนอราคา Enterprise CRM", detail: "ร่างอีเมลตอบกลับพร้อมแนบสเปกเตรียมไว้ให้ตรวจแล้ว (Ask-first)", priority: "high" },
-      { id: "b2", type: "calendar", title: "10:00 — Sprint & Architecture Review", detail: "เตรียมสไลด์สรุป KPI 10 หน้าไว้ใน Library เรียบร้อย", priority: "high" },
-      { id: "b3", type: "task", title: "Work: Q4 Board Strategy Report รออนุมัติงบ", detail: "ประเมิน $1.15 (~10 นาที) — กด Approve เพื่อเริ่มสร้าง DOCX/PPTX", priority: "medium" },
-    ],
-    proactive: [
-      { id: "p1", title: "ตรวจพบใบแจ้งหนี้ AWS & Cloudflare ประจำเดือน", detail: "ยอดตรงกับ PO เดือนก่อน — ต้องการให้จัดเข้าคิวอนุมัติจ่ายเลยไหม?", action: "สร้างคิวอนุมัติใบแจ้งหนี้ AWS และ Cloudflare" },
-      { id: "p2", title: "สร้าง Routine สรุปความคืบหน้าทุกวันศุกร์ 16:00", detail: "สัปดาห์นี้คุณสั่งสรุปงานวันศุกร์ 2 ครั้ง — เปลี่ยนเป็น Routine อัตโนมัติได้ทันที", action: "ตั้งค่า Routine สรุปงานทุกวันศุกร์ 16:00" },
-    ],
+    date: dateLabel,
+    greeting: `Daily Briefing · ${connected.length} connected app${connected.length === 1 ? "" : "s"}`,
+    stats: {
+      tasks: needsAction.length,
+      completed: completed.length,
+      routines: routines.filter((r: any) => r.status === "active").length,
+      apps: connected.length,
+    },
+    items,
+    proactive,
+    generatedAt: now.toISOString(),
   });
 }
