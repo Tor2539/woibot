@@ -8,6 +8,7 @@ import { callWoibotLLM } from "@/lib/llm";
 export async function GET(req: NextRequest) {
   try {
     const userId = await getUserId(req);
+    if (!userId) return errorResponse("Unauthorized", 401);
     const teammateId = req.nextUrl.searchParams.get("teammateId") || "tm_main";
 
     const teammates = await prisma.teammate.findMany({ where: { userId } });
@@ -41,6 +42,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const userId = await getUserId(req);
+    if (!userId) return errorResponse("Unauthorized", 401);
     const body = (await req.json()) as {
       teammateId?: string;
       message: string;

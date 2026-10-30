@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { createPgClient, pgEnabled, ensureSchema, audit } from "./pg";
 
 export interface StoreRecord {
   id: string;
@@ -1067,19 +1068,30 @@ function createCollectionDelegate(table: keyof WoibotRuntimeData, prefix: string
   };
 }
 
-export const prisma: any = {
-  user: createCollectionDelegate("user", "usr"),
-  teammate: createCollectionDelegate("teammate", "tm"),
-  chatMessage: createCollectionDelegate("chatMessage", "msg"),
-  memory: createCollectionDelegate("memory", "mem"),
-  task: createCollectionDelegate("task", "tsk"),
-  deliverable: createCollectionDelegate("deliverable", "del"),
-  file: createCollectionDelegate("file", "fil"),
-  subscription: createCollectionDelegate("subscription", "sub"),
-  workQuota: createCollectionDelegate("workQuota", "wq"),
-  usageEvent: createCollectionDelegate("usageEvent", "ue"),
-  connectedApp: createCollectionDelegate("connectedApp", "app"),
-  routine: createCollectionDelegate("routine", "rt"),
-  artifact: createCollectionDelegate("artifact", "art"),
-  vaultSecret: createCollectionDelegate("vaultSecret", "sec"),
-};
+/**
+ * Durable store selection:
+ *  - Postgres (DATABASE_URL / PGHOST) -> real, shared, survives restarts
+ *  - otherwise -> JSON file store (local dev only)
+ */
+const pgClient = pgEnabled() ? createPgClient() : null;
+
+export const prisma: any = pgClient
+  ? pgClient
+  : {
+      user: createCollectionDelegate("user", "usr"),
+      teammate: createCollectionDelegate("teammate", "tm"),
+      chatMessage: createCollectionDelegate("chatMessage", "msg"),
+      memory: createCollectionDelegate("memory", "mem"),
+      task: createCollectionDelegate("task", "tsk"),
+      deliverable: createCollectionDelegate("deliverable", "del"),
+      file: createCollectionDelegate("file", "fil"),
+      subscription: createCollectionDelegate("subscription", "sub"),
+      workQuota: createCollectionDelegate("workQuota", "wq"),
+      usageEvent: createCollectionDelegate("usageEvent", "ue"),
+      connectedApp: createCollectionDelegate("connectedApp", "app"),
+      routine: createCollectionDelegate("routine", "rt"),
+      artifact: createCollectionDelegate("artifact", "art"),
+      vaultSecret: createCollectionDelegate("vaultSecret", "sec"),
+    };
+
+export { pgEnabled, ensureSchema, audit };

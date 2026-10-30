@@ -1,0 +1,15 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - harness/docker/Dockerfile
+      - -t
+      - asia-southeast1-docker.pkg.dev/woibot/woibot/computer:base
+      - harness/docker
+images:
+  - asia-southeast1-docker.pkg.dev/woibot/woibot/computer:base
+options:
+  machineType: E2_HIGHCPU_8
+  logging: CLOUD_LOGGING_ONLY
+timeout: 2400s

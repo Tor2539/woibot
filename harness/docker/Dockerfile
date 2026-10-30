@@ -1,30 +1,29 @@
-FROM ubuntu:22.04
+FROM debian:bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV DISPLAY=:99
-ENV WOIBOT_HOME=/home/woibot
 
-RUN apt-get update && apt-get install -y \
-    curl wget git python3 python3-pip ffmpeg libreoffice \
-    chromium-browser xvfb x11vnc fluxbox novnc \
-    nodejs npm supervisor \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl wget git jq unzip procps \
+    python3 python3-pip \
+    chromium xvfb x11vnc fluxbox novnc websockify supervisor \
+    ffmpeg libreoffice \
+    fonts-noto-core fonts-noto-cjk fonts-thai-tlwg \
     && rm -rf /var/lib/apt/lists/*
 
-# Node 22
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && npm i -g pnpm@9 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Playwright
-RUN npx playwright install --with-deps chromium
+RUN useradd -m -u 1000 -s /bin/bash woibot \
+    && mkdir -p /home/woibot/workspace /home/woibot/.config \
+    && chown -R woibot:woibot /home/woibot
 
-# Workspace
-RUN useradd -m -s /bin/bash woibot && mkdir -p $WOIBOT_HOME/workspace $WOIBOT_HOME/.config
-WORKDIR $WOIBOT_HOME/workspace
-RUN chown -R woibot:woibot $WOIBOT_HOME
+COPY supervisord.conf /etc/supervisor/conf.d/woibot.conf
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY start.sh /usr/local/bin/start.sh
-RUN chmod +x /usr/local/bin/start.sh
-
-EXPOSE 9222 5900 6080 3000
-CMD ["/usr/local/bin/start.sh"]
-
+WORKDIR /home/woibot/workspace
+EXPOSE 5900 6080 9222
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

@@ -4,6 +4,7 @@ import { getUserId, safeJsonParse } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const userId = await getUserId(req);
+  if (!userId) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   const teammates = await prisma.teammate.findMany({ where: { userId } });
   const main = teammates.find((t: any) => t.isMain) || teammates[0];
 
@@ -39,6 +40,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const userId = await getUserId(req);
+  if (!userId) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
   const created = await prisma.teammate.create({
     data: {

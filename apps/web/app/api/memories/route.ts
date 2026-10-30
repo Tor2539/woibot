@@ -4,6 +4,7 @@ import { getUserId } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const userId = await getUserId(req);
+  if (!userId) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   const scope = req.nextUrl.searchParams.get("scope");
   const where: Record<string, any> = { userId };
   if (scope && scope !== "all") where.scope = scope;
@@ -14,6 +15,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const userId = await getUserId(req);
+  if (!userId) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
   if (body.isVaultSecret) {
     const raw = String(body.value || "");

@@ -4,6 +4,7 @@ import { getUserId, safeJsonParse } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const userId = await getUserId(req);
+  if (!userId) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   const rows = await prisma.connectedApp.findMany({ where: { userId } });
   const secrets = await prisma.vaultSecret.findMany({ where: { userId } });
   const apps = rows.map((r: any) => ({
@@ -15,6 +16,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const userId = await getUserId(req);
+  if (!userId) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
   const { id, provider, action, scopes, account } = body;
 

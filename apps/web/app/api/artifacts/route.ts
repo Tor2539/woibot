@@ -5,6 +5,7 @@ import { callWoibotLLM } from "@/lib/llm";
 
 export async function GET(req: NextRequest) {
   const userId = await getUserId(req);
+  if (!userId) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   const downloadId = req.nextUrl.searchParams.get("download");
   if (downloadId) {
     const art = await prisma.artifact.findFirst({ where: { id: downloadId } });
@@ -68,6 +69,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const userId = await getUserId(req);
+  if (!userId) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
   const tab = body.tab || "docs";
   const title = body.title || "New Verified Artifact";

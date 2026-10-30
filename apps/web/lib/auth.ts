@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "./db";
+import { cookies } from "next/headers";
+import { prisma, ensureSchema } from "./db";
+import { SESSION_COOKIE, verifySessionToken } from "./session";
 
 export function errorResponse(message: string, status = 400, extra?: Record<string, unknown>) {
   return NextResponse.json({ ok: false, error: message, ...extra }, { status });
@@ -9,29 +11,50 @@ export function successResponse(data: unknown, status = 200, headers?: Record<st
   return NextResponse.json({ ok: true, data }, { status, headers });
 }
 
-export async function getUserId(req?: NextRequest): Promise<string> {
+async function tokenFrom(req?: NextRequest): Promise<string | undefined> {
   if (req) {
-    const headerId = req.headers.get("x-user-id");
-    if (headerId) return headerId;
-    const urlId = req.nextUrl?.searchParams?.get("userId");
-    if (urlId) return urlId;
+    const fromReq = req.cookies?.get(SESSION_COOKIE)?.value;
+    if (fromReq) return fromReq;
   }
-  const devEmail = process.env.DEV_USER_EMAIL || "dev@woibot.com";
   try {
-    let user = await prisma.user.findUnique({ where: { email: devEmail } });
-    if (!user) {
-      user = await prisma.user.create({
-        data: { id: "usr_woibot_default", email: devEmail, name: "Takin (CEO Workspace)" },
-      });
-    }
-    return user.id || "usr_woibot_default";
+    const store = await cookies();
+    return store.get(SESSION_COOKIE)?.value;
   } catch {
-    return "usr_woibot_default";
+    return undefined;
   }
 }
 
-export async function requireUser(req: NextRequest) {
-  return getUserId(req);
+/**
+ * Resolve the caller's user id.
+ *
+ * Production: a valid signed session cookie is the ONLY source of identity.
+ * Local development may opt into the seeded demo account with ALLOW_DEV_USER=1.
+ */
+export async function getUserId(req?: NextRequest): Promise<string | null> {
+  const token = await tokenFrom(req);
+  const session = await verifySessionToken(token);
+  if (session?.userId) return session.userId;
+
+  if (process.env.ALLOW_DEV_USER === "1" && process.env.NODE_ENV !== "production") {
+    const devEmail = process.env.DEV_USER_EMAIL || "dev@woibot.com";
+    try {
+      await ensureSchema();
+      let user = await prisma.user.findUnique({ where: { email: devEmail } });
+      if (!user) {
+        user = await prisma.user.create({ data: { id: "usr_woibot_default", email: devEmail, name: "Dev Workspace" } });
+      }
+      return user.id;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+export async function requireUser(req: NextRequest): Promise<string> {
+  const userId = await getUserId(req);
+  if (!userId) throw new Error("Unauthorized");
+  return userId;
 }
 
 export async function parseJson<T>(req: NextRequest): Promise<T> {
