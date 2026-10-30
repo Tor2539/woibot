@@ -51,7 +51,9 @@ export async function ensureComputer(userId: string): Promise<ComputerStatus> {
     name: out.name,
     port: out.port,
     cdpPort: out.cdpPort,
-    vncPath: `/users/${encodeURIComponent(userId)}/vnc/vnc.html?autoconnect=1&resize=scale&token=${encodeURIComponent(MANAGER_TOKEN)}`,
+    vncPath: `/users/${encodeURIComponent(userId)}/vnc/vnc.html?autoconnect=1&resize=scale&show_dot=1&path=${encodeURIComponent(
+        `/users/${userId}/vnc/websockify`,
+      )}&token=${encodeURIComponent(MANAGER_TOKEN)}`,
   };
 }
 
@@ -67,7 +69,9 @@ export async function computerStatus(userId: string): Promise<ComputerStatus> {
     name: out.name,
     port: out.port,
     cdpPort: (out.port || 0) + 1000,
-    vncPath: `/users/${encodeURIComponent(userId)}/vnc/vnc.html?autoconnect=1&resize=scale&token=${encodeURIComponent(MANAGER_TOKEN)}`,
+    vncPath: `/users/${encodeURIComponent(userId)}/vnc/vnc.html?autoconnect=1&resize=scale&show_dot=1&path=${encodeURIComponent(
+        `/users/${userId}/vnc/websockify`,
+      )}&token=${encodeURIComponent(MANAGER_TOKEN)}`,
   };
 }
 

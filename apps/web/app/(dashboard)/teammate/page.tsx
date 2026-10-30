@@ -128,6 +128,17 @@ function TeammateWorkspaceInner() {
   const [newBotName, setNewBotName] = useState("");
   const [newBotRole, setNewBotRole] = useState("");
   const [botSaving, setBotSaving] = useState(false);
+  const [screenImg, setScreenImg] = useState<string>("");
+  const [screenTs, setScreenTs] = useState<string>("");
+  const [screenTick, setScreenTick] = useState(0);
+
+  // Live screen: browser loads a real PNG of the container display; a ticker rotates
+  // the cache-busting param so the image refreshes on its own.
+  useEffect(() => {
+    const id = setInterval(() => setScreenTick((n) => n + 1), 8000);
+    return () => clearInterval(id);
+  }, []);
+
 
   // Right Inspector state (Grok Bot Bot-Details + Cursor Panel)
   const [inspectorOpen, setInspectorOpen] = useState(true);
@@ -1289,28 +1300,47 @@ function TeammateWorkspaceInner() {
                 </div>
 
                 {/* Simulated Live Desktop / Browser Canvas */}
-                {computer?.vncUrl && computer?.status === "running" && (
+                {computer?.status === "running" && (
                   <div
                     className="overflow-hidden rounded-[10px]"
                     style={{ border: "1px solid var(--wb-line-strong)" }}
                   >
                     <div className="flex items-center justify-between bg-[#14151c] px-3 py-1.5 text-[11px] text-[#8f929a]">
-                      <span className="truncate">หน้าจอจริงของ Teammate · {computer?.name}</span>
-                      <a
-                        href={computer.vncUrl}
-                        target="_blank"
-                        rel="noreferrer"
+                      <span className="truncate">
+                        หน้าจอจริง · {computer?.name} {screenTs ? `· อัปเดต ${screenTs}` : ""}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setScreenTick((n) => n + 1);
+                        }}
                         className="text-[10.5px] text-[#7cb0ff] hover:underline"
                       >
-                        เปิดเต็มจอ ↗
-                      </a>
+                        รีเฟรช
+                      </button>
                     </div>
-                    <iframe
-                      src={computer.vncUrl}
-                      title="Cloud Computer live screen"
-                      className="h-[220px] w-full"
-                      style={{ border: 0, backgroundColor: "#000" }}
+                    <img
+                      key={screenTick}
+                      src={`/api/computer?action=screen&raw=1&t=${screenTick}`}
+                      alt="Cloud Computer screen"
+                      className="w-full"
+                      style={{ display: "block", backgroundColor: "#000", minHeight: 120 }}
                     />
+                    {computer?.vncUrl && (
+                      <div className="flex items-center justify-between bg-[#14151c] px-3 py-1.5">
+                        <span className="text-[10.5px] text-[#8f929a]">
+                          ควบคุมด้วยเมาส์/คีย์บอร์ดได้ในหน้าจอเต็ม
+                        </span>
+                        <a
+                          href={computer.vncUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="rounded-[6px] bg-[#2b66e0] px-2.5 py-1 text-[10.5px] font-medium text-white"
+                        >
+                          เปิดเต็มจอ ↗
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1358,29 +1388,23 @@ function TeammateWorkspaceInner() {
 
                 {/* Take Control & Teach-by-Demonstration Controls (Grok Bot §1.7) */}
                 <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setComputerTakeover((v) => !v)}
-                    className={`flex items-center justify-center gap-1.5 rounded-[8px] py-2 text-[12px] font-medium transition-colors ${
-                      computerTakeover
-                        ? "bg-amber-500 text-black font-semibold"
-                        : "bg-[#2b66e0] text-white hover:bg-[#2458c6]"
-                    }`}
+                  <a
+                    href={computer?.vncUrl || "/computer"}
+                    target={computer?.vncUrl ? "_blank" : undefined}
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-1.5 rounded-[8px] bg-[#2b66e0] py-2 text-[12px] font-medium text-white hover:bg-[#2458c6]"
                   >
                     <Monitor className="h-3.5 w-3.5" />
-                    <span>{computerTakeover ? "Release Control" : "Take Control"}</span>
-                  </button>
+                    <span>เปิดหน้าจอเต็ม</span>
+                  </a>
                   <button
                     type="button"
-                    onClick={() => setTeachRecording((r) => !r)}
-                    className={`flex items-center justify-center gap-1.5 rounded-[8px] py-2 text-[12px] font-medium transition-colors ${
-                      teachRecording
-                        ? "bg-red-500/20 border border-red-500 text-red-300"
-                        : "bg-[var(--wb-raised)] border border-[var(--wb-line)] text-[var(--wb-fg)] hover:bg-[var(--wb-hover)]"
-                    }`}
+                    onClick={() => router.push("/routines")}
+                    className="flex items-center justify-center gap-1.5 rounded-[8px] py-2 text-[12px] font-medium text-[var(--wb-fg)]"
+                    style={{ border: "1px solid var(--wb-line)", backgroundColor: "var(--wb-raised)" }}
                   >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    <span>{teachRecording ? "Stop Recording" : "Teach Routine"}</span>
+                    <Repeat2 className="h-3.5 w-3.5" />
+                    <span>สร้าง Routine</span>
                   </button>
                 </div>
 

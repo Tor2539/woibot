@@ -3,6 +3,9 @@ import { getUserId } from "@/lib/auth";
 import { ensureComputer, computerStatus, computerAction, execInComputer, computerLogs, computerPublicOrigin } from "@/lib/computer";
 import { audit } from "@/lib/pg";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
@@ -12,6 +15,27 @@ export async function GET(req: NextRequest) {
     const out = await ensureComputer(userId);
     await audit({ tenantId: userId, actor: userId, action: "computer.ensure", meta: { status: out.status } });
     return NextResponse.json({ ok: out.status !== "error", computer: out, origin: computerPublicOrigin() });
+  }
+
+  if (action === "screen") {
+    const shot = await execInComputer(
+      userId,
+      "export DISPLAY=:99; import -window root -resize 640x -quality 55 jpg:- 2>/dev/null | base64 -w0",
+    );
+    const b64 = String((shot as any)?.stdout || "").trim();
+    if (!b64) {
+      return NextResponse.json({ ok: false, error: "screen_unavailable" }, { status: 502 });
+    }
+    if (req.nextUrl.searchParams.get("raw") === "1") {
+      return new NextResponse(Buffer.from(b64, "base64"), {
+        headers: { "content-type": "image/jpeg", "cache-control": "no-store" },
+      });
+    }
+    return NextResponse.json({
+      ok: true,
+      image: `data:image/jpeg;base64,${b64}`,
+      ts: new Date().toISOString(),
+    });
   }
 
   const out = await computerStatus(userId);
