@@ -1,0 +1,152 @@
+generator client { provider = "prisma-client-js" }
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Product { teammate work }
+enum TaskStatus { queued planning in_progress waiting_for_user paused reviewing completed partially_completed failed cancelled }
+enum WorkKind { coding research doc video_analysis video_gen media_heavy }
+enum ExecutionMode { cloud local }
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  createdAt     DateTime @default(now())
+  teammates     Teammate[]
+  tasks         Task[]
+  subscriptions Subscription[]
+  quotas        WorkQuota?
+  usageEvents   UsageEvent[]
+}
+
+model Teammate {
+  id        String @id @default(cuid())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id])
+  name      String
+  role      String // e.g. Executive Assistant
+  persona   Json?  // tone, language
+  isMain    Boolean @default(false)
+  memory    Memory[]
+  createdAt DateTime @default(now())
+}
+
+model Memory {
+  id         String   @id @default(cuid())
+  teammateId String
+  teammate   Teammate @relation(fields: [teammateId], references: [id])
+  scope      String   // personal | team | project
+  key        String
+  value      String
+  canDelete  Boolean @default(true)
+  createdAt  DateTime @default(now())
+  @@index([teammateId, scope])
+}
+
+model Task {
+  id              String     @id @default(cuid())
+  userId          String
+  user            User       @relation(fields: [userId], references: [id])
+  title           String
+  goal            String
+  product         Product
+  workKind        WorkKind?
+  status          TaskStatus @default(queued)
+  executionMode   ExecutionMode @default(cloud)
+  handoffPacket   Json?      // HandoffPacket spec
+  traceId         String     @unique
+  deliverables    Deliverable[]
+  verification    VerificationReport?
+  estimate        WorkEstimate?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Deliverable {
+  id        String @id @default(cuid())
+  taskId    String
+  task      Task   @relation(fields: [taskId], references: [id])
+  kind      String // file | code | video | doc
+  fileUrl   String
+  fileName  String
+  mimeType  String
+  editable  Boolean @default(true)
+  createdAt DateTime @default(now())
+}
+
+model VerificationReport {
+  id        String @id @default(cuid())
+  taskId    String @unique
+  task      Task   @relation(fields: [taskId], references: [id])
+  type      String // coding | docs | video
+  passed    Boolean
+  checks    Json   // array of {name, passed, evidenceUrl}
+  summary   String
+  createdAt DateTime @default(now())
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  plan      String   // free | starter | pro
+  periodStart DateTime
+  periodEnd   DateTime
+  allowance Json     // {tokens, cloudHours, routines}
+}
+
+model WorkQuota {
+  id              String @id @default(cuid())
+  userId          String @unique
+  user            User   @relation(fields: [userId], references: [id])
+  monthlyCap      Float  @default(50)
+  perTaskCap      Float  @default(5)
+  alertThreshold  Float  @default(0.8)
+}
+
+model WorkEstimate {
+  id            String @id @default(cuid())
+  taskId        String @unique
+  task          Task   @relation(fields: [taskId], references: [id])
+  estimatedCost Float
+  actualCost    Float?
+  estimatedMinutes Int
+  approved      Boolean @default(false)
+  createdAt     DateTime @default(now())
+}
+
+model UsageEvent {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  product    Product
+  kind       WorkKind?
+  tokens     Int      @default(0)
+  gpuSeconds Float    @default(0)
+  storageMb  Float    @default(0)
+  cost       Float
+  createdAt  DateTime @default(now())
+  @@index([userId, product, createdAt])
+}
+
+model ConnectedApp {
+  id        String @id @default(cuid())
+  userId    String
+  provider  String // gmail, slack, notion...
+  scopes    String[]
+  status    String // connected | expired | revoked
+  createdAt DateTime @default(now())
+}
+
+model Routine {
+  id          String @id @default(cuid())
+  userId      String
+  title       String
+  trigger     Json   // {type: cron|event, expr}
+  action      Json   // {taskTemplate}
+  lastRun     DateTime?
+  nextRun     DateTime?
+  status      String // active | paused | failed
+}
