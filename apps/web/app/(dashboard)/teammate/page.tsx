@@ -1389,13 +1389,13 @@ function TeammateWorkspaceInner() {
                 {/* Take Control & Teach-by-Demonstration Controls (Grok Bot §1.7) */}
                 <div className="grid grid-cols-2 gap-2">
                   <a
-                    href={computer?.vncUrl || "/computer"}
-                    target={computer?.vncUrl ? "_blank" : undefined}
+                    href={`/api/computer?action=screen&raw=1&t=${screenTick}`}
+                    target="_blank"
                     rel="noreferrer"
                     className="flex items-center justify-center gap-1.5 rounded-[8px] bg-[#2b66e0] py-2 text-[12px] font-medium text-white hover:bg-[#2458c6]"
                   >
                     <Monitor className="h-3.5 w-3.5" />
-                    <span>เปิดหน้าจอเต็ม</span>
+                    <span>ดูหน้าจอเต็ม</span>
                   </a>
                   <button
                     type="button"
@@ -1420,7 +1420,7 @@ function TeammateWorkspaceInner() {
                   className="flex w-full items-center justify-between rounded-[8px] px-3 py-2 text-[12px] hover:bg-[var(--wb-hover)]"
                   style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
                 >
-                  <span>Open Full-Screen Cloud Computer</span>
+                  <span>จัดการเครื่อง (สตาร์ท/หยุด/ลบ) →</span>
                   <ArrowUpRight className="h-3.5 w-3.5 text-[var(--wb-muted)]" />
                 </button>
               </div>
