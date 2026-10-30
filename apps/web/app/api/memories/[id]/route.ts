@@ -1,10 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+import { prisma } from "@/lib/db";
+
+type Params = { params: Promise<{ id: string }> };
+
+export async function PATCH(req: NextRequest, { params }: Params) {
   const { id } = await params;
-  const body = await req.json().catch(() => ({}));
-  return NextResponse.json({ ok: true, id, patch: body });
+  const body = await req.json();
+  const updated = await prisma.memory.update({
+    where: { id },
+    data: {
+      key: body.key,
+      value: body.value,
+      scope: body.scope,
+    },
+  });
+  return NextResponse.json({ ok: true, memory: updated });
 }
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+
+export async function DELETE(_req: NextRequest, { params }: Params) {
   const { id } = await params;
-  return NextResponse.json({ ok: true, id, deleted: true });
+  await prisma.memory.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
 }

@@ -1,77 +1,195 @@
 "use client";
-import { useState } from "react";
 
-type App = {id:string;name:string;desc:string;icon:string;status:"connected"|"disconnected"|"expired";account?:string;scopes?:string[];category:"comms"|"calendar"|"storage"|"dev"|"workspace"};
-const APPS: App[] = [
-  {id:"gmail",name:"Gmail",desc:"อ่าน/สรุป/ร่างตอบเมล • สร้าง Task จากเมล",icon:"✉️",status:"connected",account:"you@gmail.com",scopes:["gmail.read","gmail.send"],category:"comms"},
-  {id:"calendar",name:"Google Calendar",desc:"สรุปนัดวันนี้ • เตือนก่อนเริ่ม • หาช่องว่าง",icon:"📅",status:"connected",account:"you@gmail.com",scopes:["calendar.read"],category:"calendar"},
-  {id:"drive",name:"Google Drive",desc:"ซิงก์ Cloud Drive • แนบไฟล์เข้า Work",icon:"💾",status:"connected",account:"you@gmail.com",scopes:["drive.read"],category:"storage"},
-  {id:"slack",name:"Slack",desc:"สรุปแชนแนล • แจ้งเตือน mention • สร้าง Task",icon:"💬",status:"disconnected",category:"comms"},
-  {id:"notion",name:"Notion",desc:"อ่าน/เขียนฐานความรู้ • sync memory",icon:"📝",status:"connected",account:"my-workspace",scopes:["notion.read","notion.write"],category:"workspace"},
-  {id:"github",name:"GitHub",desc:"สร้าง repo/PR • ดูโค้ด Deliverables",icon:"🐙",status:"expired",account:"@you",scopes:["repo"],category:"dev"},
-  {id:"linear",name:"Linear",desc:"ซิงก์ issue ↔ Task",icon:"◧",status:"disconnected",category:"dev"},
-  {id:"figma",name:"Figma",desc:"ดึงดีไซน์เข้า Work coding",icon:"🎨",status:"disconnected",category:"workspace"},
-];
+import React, { useState, useEffect } from "react";
+import { Blocks, Lock, ShieldCheck, Globe, Plus, CheckCircle2 } from "lucide-react";
 
-const CATS = [{k:"all",l:"All"},{k:"comms",l:"Comms"},{k:"calendar",l:"Calendar"},{k:"storage",l:"Storage"},{k:"workspace",l:"Workspace"},{k:"dev",l:"Dev"}] as const;
+const CATALOG_META: Record<string, { label: string; category: string; desc: string }> = {
+  gmail: { label: "Gmail & Google Workspace", category: "Email", desc: "อ่าน สรุป และร่างตอบอีเมลสำคัญภายใต้โหมด Ask-first" },
+  calendar: { label: "Google Calendar", category: "Calendar", desc: "ตรวจสอบตารางนัดหมาย แจ้งเตือนความขัดแย้ง และเตรียมวาระประชุม" },
+  slack: { label: "Slack Workspace Bot", category: "Communication", desc: "รับคำสั่งผ่าน @woibot ในห้องแชทและส่งสรุปความคืบหน้า" },
+  github: { label: "GitHub Repositories & PRs", category: "Development", desc: "เชื่อมต่อ Repository สำหรับ Work (Code) เพื่อเปิด PR และรัน Verification" },
+  drive: { label: "Google Drive", category: "Storage", desc: "อ่านเอกสารต้นฉบับและซิงค์ Deliverables ที่ตรวจผ่านแล้ว" },
+  notion: { label: "Notion Knowledge Base", category: "Productivity", desc: "เชื่อมฐานความรู้ทีมและบันทึกสรุปการประชุม" },
+  linear: { label: "Linear Issue Tracker", category: "Project Mgmt", desc: "ซิงค์ตั๋วงานกับศูนย์ Unified Tasks อัตโนมัติ" },
+  onepassword: { label: "1Password Service Vault", category: "Security Vault", desc: "กรอกรหัสผ่านอัตโนมัติบนเบราว์เซอร์ Cloud Computer โดยไม่เปิดเผยค่าให้โมเดลเห็น" },
+};
 
-export default function AppsPage(){
-  const [apps,setApps]=useState<App[]>(APPS);
-  const [cat,setCat]=useState<string>("all");
-  const [q,setQ]=useState("");
-  const toggle = (id:string, to:"connected"|"disconnected")=> setApps(a=>a.map(x=> x.id===id ? {...x,status:to,account:to==="connected"?(x.account||"connected"):""} : x));
-  const filtered = apps.filter(a=> (cat==="all"||a.category===cat) && (!q || (a.name+a.desc).toLowerCase().includes(q.toLowerCase())));
+export default function ConnectedAppsVaultPage() {
+  const [apps, setApps] = useState<any[]>([]);
+  const [secrets, setSecrets] = useState<any[]>([]);
+  const [secName, setSecName] = useState("");
+  const [secHost, setSecHost] = useState("*.acmecorp.co.th");
+  const [secVal, setSecVal] = useState("");
+
+  const loadData = () => {
+    fetch("/api/connected-apps")
+      .then((r) => r.json())
+      .then((res) => {
+        setApps(res?.apps || []);
+        setSecrets(res?.secrets || []);
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const toggleApp = async (app: any) => {
+    await fetch("/api/connected-apps", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: app.id, provider: app.provider }),
+    });
+    loadData();
+  };
+
+  const handleAddSecret = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!secName.trim() || !secVal.trim()) return;
+    await fetch("/api/memories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        isVaultSecret: true,
+        key: secName.trim().toUpperCase(),
+        hostAllowlist: secHost.trim(),
+        value: secVal,
+      }),
+    });
+    setSecName("");
+    setSecVal("");
+    loadData();
+  };
+
   return (
-    <div style={{fontFamily:"system-ui",maxWidth:1180,margin:"0 auto",padding:"24px 20px"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
-        <div>
-          <h1 style={{margin:0,fontSize:22}}>Connected Apps</h1>
-          <p style={{margin:"4px 0 0",color:"#6b7280",fontSize:13}}>เชื่อม Gmail/Calendar/Slack/Notion/Drive/GitHub • OAuth แยกแอปละ scope • Revoke ได้ทันที</p>
-        </div>
-        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search apps" style={{border:"1px solid #e5e7eb",borderRadius:10,padding:"8px 12px",minWidth:220,fontSize:13}}/>
+    <div className="p-4 lg:p-6 space-y-6">
+      <div>
+        <h1 className="text-[18px] font-bold">Connected Apps, 1Password Bridge & Logins Vault</h1>
+        <p className="text-[12.5px] text-[var(--wb-muted)]">
+          ควบคุมสิทธิ์ Read/Write รายบริการ และเก็บรหัสผ่านแบบ Write-Only (AI กรอกใช้งานได้บน Host ที่อนุญาตโดยไม่เห็นรหัสจริง)
+        </p>
       </div>
 
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:14}}>
-        {CATS.map(c=>(
-          <button key={c.k} onClick={()=>setCat(c.k)} style={{padding:"6px 10px",borderRadius:999,border:cat===c.k?"1px solid #0d0d0d":"1px solid #e5e7eb",background:cat===c.k?"#0d0d0d":"#fff",color:cat===c.k?"#fff":"#374151",fontSize:12,fontWeight:600,cursor:"pointer"}}>{c.l}</button>
-        ))}
-        <span style={{alignSelf:"center",color:"#9ca3af",fontSize:12,marginLeft:6}}>{apps.filter(a=>a.status==="connected").length} connected • {apps.filter(a=>a.status==="expired").length} need re-auth</span>
-      </div>
-
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12,marginTop:14}}>
-        {filtered.map(a=>(
-          <div key={a.id} style={{border:"1px solid #e5e7eb",borderRadius:14,padding:14,background:a.status==="connected"?"#fff":"#f9fafb"}}>
-            <div style={{display:"flex",gap:10,alignItems:"center"}}>
-              <div style={{width:42,height:42,borderRadius:10,background:"#f3f4f6",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>{a.icon}</div>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:700,fontSize:13}}>{a.name}</div>
-                <div style={{fontSize:11,color:"#6b7280"}}>{a.category}</div>
+      {/* Connected OAuth Services Grid */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {apps.map((app) => {
+          const meta = CATALOG_META[app.provider] || {
+            label: app.provider,
+            category: "Integration",
+            desc: "Connected service",
+          };
+          const connected = app.status === "connected";
+          return (
+            <div
+              key={app.id}
+              className="flex flex-col justify-between rounded-[12px] p-4 space-y-3"
+              style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
+            >
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="rounded bg-[var(--wb-panel)] px-2 py-0.5 text-[10.5px] font-medium text-[var(--wb-muted)]">
+                    {meta.category}
+                  </span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10.5px] font-semibold uppercase ${
+                      connected ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"
+                    }`}
+                  >
+                    {connected ? "Connected" : "Disconnected"}
+                  </span>
+                </div>
+                <div className="text-[14px] font-semibold">{meta.label}</div>
+                <p className="text-[11.5px] text-[var(--wb-muted)] leading-relaxed">{meta.desc}</p>
               </div>
-              <span style={{fontSize:11,padding:"3px 8px",borderRadius:999,border:"1px solid #e5e7eb",background:a.status==="connected"?"#dcfce7":a.status==="expired"?"#fef3c7":"#fff",color:a.status==="connected"?"#166534":a.status==="expired"?"#92400e":"#6b7280"}}>{a.status}</span>
+
+              <div className="pt-2 space-y-2" style={{ borderTop: "1px solid var(--wb-line)" }}>
+                <div className="truncate font-mono text-[11px] text-[var(--wb-muted)]">
+                  Account: {app.account || "Not linked"}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleApp(app)}
+                  className={`w-full rounded-[7px] py-1.5 text-[12px] font-medium transition-colors ${
+                    connected
+                      ? "bg-[var(--wb-panel)] border border-[var(--wb-line)] text-[var(--wb-fg-soft)] hover:text-red-400"
+                      : "bg-[#2b66e0] text-white hover:bg-[#2458c6]"
+                  }`}
+                >
+                  {connected ? "Revoke Access" : "Authorize OAuth"}
+                </button>
+              </div>
             </div>
-            <div style={{fontSize:12,color:"#374151",marginTop:8,lineHeight:1.5}}>{a.desc}</div>
-            {a.account && <div style={{fontSize:11,color:"#6b7280",marginTop:6}}>Account: {a.account}</div>}
-            {a.scopes && <div style={{fontSize:11,color:"#6b7280"}}>Scopes: {a.scopes.join(", ")}</div>}
-            <div style={{display:"flex",gap:6,marginTop:10}}>
-              {a.status==="connected" ? (
-                <>
-                  <button onClick={()=>toggle(a.id,"disconnected")} style={{border:"1px solid #fecaca",background:"#fff",color:"#dc2626",borderRadius:8,padding:"6px 10px",fontSize:12,cursor:"pointer"}}>Revoke</button>
-                  <button onClick={()=>alert("Manage scopes for "+a.name)} style={{border:"1px solid #e5e7eb",background:"#fff",borderRadius:8,padding:"6px 10px",fontSize:12,cursor:"pointer"}}>Manage</button>
-                </>
-              ) : a.status==="expired" ? (
-                <button onClick={()=>toggle(a.id,"connected")} style={{background:"#f59e0b",color:"#fff",borderRadius:8,padding:"6px 10px",border:"none",fontSize:12,fontWeight:600,cursor:"pointer"}}>Re-authorize</button>
-              ) : (
-                <button onClick={()=>toggle(a.id,"connected")} style={{background:"#0d0d0d",color:"#fff",borderRadius:8,padding:"6px 10px",border:"none",fontSize:12,fontWeight:600,cursor:"pointer"}}>Connect</button>
-              )}
-              <span style={{marginLeft:"auto",fontSize:11,color:"#9ca3af",alignSelf:"center"}}>OAuth 2.0</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      <div style={{marginTop:14,border:"1px solid #e5e7eb",borderRadius:12,padding:12,background:"#eff6ff"}}>
-        <div style={{fontWeight:600,fontSize:13}}>Privacy</div>
-        <div style={{fontSize:12,color:"#6b7280",marginTop:4}}>Teammate อ่านเฉพาะ scope ที่คุณอนุญาต • ไม่เก็บรหัสผ่าน • Revoke แล้ว token หมดอายุทันที • Work ไม่เข้าถึง Connected Apps โดยตรง (ผ่าน Handoff packet เท่านั้น)</div>
+      {/* Secure Vault Logins & Secrets Section (Grok Bot §2.5) */}
+      <div
+        className="rounded-[12px] p-5 space-y-4"
+        style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line-strong)" }}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-2">
+              <Lock className="h-4 w-4 text-emerald-400" />
+              <h2 className="text-[15px] font-semibold">Woibot Zero-Knowledge Secrets & Browser Autofill Vault</h2>
+            </div>
+            <p className="text-[12px] text-[var(--wb-muted)]">
+              Never shown to your Bot or teammates. Only injected/autofilled inside the Cloud Computer on matching host allowlists.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleAddSecret} className="grid gap-2.5 sm:grid-cols-4">
+          <input
+            type="text"
+            value={secName}
+            onChange={(e) => setSecName(e.target.value)}
+            placeholder="SECRET_NAME (e.g. STRIPE_LIVE_KEY)"
+            className="rounded-[8px] px-3 py-2 font-mono text-[12px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
+          />
+          <input
+            type="text"
+            value={secHost}
+            onChange={(e) => setSecHost(e.target.value)}
+            placeholder="Allowed Host (*.stripe.com)"
+            className="rounded-[8px] px-3 py-2 font-mono text-[12px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
+          />
+          <input
+            type="password"
+            value={secVal}
+            onChange={(e) => setSecVal(e.target.value)}
+            placeholder="Secret / Password Value..."
+            className="rounded-[8px] px-3 py-2 text-[12px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
+          />
+          <button
+            type="submit"
+            className="rounded-[8px] bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-[12.5px] font-semibold text-white"
+          >
+            + Store in Vault
+          </button>
+        </form>
+
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          {secrets.map((sec) => (
+            <div
+              key={sec.id}
+              className="flex items-center justify-between rounded-[9px] px-3.5 py-2.5"
+              style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
+            >
+              <div>
+                <div className="font-mono text-[12.5px] font-semibold text-[#7cb0ff]">{sec.name}</div>
+                <div className="font-mono text-[11px] text-[var(--wb-muted)]">
+                  Allowed Host: {sec.hostAllowlist} · {sec.maskedValue}
+                </div>
+              </div>
+              <span className="rounded bg-emerald-500/15 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
+                Write-Only
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

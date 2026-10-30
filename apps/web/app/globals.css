@@ -2,66 +2,210 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 0 0% 96.5%;
-    --foreground: 0 0% 5%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 5%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 5%;
-    --primary: 224 79% 48%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 224 79% 48%;
-    --radius: 0.75rem;
-  }
-  .dark {
-    --background: 0 0% 5%;
-    --foreground: 0 0% 96%;
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 96%;
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 96%;
-    --primary: 224 79% 58%;
-    --primary-foreground: 0 0% 5%;
-    --secondary: 0 0% 14%;
-    --secondary-foreground: 0 0% 96%;
-    --muted: 0 0% 14%;
-    --muted-foreground: 0 0% 63%;
-    --accent: 0 0% 14%;
-    --accent-foreground: 0 0% 96%;
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 0 0% 96%;
-    --border: 0 0% 14%;
-    --input: 0 0% 14%;
-    --ring: 224 79% 58%;
-  }
+:root,
+[data-theme="dark"] {
+  --wb-bg: #0e0e10;
+  --wb-sidebar: #121316;
+  --wb-panel: #0b0b0d;
+  --wb-raised: #18191c;
+  --wb-card: #151619;
+  --wb-hover: #202126;
+  --wb-active: #26282e;
+  --wb-line: #25262c;
+  --wb-line-strong: #32343d;
+  --wb-fg: #ececee;
+  --wb-fg-soft: #d2d3d8;
+  --wb-muted: #8f929a;
+  --wb-faint: #5c5f66;
+  --wb-accent: #3b82f6;
+  --wb-accent-soft: rgba(59, 130, 246, 0.14);
+  --wb-primary: #2b66e0;
+  --wb-primary-hover: #2458c6;
+  --wb-bubble-user: #173e76;
+  --wb-bubble-user-fg: #f6fafe;
+  --wb-ok: #34d399;
+  --wb-warn: #f59e0b;
+  --wb-danger: #f87171;
+
+  --background: 240 6% 6%;
+  --foreground: 240 5% 93%;
+  --card: 228 9% 9%;
+  --card-foreground: 240 5% 93%;
+  --popover: 228 9% 9%;
+  --popover-foreground: 240 5% 93%;
+  --primary: 220 75% 52%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 228 8% 14%;
+  --secondary-foreground: 240 5% 93%;
+  --muted: 228 8% 14%;
+  --muted-foreground: 224 6% 58%;
+  --accent: 220 75% 52%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 231 8% 16%;
+  --input: 231 8% 16%;
+  --ring: 220 75% 52%;
+  --radius: 0.625rem;
 }
 
-@layer base {
-  * { @apply border-border; }
-  body {
-    @apply bg-background text-foreground font-sans antialiased;
-    background: #f5f5f3;
-    font-feature-settings: "rlig" 1, "calt" 1;
-  }
+[data-theme="light"] {
+  --wb-bg: #faf9f7;
+  --wb-sidebar: #f3f0eb;
+  --wb-panel: #f6f3ee;
+  --wb-raised: #ffffff;
+  --wb-card: #ffffff;
+  --wb-hover: #eae5dc;
+  --wb-active: #e2dcd1;
+  --wb-line: #e2ddd4;
+  --wb-line-strong: #cfc8bc;
+  --wb-fg: #1d1b18;
+  --wb-fg-soft: #36332e;
+  --wb-muted: #656159;
+  --wb-faint: #8c877e;
+  --wb-accent: #1d5fd1;
+  --wb-accent-soft: rgba(29, 95, 209, 0.1);
+  --wb-primary: #1d5fd1;
+  --wb-primary-hover: #174eae;
+  --wb-bubble-user: #e8eef9;
+  --wb-bubble-user-fg: #142238;
+  --wb-ok: #059669;
+  --wb-warn: #d97706;
+  --wb-danger: #dc2626;
+
+  --background: 40 20% 97%;
+  --foreground: 36 9% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 36 9% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 36 9% 10%;
+  --primary: 218 76% 47%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 38 18% 92%;
+  --secondary-foreground: 36 9% 10%;
+  --muted: 38 18% 92%;
+  --muted-foreground: 38 6% 37%;
+  --accent: 218 76% 47%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 38 18% 86%;
+  --input: 38 18% 86%;
+  --ring: 218 76% 47%;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+* {
+  box-sizing: border-box;
+  border-color: var(--wb-line);
+}
 
-/* Smooth transitions */
-* { scrollbar-width: thin; scrollbar-color: #d1d5db transparent; }
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--wb-bg);
+  color: var(--wb-fg);
+  font-family: var(--font-inter), var(--font-thai), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13.5px;
+  line-height: 1.55;
+  letter-spacing: -0.006em;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular-nums,
+table td,
+table th,
+.kpi-val {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Segmented Mode Tabs (Grok Bot + Claude Desktop / NymoruCode style) */
+.wb-mode-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--wb-line);
+  border-radius: 8px;
+}
+
+[data-theme="light"] .wb-mode-tabs {
+  background: rgba(32, 30, 26, 0.06);
+}
+
+.wb-mode-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--wb-muted);
+  transition: all 0.14s ease;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.wb-mode-tab:hover {
+  color: var(--wb-fg);
+}
+
+.wb-mode-tab.is-active {
+  background: var(--wb-active);
+  color: var(--wb-fg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="light"] .wb-mode-tab.is-active {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Dense 29px desktop sidebar rows */
+.wb-nav-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 30px;
+  padding: 4px 10px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 450;
+  color: var(--wb-fg-soft);
+  transition: background-color 0.12s ease, color 0.12s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.wb-nav-row:hover {
+  background: var(--wb-hover);
+  color: var(--wb-fg);
+}
+
+.wb-nav-row.is-active {
+  background: var(--wb-active);
+  color: var(--wb-fg);
+  font-weight: 500;
+}
+
+/* Custom subtle scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(143, 146, 154, 0.22);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(143, 146, 154, 0.38);
+}

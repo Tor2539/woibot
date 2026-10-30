@@ -1,21 +1,67 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { getUserId, safeJsonParse } from "@/lib/auth";
 
-const APPS = [
-  { id: "1", provider: "gmail", label: "Gmail", icon: "\uD83D\uDCE7", status: "connected", scopes: ["read", "send"], account: "you@company.com" },
-  { id: "2", provider: "calendar", label: "Google Calendar", icon: "\uD83D\uDCC5", status: "connected", scopes: ["read", "write"], account: "you@company.com" },
-  { id: "3", provider: "drive", label: "Google Drive", icon: "\uD83D\uDCC1", status: "connected", scopes: ["read"], account: "you@company.com" },
-  { id: "4", provider: "slack", label: "Slack", icon: "\uD83D\uDCAC", status: "connected", scopes: ["read", "write"], account: "woibot-workspace" },
-  { id: "5", provider: "notion", label: "Notion", icon: "\uD83D\uDCDD", status: "expired", scopes: ["read"], account: "you@company.com" },
-  { id: "6", provider: "github", label: "GitHub", icon: "\uD83D\uDC19", status: "connected", scopes: ["read", "write"], account: "woibot" },
-  { id: "7", provider: "linear", label: "Linear", icon: "\uD83D\uDCCA", status: "not_connected", scopes: [], account: null },
-];
-
-export async function GET() {
-  return NextResponse.json({ apps: APPS });
+export async function GET(req: NextRequest) {
+  const userId = await getUserId(req);
+  const rows = await prisma.connectedApp.findMany({ where: { userId } });
+  const secrets = await prisma.vaultSecret.findMany({ where: { userId } });
+  const apps = rows.map((r: any) => ({
+    ...r,
+    scopes: safeJsonParse(r.scopes, ["read"]),
+  }));
+  return NextResponse.json({ ok: true, apps, secrets });
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
-  // Toggle logic mock
-  return NextResponse.json({ ok: true, id: body.id, toggled: true });
+  const userId = await getUserId(req);
+  const body = await req.json();
+  const { id, provider, action, scopes, account } = body;
+
+  if (id) {
+    const existing = await prisma.connectedApp.findFirst({ where: { id } });
+    if (existing) {
+      const nextStatus =
+        action === "disconnect" || action === "revoke"
+          ? "not_connected"
+          : action === "connect" || action === "reconnect"
+          ? "connected"
+          : existing.status === "connected"
+          ? "not_connected"
+          : "connected";
+      const updated = await prisma.connectedApp.update({
+        where: { id },
+        data: {
+          status: nextStatus,
+          ...(scopes ? { scopes: JSON.stringify(scopes) } : {}),
+          ...(account ? { account } : {}),
+        },
+      });
+      return NextResponse.json({ ok: true, app: { ...updated, scopes: safeJsonParse(updated.scopes, []) } });
+    }
+  }
+
+  if (provider) {
+    const existing = await prisma.connectedApp.findFirst({ where: { userId, provider } });
+    if (existing) {
+      const nextStatus = existing.status === "connected" ? "not_connected" : "connected";
+      const updated = await prisma.connectedApp.update({
+        where: { id: existing.id },
+        data: { status: nextStatus },
+      });
+      return NextResponse.json({ ok: true, app: { ...updated, scopes: safeJsonParse(updated.scopes, []) } });
+    }
+    const created = await prisma.connectedApp.create({
+      data: {
+        userId,
+        provider,
+        status: "connected",
+        scopes: JSON.stringify(scopes || ["read", "write"]),
+        account: account || "takin@woxacorp.com",
+      },
+    });
+    return NextResponse.json({ ok: true, app: { ...created, scopes: safeJsonParse(created.scopes, []) } });
+  }
+
+  return NextResponse.json({ ok: false, error: "id or provider required" }, { status: 400 });
 }
