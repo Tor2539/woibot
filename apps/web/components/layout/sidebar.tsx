@@ -101,10 +101,40 @@ export function Sidebar({
   const [cmdOpen, setCmdOpen] = useState(false);
   const [cmdQuery, setCmdQuery] = useState("");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [dbBots, setDbBots] = useState<any[]>([]);
+  const [dbComputer, setDbComputer] = useState<any>(null);
+
+  const NAV_BOTS = dbBots.length
+    ? dbBots.map((b: any) => ({
+        id: b.id,
+        name: b.name,
+        role: b.role,
+        status: b.isMain
+          ? dbComputer?.status === "running"
+            ? "Main · Cloud Computer running"
+            : "Main · Idle"
+          : "Idle · Ready",
+        dot: b.isMain ? "#34d399" : "#8f929a",
+        badge: b.isMain ? "MAIN" : undefined,
+        unread: 0,
+      }))
+    : ROSTER_BOTS;
+
 
   const isWorkMode: ProductMode = pathname.startsWith("/work") ? "work" : "teammate";
   const currentArea = (searchParams.get("area") as WorkAreaTab) || "code";
   const activeBotId = searchParams.get("bot") || "tm_main";
+
+  useEffect(() => {
+    fetch("/api/teammate")
+      .then((r) => r.json())
+      .then((res) => setDbBots(res?.teammates || []))
+      .catch(() => {});
+    fetch("/api/computer")
+      .then((r) => r.json())
+      .then((res) => setDbComputer(res?.computer || null))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     try {
@@ -155,7 +185,7 @@ export function Sidebar({
     { group: "Modes", label: "Switch to Work › Code (Autonomous Software Engineering)", action: () => switchWorkArea("code") },
     { group: "Modes", label: "Switch to Work › Video (Multi-Scene Video Studio)", action: () => switchWorkArea("video") },
     { group: "Modes", label: "Switch to Work › Artifacts (Claude Artifacts Gallery & Designer Mode)", action: () => switchWorkArea("artifacts") },
-    ...ROSTER_BOTS.map((b) => ({
+    ...NAV_BOTS.map((b) => ({
       group: "Teammates",
       label: `Chat with ${b.name} (${b.role}) — ${b.status}`,
       action: () => router.push(`/teammate?bot=${b.id}`),
@@ -374,7 +404,7 @@ export function Sidebar({
                       </Link>
                     </div>
                     <div className="space-y-0.5">
-                      {ROSTER_BOTS.map((bot) => {
+                      {NAV_BOTS.map((bot) => {
                         const isSelected = pathname === "/teammate" && activeBotId === bot.id;
                         return (
                           <Link
@@ -590,7 +620,11 @@ export function Sidebar({
                         Cloud Computer · :99
                       </div>
                       <div className="truncate text-[10.5px] text-[var(--wb-muted)] tabular-nums">
-                        2 vCPU / 4GB · Persistent
+                        {dbComputer?.status === "running"
+                          ? `${dbComputer?.name || "container"} · port ${dbComputer?.port ?? "—"}`
+                          : dbComputer
+                            ? "not running"
+                            : "checking…"}
                       </div>
                     </div>
                   </div>

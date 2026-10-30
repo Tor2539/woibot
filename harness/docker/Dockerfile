@@ -6,7 +6,7 @@ ENV DISPLAY=:99
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl wget git jq unzip procps \
     python3 python3-pip \
-    chromium xvfb x11vnc fluxbox novnc websockify supervisor \
+    chromium xvfb x11vnc fluxbox novnc websockify supervisor x11-xserver-utils \
     ffmpeg libreoffice poppler-utils \
     tesseract-ocr tesseract-ocr-tha tesseract-ocr-eng imagemagick \
     python3-openpyxl python3-pandas python3-pip \
@@ -23,6 +23,7 @@ RUN useradd -m -u 1000 -s /bin/bash woibot \
     && chown -R woibot:woibot /home/woibot
 
 COPY supervisord.conf /etc/supervisor/conf.d/woibot.conf
+COPY start.html /opt/start.html
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 

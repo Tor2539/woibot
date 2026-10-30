@@ -120,6 +120,14 @@ function TeammateWorkspaceInner() {
   const [briefingOpen, setBriefingOpen] = useState(true);
   const [briefing, setBriefing] = useState<any>(null);
   const [computer, setComputer] = useState<any>(null);
+  const [bots, setBots] = useState<any[]>([]);
+  const [artifacts, setArtifacts] = useState<any[]>([]);
+  const [apps, setApps] = useState<any[]>([]);
+  const [botMenuOpen, setBotMenuOpen] = useState(false);
+  const [newBotOpen, setNewBotOpen] = useState(false);
+  const [newBotName, setNewBotName] = useState("");
+  const [newBotRole, setNewBotRole] = useState("");
+  const [botSaving, setBotSaving] = useState(false);
 
   // Right Inspector state (Grok Bot Bot-Details + Cursor Panel)
   const [inspectorOpen, setInspectorOpen] = useState(true);
@@ -138,7 +146,22 @@ function TeammateWorkspaceInner() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const feedEndRef = useRef<HTMLDivElement>(null);
 
-  const currentBot = ROSTER_BOTS.find((b) => b.id === activeBotId) || ROSTER_BOTS[0];
+  const roster = bots.length
+    ? bots.map((b: any) => ({
+        id: b.id,
+        name: b.name,
+        role: b.role,
+        badge: b.isMain ? "MAIN" : undefined,
+        dot: "#34d399",
+        status: b.isMain
+          ? computer?.status === "running"
+            ? "On its computer · running"
+            : "Idle · Ready"
+          : "Idle · Ready",
+        isMain: Boolean(b.isMain),
+      }))
+    : ROSTER_BOTS;
+  const currentBot = roster.find((b: any) => b.id === activeBotId) || roster[0];
 
   useEffect(() => {
     setActiveBotId(botParam);
@@ -173,8 +196,31 @@ function TeammateWorkspaceInner() {
       .catch(() => setBriefing(null));
     fetch("/api/computer")
       .then((r) => r.json())
-      .then((res) => setComputer(res?.computer || null))
+      .then((res) => {
+        const c = res?.computer || null;
+        if (c) {
+          const origin = res?.origin || "https://computer.woibot.com";
+          setComputer({ ...c, vncUrl: c.vncPath ? `${origin}${c.vncPath}` : null });
+        } else {
+          setComputer(null);
+        }
+      })
       .catch(() => setComputer(null));
+    fetch("/api/teammate")
+      .then((r) => r.json())
+      .then((res) => {
+        setBots(res?.teammates || []);
+        if (res?.teammate?.computer) setComputer((c: any) => c || res.teammate.computer);
+      })
+      .catch(() => {});
+    fetch("/api/artifacts")
+      .then((r) => r.json())
+      .then((res) => setArtifacts(res?.artifacts || []))
+      .catch(() => {});
+    fetch("/api/connected-apps")
+      .then((r) => r.json())
+      .then((res) => setApps(res?.apps || []))
+      .catch(() => {});
   }, []);
 
   const toggleTrace = (msgId: string) => {
@@ -357,9 +403,15 @@ function TeammateWorkspaceInner() {
               />
             </div>
             <div className="flex min-w-0 items-center gap-2">
-              <span className="truncate text-[13.5px] font-semibold text-[var(--wb-fg)]">
-                {currentBot.name}
-              </span>
+              <button
+                type="button"
+                onClick={() => setBotMenuOpen((v) => !v)}
+                className="flex items-center gap-1 rounded-[6px] px-1.5 py-0.5 text-[13.5px] font-semibold text-[var(--wb-fg)] hover:bg-[var(--wb-hover)]"
+                title="สลับ / สร้าง Teammate"
+              >
+                <span className="max-w-[160px] truncate">{currentBot.name}</span>
+                <ChevronDown className="h-3.5 w-3.5 text-[var(--wb-muted)]" />
+              </button>
               <span className="hidden sm:inline-block rounded bg-[var(--wb-raised)] border border-[var(--wb-line)] px-1.5 py-0.5 text-[11px] text-[var(--wb-muted)]">
                 {currentBot.role}
               </span>
@@ -406,6 +458,129 @@ function TeammateWorkspaceInner() {
             </button>
           </div>
         </header>
+
+        {botMenuOpen && (
+          <div className="relative">
+            <div
+              className="absolute left-4 top-1 z-40 w-[300px] rounded-[10px] p-1.5 shadow-2xl"
+              style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line-strong)" }}
+            >
+              <div className="px-2 py-1 text-[10.5px] uppercase tracking-wide text-[var(--wb-muted)]">
+                Teammates ของคุณ ({roster.length})
+              </div>
+              <div className="max-h-64 overflow-y-auto">
+                {roster.map((b: any) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveBotId(b.id);
+                      setBotMenuOpen(false);
+                      router.replace(`/teammate?bot=${b.id}`);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-[7px] px-2 py-1.5 text-left hover:bg-[var(--wb-hover)]"
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: b.dot }} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[12.5px] font-medium">{b.name}</span>
+                      <span className="block truncate text-[10.5px] text-[var(--wb-muted)]">{b.role}</span>
+                    </span>
+                    {b.badge && (
+                      <span className="rounded bg-[var(--wb-panel)] px-1.5 py-0.5 text-[9.5px] text-[var(--wb-muted)]">
+                        {b.badge}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setBotMenuOpen(false);
+                  setNewBotOpen(true);
+                }}
+                className="mt-1 flex w-full items-center gap-1.5 rounded-[7px] px-2 py-1.5 text-[12px] font-medium text-[#7cb0ff] hover:bg-[var(--wb-hover)]"
+              >
+                <Plus className="h-3.5 w-3.5" /> สร้าง Teammate ใหม่
+              </button>
+            </div>
+          </div>
+        )}
+
+        {newBotOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div
+              className="w-full max-w-[420px] rounded-[12px] p-4 space-y-3"
+              style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line-strong)" }}
+            >
+              <div>
+                <div className="text-[14px] font-semibold">สร้าง Teammate ใหม่</div>
+                <div className="text-[11.5px] text-[var(--wb-muted)]">
+                  บอกชื่อและหน้าที่ — ไม่ต้องเขียน prompt
+                </div>
+              </div>
+              <input
+                value={newBotName}
+                onChange={(e) => setNewBotName(e.target.value)}
+                placeholder="ชื่อ เช่น Finance Ops"
+                className="w-full rounded-[8px] px-3 py-2 text-[13px] outline-none"
+                style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)", color: "var(--wb-fg)" }}
+              />
+              <input
+                value={newBotRole}
+                onChange={(e) => setNewBotRole(e.target.value)}
+                placeholder="หน้าที่ เช่น ตรวจใบแจ้งหนี้และสรุปต้นทุนรายเดือน"
+                className="w-full rounded-[8px] px-3 py-2 text-[13px] outline-none"
+                style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)", color: "var(--wb-fg)" }}
+              />
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setNewBotOpen(false)}
+                  className="rounded-[7px] px-3 py-1.5 text-[12px]"
+                  style={{ border: "1px solid var(--wb-line)", color: "var(--wb-muted)" }}
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="button"
+                  disabled={!newBotName.trim() || botSaving}
+                  onClick={async () => {
+                    if (!newBotName.trim()) return;
+                    setBotSaving(true);
+                    try {
+                      const res = await fetch("/api/teammate", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          name: newBotName.trim(),
+                          role: newBotRole.trim() || "Operations Specialist",
+                          language: "th",
+                        }),
+                      }).then((r) => r.json());
+                      if (res?.ok) {
+                        const list = await fetch("/api/teammate").then((r) => r.json());
+                        setBots(list?.teammates || []);
+                        if (res.teammate?.id) {
+                          setActiveBotId(res.teammate.id);
+                          router.replace(`/teammate?bot=${res.teammate.id}`);
+                        }
+                        setNewBotOpen(false);
+                        setNewBotName("");
+                        setNewBotRole("");
+                      }
+                    } finally {
+                      setBotSaving(false);
+                    }
+                  }}
+                  className="rounded-[7px] bg-[#2b66e0] px-3 py-1.5 text-[12px] font-medium text-white disabled:opacity-50"
+                >
+                  {botSaving ? "กำลังสร้าง…" : "สร้าง"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Scrollable Chat Transcript */}
         <div className="flex-1 overflow-y-auto px-4 py-5">
@@ -1114,6 +1289,31 @@ function TeammateWorkspaceInner() {
                 </div>
 
                 {/* Simulated Live Desktop / Browser Canvas */}
+                {computer?.vncUrl && computer?.status === "running" && (
+                  <div
+                    className="overflow-hidden rounded-[10px]"
+                    style={{ border: "1px solid var(--wb-line-strong)" }}
+                  >
+                    <div className="flex items-center justify-between bg-[#14151c] px-3 py-1.5 text-[11px] text-[#8f929a]">
+                      <span className="truncate">หน้าจอจริงของ Teammate · {computer?.name}</span>
+                      <a
+                        href={computer.vncUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10.5px] text-[#7cb0ff] hover:underline"
+                      >
+                        เปิดเต็มจอ ↗
+                      </a>
+                    </div>
+                    <iframe
+                      src={computer.vncUrl}
+                      title="Cloud Computer live screen"
+                      className="h-[220px] w-full"
+                      style={{ border: 0, backgroundColor: "#000" }}
+                    />
+                  </div>
+                )}
+
                 <div
                   className="overflow-hidden rounded-[10px]"
                   style={{ backgroundColor: "#090a0f", border: "1px solid var(--wb-line-strong)" }}
@@ -1352,7 +1552,7 @@ function TeammateWorkspaceInner() {
                   <div>
                     <div className="text-[13px] font-semibold">Bot Library & Deliverables</div>
                     <div className="text-[11px] text-[var(--wb-muted)]">
-                      Pages, files, and code packages produced
+                      ไฟล์และผลงานจริงจาก Workspace ของคุณ
                     </div>
                   </div>
                   <button
@@ -1365,31 +1565,36 @@ function TeammateWorkspaceInner() {
                 </div>
 
                 <div className="space-y-2">
-                  {[
-                    { id: "del_crm_zip", name: "crm-enterprise-v1.zip", kind: "Runnable Next.js CRM", size: "4.2 MB" },
-                    { id: "art_doc_1", name: "Q4_Board_Strategy_Report.docx", kind: "14 Pages · Verified Layout", size: "1.8 MB" },
-                    { id: "art_slides_1", name: "Q4_Executive_Deck.pptx", kind: "10 Slides (16:9)", size: "3.9 MB" },
-                    { id: "del_vid_169", name: "woibot-launch-16x9-1080p.mp4", kind: "H.264 + TH/EN Subs", size: "14.8 MB" },
-                  ].map((item) => (
+                  {artifacts.length === 0 ? (
                     <div
-                      key={item.id}
-                      className="flex items-center justify-between rounded-[9px] p-2.5"
-                      style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
+                      className="rounded-[9px] p-4 text-center text-[11.5px] text-[var(--wb-muted)]"
+                      style={{ backgroundColor: "var(--wb-raised)", border: "1px dashed var(--wb-line-strong)" }}
                     >
-                      <div className="min-w-0">
-                        <div className="truncate text-[12.5px] font-medium">{item.name}</div>
-                        <div className="text-[11px] text-[var(--wb-muted)] tabular-nums">
-                          {item.kind} · {item.size}
-                        </div>
-                      </div>
-                      <a
-                        href={`/api/artifacts?download=${item.id}`}
-                        className="shrink-0 rounded-[6px] bg-[var(--wb-panel)] border border-[var(--wb-line)] px-2.5 py-1 text-[11px] font-medium hover:bg-[var(--wb-hover)]"
-                      >
-                        Download
-                      </a>
+                      ยังไม่มีไฟล์ใน Library — ผลงานที่ Work สร้างเสร็จจะปรากฏที่นี่พร้อมลิงก์ดาวน์โหลด
                     </div>
-                  ))}
+                  ) : (
+                    artifacts.map((item: any) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between gap-2 rounded-[9px] p-2.5"
+                        style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-[12.5px] font-medium">{item.title || item.name || item.fileName}</div>
+                          <div className="text-[11px] text-[var(--wb-muted)] tabular-nums">
+                            {item.kind || item.category || "artifact"}
+                            {item.createdAt ? ` · ${new Date(item.createdAt).toLocaleDateString("th-TH")}` : ""}
+                          </div>
+                        </div>
+                        <a
+                          href={item.fileUrl || `/api/artifacts?download=${item.id}`}
+                          className="shrink-0 rounded-[6px] border border-[var(--wb-line)] bg-[var(--wb-panel)] px-2.5 py-1 text-[11px] font-medium hover:bg-[var(--wb-hover)]"
+                        >
+                          Download
+                        </a>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -1401,10 +1606,32 @@ function TeammateWorkspaceInner() {
                   className="rounded-[10px] p-3 space-y-2"
                   style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
                 >
-                  <div className="text-[13px] font-semibold">{currentBot.name}</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-[13px] font-semibold">{currentBot.name}</div>
+                    <span className="rounded bg-[var(--wb-panel)] px-1.5 py-0.5 text-[9.5px] uppercase text-[var(--wb-muted)]">
+                      {currentBot.badge || "teammate"}
+                    </span>
+                  </div>
                   <div className="text-[11.5px] text-[var(--wb-muted)]">{currentBot.role}</div>
-                  <div className="pt-1 text-[12px] text-[var(--wb-fg-soft)]">
-                    ทำงานบน Cloud Computer ส่วนตัวตลอด 24 ชม. จดจำบริบทระยะยาว และส่งต่องานหนักให้ Work โดยอัตโนมัติพร้อมใบประเมินราคา
+                  <div className="grid grid-cols-2 gap-2 pt-1 text-[11.5px]">
+                    <div className="rounded px-2 py-1.5" style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}>
+                      <div className="text-[10px] text-[var(--wb-muted)]">Memory</div>
+                      <div className="font-semibold tabular-nums">{memories.length} รายการ</div>
+                    </div>
+                    <div className="rounded px-2 py-1.5" style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}>
+                      <div className="text-[10px] text-[var(--wb-muted)]">Routines</div>
+                      <div className="font-semibold tabular-nums">{routines.length} งาน</div>
+                    </div>
+                    <div className="rounded px-2 py-1.5" style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}>
+                      <div className="text-[10px] text-[var(--wb-muted)]">Computer</div>
+                      <div className="font-semibold">{computer?.status || "unknown"}</div>
+                    </div>
+                    <div className="rounded px-2 py-1.5" style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}>
+                      <div className="text-[10px] text-[var(--wb-muted)]">Apps connected</div>
+                      <div className="font-semibold tabular-nums">
+                        {apps.filter((a: any) => a.status === "connected").length}/{apps.length}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1413,7 +1640,7 @@ function TeammateWorkspaceInner() {
                   style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[12px] font-semibold">Connected Apps & 1Password Vault</span>
+                    <span className="text-[12px] font-semibold">Connected Apps & Vault</span>
                     <button
                       type="button"
                       onClick={() => router.push("/apps")}
@@ -1422,19 +1649,48 @@ function TeammateWorkspaceInner() {
                       Configure
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 gap-1.5 text-[11.5px]">
-                    {["Gmail (VIP)", "Google Calendar", "Slack Bot", "GitHub Repos", "Notion Wiki", "1Password Vault"].map((app) => (
-                      <div
-                        key={app}
-                        className="flex items-center gap-1.5 rounded px-2 py-1"
-                        style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
-                      >
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                        <span className="truncate">{app}</span>
-                      </div>
-                    ))}
-                  </div>
+                  {apps.length === 0 ? (
+                    <div className="text-[11.5px] text-[var(--wb-muted)]">ยังไม่มีรายการแอป — ไปที่หน้า Apps เพื่อเชื่อมต่อ</div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-1.5 text-[11.5px]">
+                      {apps.map((a: any) => (
+                        <div
+                          key={a.id}
+                          className="flex items-center gap-1.5 rounded px-2 py-1"
+                          style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
+                          title={a.status}
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${
+                              a.status === "connected" ? "bg-emerald-400" : "bg-[var(--wb-muted)]"
+                            }`}
+                          />
+                          <span className="truncate">{a.provider}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
+                {!(currentBot as any).isMain && bots.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!confirm(`ลบ Teammate "${currentBot.name}"?`)) return;
+                      const res = await fetch(`/api/teammate?id=${currentBot.id}`, { method: "DELETE" }).then((r) => r.json());
+                      if (res?.ok) {
+                        const list = await fetch("/api/teammate").then((r) => r.json());
+                        setBots(list?.teammates || []);
+                        setActiveBotId("tm_main");
+                        router.replace("/teammate");
+                      }
+                    }}
+                    className="w-full rounded-[8px] px-3 py-1.5 text-[11.5px] font-medium text-red-400"
+                    style={{ border: "1px solid rgba(239,68,68,0.35)" }}
+                  >
+                    ลบ Teammate นี้
+                  </button>
+                )}
               </div>
             )}
           </div>
