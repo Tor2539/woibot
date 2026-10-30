@@ -6,8 +6,10 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "verify": "turbo run verify"
-  }
+    "dev": "pnpm --filter @woibot/web dev",
+    "build": "pnpm --filter @woibot/web build",
+    "db:push": "pnpm --filter @woibot/web db:push",
+    "db:seed": "pnpm --filter @woibot/web db:seed"
+  },
+  "packageManager": "pnpm@9.12.3"
 }

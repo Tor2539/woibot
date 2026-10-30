@@ -1,0 +1,21 @@
+# deps
+node_modules
+.pnpm-store
+
+# next
+.next
+out
+
+# db
+prisma/dev.db
+*.db
+*.db-journal
+
+# env
+.env
+.env.local
+
+# build
+dist
+.cache
+

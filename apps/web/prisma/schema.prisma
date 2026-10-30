@@ -1,0 +1,275 @@
+// woibot Prisma schema — SQLite (dev) + Postgres (prod) compatible
+// --------------------------------------------------------------
+// Provider: "sqlite" for local dev (file:./dev.db)
+// For production Postgres: change provider to "postgresql" and DATABASE_URL to postgres://...
+// All enums are stored as String for SQLite compat; see comments for PG native enums.
+// This schema covers all PRD entities: User, Teammate, ChatMessage, Memory, Task (10 statuses),
+// Deliverable, File, Subscription, WorkQuota, UsageEvent, ConnectedApp, Routine
+// --------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+  // For Postgres production, use:
+  // provider = "postgresql"
+  // url = env("DATABASE_URL")
+}
+
+// --- Enums (documented, stored as String for SQLite compat) ---
+// TaskStatus: queued | planning | in_progress | waiting_for_user | paused | reviewing | completed | partially_completed | failed | cancelled
+// Product: teammate | work
+// WorkKind: coding | research | doc | video_analysis | video_gen | media_heavy | data
+// ExecutionMode: cloud | local
+// ConnectedAppProvider: gmail | outlook | calendar | slack | teams | notion | drive | onedrive | github | linear | jira | hubspot | custom
+// RoutineStatus: active | paused | failed | disabled
+// SubscriptionPlan: free | starter | pro | enterprise
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  teammates     Teammate[]
+  tasks         Task[]
+  subscriptions Subscription[]
+  workQuota     WorkQuota?
+  usageEvents   UsageEvent[]
+  connectedApps ConnectedApp[]
+  routines      Routine[]
+  memories      Memory[]
+  files         File[]
+
+  @@index([email])
+}
+
+model Teammate {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  role      String   // Personal Assistant, Executive Assistant, Marketing Assistant, etc.
+  persona   String?  // JSON string: {tone, style, instructions}
+  language  String   @default("th") // th | en | auto
+  avatar    String?
+  isMain    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages  ChatMessage[]
+  memories  Memory[]  @relation("TeammateMemories")
+
+  @@index([userId])
+  @@index([userId, isMain])
+}
+
+model ChatMessage {
+  id         String   @id @default(cuid())
+  teammateId String
+  teammate   Teammate @relation(fields: [teammateId], references: [id], onDelete: Cascade)
+  userId     String?  // denormalized for fast lookup, optional
+  role       String   // user | assistant | system | handoff | tool
+  content    String   // supports markdown, text
+  meta       String?  // JSON: {attachments: FileRef[], handoffPacket, toolCalls, tokens}
+  createdAt  DateTime @default(now())
+
+  @@index([teammateId, createdAt])
+  @@index([teammateId])
+}
+
+model Memory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teammateId String?
+  teammate   Teammate? @relation("TeammateMemories", fields: [teammateId], references: [id], onDelete: SetNull)
+  key       String   // e.g. "user_name", "preferred_tone", "project:xxx"
+  value     String   // markdown/text
+  scope     String   @default("personal") // personal | team | project | forbidden
+  source    String?  // user | inferred | import
+  canDelete Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, key, scope])
+  @@index([userId, scope])
+  @@index([teammateId])
+}
+
+model Task {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  goal            String   // full user intent
+  description     String?  // extended brief
+  product         String   @default("teammate") // teammate | work
+  workKind        String?  // coding | research | doc | video_analysis | video_gen | media_heavy | data
+  status          String   @default("queued") // 10 states: queued | planning | in_progress | waiting_for_user | paused | reviewing | completed | partially_completed | failed | cancelled
+  executionMode   String   @default("cloud") // cloud | local
+  priority        String   @default("normal") // low | normal | high | urgent
+  traceId         String   @unique @default(cuid()) // links Teammate ↔ Work ↔ Tasks
+  handoffPacket   String?  // JSON serialized HandoffPacket
+  verification    String?  // JSON serialized VerificationReport (verification_report.json)
+  estimate        String?  // JSON serialized WorkEstimate {cost, minutes, approved}
+  progress        Int      @default(0) // 0-100
+  currentStep     String?  // current planner step id
+  error           String?  // last error message
+  dueAt           DateTime?
+  deliverables    Deliverable[]
+  files           File[]   @relation("TaskFiles")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  completedAt     DateTime?
+  archivedAt      DateTime?
+
+  @@index([userId, status])
+  @@index([userId, product])
+  @@index([traceId])
+  @@index([status])
+  @@index([userId, createdAt])
+}
+
+model Deliverable {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  kind      String   // file | code | video | doc | preview | report | bundle
+  fileName  String
+  fileUrl   String   // S3/R2 URL or /files/...
+  mimeType  String   // application/zip, video/mp4, application/pdf, etc.
+  size      Int?     // bytes
+  editable  Boolean  @default(true)
+  previewUrl String? // for code preview, doc preview
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+  @@index([taskId, kind])
+}
+
+model File {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId    String?
+  task      Task?    @relation("TaskFiles", fields: [taskId], references: [id], onDelete: SetNull)
+  name      String
+  originalName String?
+  path      String   // storage key: tasks/{taskId}/... or users/{userId}/...
+  mimeType  String
+  size      Int      // bytes
+  bucket    String?  // teammate | work | uploads
+  url       String?  // public/signed URL
+  meta      String?  // JSON: {width,height,pages,duration}
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([taskId])
+  @@index([userId, createdAt])
+}
+
+model Subscription {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan        String   // free | starter | pro | enterprise
+  status      String   @default("active") // active | past_due | cancelled | trialing
+  periodStart DateTime @default(now())
+  periodEnd   DateTime
+  allowance   String?  // JSON: {tokens, cloudHours, routines, teammates}
+  stripeCustomerId String?
+  stripeSubscriptionId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, plan])
+}
+
+model WorkQuota {
+  id             String @id @default(cuid())
+  userId         String @unique
+  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monthlyCap     Float  @default(50)   // USD cap per month for Work
+  perTaskCap     Float  @default(5)    // USD cap per task
+  monthlyUsed    Float  @default(0)    // USD used this month
+  alertThreshold Float  @default(0.8)  // 0.8 = 80%
+  periodStart    DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model UsageEvent {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product    String   // teammate | work — CRITICAL: cost isolation ledger
+  kind       String?  // WorkKind or teammate kind (chat, search, voice)
+  taskId     String?  // link to Task if work
+  routineId  String?  // link to Routine if automated
+  tokens     Int      @default(0)
+  inputTokens Int     @default(0)
+  outputTokens Int    @default(0)
+  gpuSeconds Float    @default(0)
+  buildMinutes Float  @default(0)
+  storageMb  Float    @default(0)
+  cost       Float    // USD, computed from WORK_RATES
+  meta       String?  // JSON: {model, duration, breakdown}
+  createdAt  DateTime @default(now())
+
+  @@index([userId, product])
+  @@index([userId, createdAt])
+  @@index([taskId])
+  @@index([userId, product, createdAt])
+}
+
+model ConnectedApp {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider     String   // gmail | outlook | calendar | slack | notion | drive | onedrive | dropbox | github | linear | jira | trello | asana | hubspot | custom
+  status       String   @default("connected") // connected | expired | revoked | pending
+  scopes       String?  // JSON array: ["read:email","write:calendar"]
+  account      String?  // email / account identifier
+  accountName  String?  // display name
+  accessToken  String?  // encrypted, never returned to client
+  refreshToken String?  // encrypted
+  expiresAt    DateTime?
+  meta         String?  // JSON: provider-specific
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId, provider])
+  @@index([userId, status])
+}
+
+model Routine {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teammateId String?  // which teammate owns this routine
+  title     String
+  description String?
+  trigger   String    // JSON {type: cron|event|manual, expr: "0 8 * * *", event: "email_received"}
+  action    String    // JSON {template: "summarize_emails", params: {}, deliverTo: "chat"}
+  status    String    @default("active") // active | paused | failed | disabled
+  lastRun   DateTime?
+  nextRun   DateTime?
+  lastResult String?  // JSON: {success, output, cost}
+  runCount  Int       @default(0)
+  failCount Int       @default(0)
+  totalCost Float     @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([nextRun])
+}
