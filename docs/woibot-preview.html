@@ -3,119 +3,272 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>woibot.com — Your Personal AI Team That Actually Gets Work Done</title>
+<title>woibot.com — Grok Bot × Claude Desktop Unified Workspace</title>
 <style>
-:root{--fg:#0d0d0d;--muted:#6b7280;--accent:#1757d7;--border:#e5e7eb;--card:#fff;--bg:#f5f5f3}
-*{box-sizing:border-box} body{margin:0;font-family:Geist,system-ui,sans-serif;background:var(--bg);color:var(--fg)}
-a{color:inherit; text-decoration:none}
-.wrap{max-width:1120px;margin:0 auto;padding:24px 20px}
-.nav{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:var(--card);border:1px solid var(--border);border-radius:999px}
-.logo{font-weight:800;letter-spacing:-.02em} .logo span{color:var(--accent)}
-.nav-links{display:flex;gap:18px;font-size:14px;color:var(--muted)}
-.pill{background:var(--fg);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;font-weight:600}
-.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:28px;margin-top:28px}
-@media(max-width:860px){.hero{grid-template-columns:1fr}}
-.hero h1{font-size:46px;line-height:.95;letter-spacing:-.03em;margin:0}
-.hero p{color:var(--muted);font-size:16px;line-height:1.6;margin-top:14px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px}
-.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
-.kpi{border:1px dashed var(--border);border-radius:14px;padding:12px;text-align:center}
-.kpi b{font-size:20px}
-.flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:16px}
-.step{background:var(--card);border:1px solid var(--border);border-radius:999px;padding:8px 12px;font-size:13px}
-.arrow{color:var(--muted)}
-.split{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
-@media(max-width:860px){.split{grid-template-columns:1fr}}
-.badge{display:inline-block;background:#0d0d0d;color:#fff;border-radius:999px;padding:4px 10px;font-size:12px}
-.badge.blue{background:var(--accent)}
-.list{margin:10px 0 0 18px;color:var(--muted);font-size:14px;line-height:1.7}
-.pricing{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px}
-@media(max-width:860px){.pricing{grid-template-columns:1fr}}
-.price{border:1px solid var(--border);border-radius:16px;padding:16px;background:var(--card)}
-.price b{font-size:22px}
+*{box-sizing:border-box}
+.wb-shell{
+  background:#0e0e10;
+  color:#ececee;
+  border:1px solid #25262c;
+  border-radius:14px;
+  overflow:hidden;
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans Thai",sans-serif;
+  font-size:13px;
+}
+.wb-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:8px 14px;
+  background:#121316;
+  border-bottom:1px solid #25262c;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.wb-tabs{
+  display:inline-flex;
+  gap:2px;
+  padding:2px;
+  background:#090a0d;
+  border:1px solid #25262c;
+  border-radius:8px;
+}
+.wb-tab{
+  border:0;
+  background:transparent;
+  color:#8f929a;
+  padding:5px 12px;
+  border-radius:6px;
+  font-size:12px;
+  font-weight:600;
+  cursor:pointer;
+}
+.wb-tab.on{
+  background:#26282e;
+  color:#ececee;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+}
+.wb-body{
+  display:grid;
+  grid-template-columns:220px 1fr 270px;
+  min-height:420px;
+}
+@media(max-width:860px){
+  .wb-body{grid-template-columns:1fr}
+  .wb-side,.wb-insp{display:none}
+}
+.wb-side{
+  background:#121316;
+  border-right:1px solid #25262c;
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
+.wb-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:6px 8px;
+  border-radius:7px;
+  color:#d2d3d8;
+  font-size:12px;
+  margin-bottom:2px;
+}
+.wb-row.active{background:#26282e;color:#fff;font-weight:600}
+.wb-dot{width:7px;height:7px;border-radius:999px;display:inline-block;margin-right:6px}
+.wb-main{
+  padding:14px 18px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  gap:12px;
+}
+.wb-card{
+  background:#18191c;
+  border:1px solid #2c2e36;
+  border-radius:11px;
+  padding:12px;
+}
+.wb-insp{
+  background:#0b0b0d;
+  border-left:1px solid #25262c;
+  padding:12px;
+}
+.wb-pill{
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:999px;
+  font-size:10.5px;
+  font-weight:600;
+}
+.wb-btn{
+  background:#2b66e0;
+  color:#fff;
+  border:0;
+  border-radius:7px;
+  padding:6px 12px;
+  font-size:12px;
+  font-weight:600;
+  cursor:pointer;
+  text-decoration:none;
+  display:inline-block;
+}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="nav">
-    <div class="logo">woibot<span>.com</span></div>
-    <div class="nav-links"><a href="#t">Teammate</a><a href="#w">Work</a><a href="#tasks">Tasks</a><a href="#pricing">Pricing</a></div>
-    <a class="pill" href="#demo">Talk to your Teammate →</a>
-  </div>
-
-  <div class="hero">
-    <div>
-      <div class="badge">NEW • Cloud Computer ส่วนตัว + Work แยกต้นทุน</div>
-      <h1>Your Personal AI Team That Actually Gets Work Done.</h1>
-      <p>Teammate ดูแลทุกวัน — Work ลงมือทำจนส่งไฟล์จริง ใช้ได้ แก้ไขต่อได้<br>ประสบการณ์เดียว: <b style="color:var(--fg)">สั่งงาน → ลงมือทำ → ตรวจสอบ → ส่งมอบ → ทำงานต่อ</b></p>
-      <div class="flow">
-        <span class="step">สั่งงาน</span><span class="arrow">→</span><span class="step">ลงมือทำ</span><span class="arrow">→</span><span class="step">ตรวจสอบ</span><span class="arrow">→</span><span class="step">ส่งมอบ</span><span class="arrow">→</span><span class="step">ทำงานต่อ</span>
+<div class="wb-shell">
+  <div class="wb-top">
+    <div style="display:flex;align-items:center;gap:10px">
+      <strong style="font-size:14px">woibot<span style="color:#3b82f6">.com</span></strong>
+      <div class="wb-tabs">
+        <button id="btn-tm" class="wb-tab on" onclick="setMode('tm')">● Teammate</button>
+        <button id="btn-wk" class="wb-tab" onclick="setMode('wk')">⟨/⟩ Work (Code · Video · Artifacts)</button>
       </div>
-      <div class="kpis">
-        <div class="kpi"><b>24h</b><br><span style="font-size:12px;color:var(--muted)">Cloud Computer</span></div>
-        <div class="kpi"><b>Memory</b><br><span style="font-size:12px;color:var(--muted)">จำวิธีทำงานคุณ</span></div>
-        <div class="kpi"><b>Verified</b><br><span style="font-size:12px;color:var(--muted)">ส่งพร้อมหลักฐาน</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:#8f929a">
+      <span class="wb-pill" style="background:rgba(16,185,129,.15);color:#34d399">LIVE ON WOIBOT.COM</span>
+      <a href="https://woibot.com/teammate" target="_blank" class="wb-btn">Open Live App ↗</a>
+    </div>
+  </div>
+
+  <!-- TEAMMATE VIEW -->
+  <div id="view-tm" class="wb-body">
+    <div class="wb-side">
+      <div>
+        <div style="font-size:10.5px;color:#8f929a;padding:4px 6px;text-transform:uppercase">AI Teammates (Bots)</div>
+        <div class="wb-row active"><span><span class="wb-dot" style="background:#34d399"></span>Woibot Main</span><span style="font-size:10px;color:#7cb0ff">MAIN</span></div>
+        <div class="wb-row"><span><span class="wb-dot" style="background:#3b82f6"></span>Exec Chief</span><span style="font-size:10px;color:#8f929a">Calendar</span></div>
+        <div class="wb-row"><span><span class="wb-dot" style="background:#f59e0b"></span>Inbox Triage</span><span style="font-size:10px;background:#2b66e0;color:#fff;padding:0 5px;border-radius:99px">2</span></div>
+        <div class="wb-row"><span><span class="wb-dot" style="background:#8f929a"></span>Ops & Finance</span><span style="font-size:10px;color:#8f929a">Audit</span></div>
+        <div class="wb-row"><span><span class="wb-dot" style="background:#10b981"></span>Standup Room</span><span style="font-size:10px;color:#8f929a">3 Bots</span></div>
       </div>
-      <p style="font-size:13px;color:var(--muted);margin-top:12px">หลักคิด: ไม่ต้องเลือก AI เอง — บอกสิ่งที่ต้องการ woibot จะเข้าใจ เลือกทางที่เหมาะ และส่งผลลัพธ์ที่ใช้งานได้จริง</p>
-    </div>
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center"><b>Teammate</b><span class="badge">Always Available</span></div>
-      <p style="color:var(--muted);font-size:14px">AI ผู้ช่วยส่วนตัว — สรุปอีเมล ปฏิทิน งานค้าง Daily briefing 08:00</p>
-      <div style="background:#f9fafb;border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:8px;font-size:13px">
-        <div>🕗 08:00 Daily Briefing</div><div style="color:var(--muted)">• 3 อีเมลสำคัญจากลูกค้า • ประชุม 10:00 เตรียมสไลด์แล้ว • งานค้าง 2 ชิ้น</div>
-        <div style="margin-top:8px"><span class="badge blue">Handoff → Work</span> <span style="font-size:12px;color:var(--muted)">สร้าง CRM ใหม่ → ส่งให้ Work พร้อม estimate $2.40</span></div>
+      <div class="wb-card" style="padding:8px 10px;font-size:11px">
+        <div style="color:#34d399;font-weight:600">● Cloud Computer · :99</div>
+        <div style="color:#8f929a;font-size:10.5px">Ubuntu 24.04 · 2 vCPU / 4GB</div>
       </div>
-      <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center"><b>Work</b><span class="badge blue">Cloud / Local</span></div>
-      <p style="color:var(--muted);font-size:14px">Coding / Docs / Video / Research — ส่งไฟล์ที่เปิดได้จริง + verification report</p>
-      <ul class="list"><li>Coding: tests + preview + coverage</li><li>Docs: เปิดไฟล์จริง + layout check</li><li>Video: ffprobe + thumb + subs</li></ul>
+    </div>
+
+    <div class="wb-main">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="align-self:flex-end;background:#173e76;color:#f6fafe;padding:9px 14px;border-radius:18px;max-width:78%;font-size:13px">
+          ช่วยเช็คอีเมลสำคัญเช้านี้ ร่างคำตอบให้ ACME Corp แล้วส่งงานสร้างระบบ CRM ต่อให้ Work ทำต่อได้เลย
+        </div>
+        <div style="font-size:11.5px;color:#8f929a">● Worked for 14s · 4 steps (gmail.search, calendar.listEvents, memory.recall, handoff.pack) ›</div>
+        <div class="wb-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <strong style="font-size:12.5px">Email Draft · somchai@acmecorp.co.th</strong>
+            <span class="wb-pill" style="background:rgba(245,158,11,.15);color:#fbbf24">Mode: Ask First</span>
+          </div>
+          <div style="font-size:12px;color:#d2d3d8;line-height:1.5">
+            เรียน คุณสมชาย — ทางทีมได้จัดเตรียมโครงสร้าง Enterprise CRM พร้อม Dashboard ยอดขายและใบเสนอราคาให้เรียบร้อยแล้ว...
+          </div>
+        </div>
+        <div class="wb-card" style="border-color:#2b66e0">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="color:#7cb0ff;font-weight:600;font-size:12px">Handoff Packet → Work (CODING · trace_crm_9821a)</span>
+            <span style="font-family:monospace;color:#7cb0ff;font-weight:700">~$2.40 · 18m</span>
+          </div>
+          <div style="font-size:11.5px;color:#8f929a;margin-top:4px">
+            Enterprise Sales CRM + Playwright E2E Verification · Isolated Work Ledger (ไม่หักโควต้า Teammate)
+          </div>
+        </div>
+      </div>
+      <div class="wb-card" style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:16px">
+        <span style="color:#8f929a;font-size:12.5px">สั่งงาน Woibot Main... (+ Attach · @Skills · Effort: Auto ▾ · Voice PTT)</span>
+        <span class="wb-btn" onclick="setMode('wk')">Open in Work →</span>
+      </div>
+    </div>
+
+    <div class="wb-insp">
+      <div style="font-size:11.5px;font-weight:600;margin-bottom:8px">Bot Inspector · Computer (:99) · Memory</div>
+      <div style="background:#07080c;border:1px solid #232634;border-radius:8px;padding:10px;font-family:monospace;font-size:11px;color:#a3a7b5;margin-bottom:10px">
+        <div style="color:#7cb0ff">[CDP :9222] Chromium Active</div>
+        <div>• mail.google.com (3 VIP)</div>
+        <div>• calendar.google.com</div>
+        <div style="color:#34d399;margin-top:4px">woibot@cloud-vm:~$ agent_loop</div>
+      </div>
+      <div style="font-size:11px;color:#8f929a;margin-bottom:4px">2-Tier Memory (Personal + Team)</div>
+      <div class="wb-card" style="padding:8px;font-size:11px;margin-bottom:6px">
+        <div style="color:#7cb0ff;font-family:monospace">communication_style</div>
+        <div style="color:#d2d3d8">สรุปสั้น ตรงประเด็น ตัดสินใจนำ ใช้ตัวเลข tabular-nums</div>
+      </div>
     </div>
   </div>
 
-  <div class="split">
-    <div class="card" id="t">
-      <h3 style="margin:0">Teammate — กลับมาหาทุกวัน</h3>
-      <p style="color:var(--muted);font-size:14px">จุดแข็ง: Memory, Connected Apps, Daily Routines, ดูแลงานค้าง — ไม่ใช่แค่ตอบฉลาด</p>
-      <ul class="list">
-        <li>ตั้งชื่อ/บทบาท/ภาษา/บุคลิก • หลาย Teammate + Group chat</li>
-        <li>Memory ระยะยาว (แก้/ลบได้) + แยก personal/team</li>
-        <li>Cloud Computer ส่วนตัว: Browser จริง, Files, noVNC Take Over</li>
-        <li>Connected Apps: Gmail, Calendar, Slack, Notion, Drive, GitHub, Jira</li>
-        <li>Routines: cron + event + teach-by-demo + หน้าจอ last/next/success/fail/cost</li>
-        <li>Proactive (ภายใต้ consent): แจ้งงานช้า, เตรียมประชุม, เสนอ follow-up</li>
-      </ul>
+  <!-- WORK VIEW -->
+  <div id="view-wk" class="wb-body" style="display:none">
+    <div class="wb-side">
+      <div>
+        <div style="font-size:10.5px;color:#8f929a;padding:4px 6px;text-transform:uppercase">Work Studio Areas</div>
+        <div class="wb-row active"><span>⟨/⟩ 1. Code Studio</span><span style="font-size:10px;color:#34d399">5/5 ✓</span></div>
+        <div class="wb-row"><span>▶ 2. Video Studio</span><span style="font-size:10px;color:#7cb0ff">30s</span></div>
+        <div class="wb-row"><span>❖ 3. Artifacts Gallery</span><span style="font-size:10px;color:#fbbf24">5 Items</span></div>
+        <div style="font-size:10.5px;color:#8f929a;padding:10px 6px 4px;text-transform:uppercase">Active Work Jobs</div>
+        <div class="wb-row active"><span>Enterprise Sales CRM</span><span style="font-family:monospace;font-size:10.5px">$2.15</span></div>
+        <div class="wb-row"><span>30s Launch Promo Video</span><span style="font-family:monospace;font-size:10.5px">$3.60</span></div>
+        <div class="wb-row"><span>Q4 Board Report & PPTX</span><span style="font-family:monospace;font-size:10.5px">$1.15</span></div>
+      </div>
+      <div class="wb-card" style="padding:8px 10px;font-size:11px">
+        <div style="display:flex;justify-content:space-between"><span>Work Ledger</span><strong style="color:#7cb0ff">$5.75 / $50</strong></div>
+        <div style="color:#8f929a;font-size:10px;margin-top:2px">Cloud / Local · Per-task cap $5.00</div>
+      </div>
     </div>
-    <div class="card" id="w">
-      <h3 style="margin:0">Work — วัดที่คุณภาพผลงาน</h3>
-      <p style="color:var(--muted);font-size:14px">Software / Video / Documents / Legal / Data / Research / Cross-app — มีระบบตรวจสอบเฉพาะประเภท</p>
-      <ul class="list">
-        <li>Coding: รับคำสั่งภาษาธรรมชาติ → ส่งโปรเจกต์รันได้ + PR + tests</li>
-        <li>Video: idea → script → gen → edit → subs → export + project file</li>
-        <li>Docs: อ่านหลายไฟล์ → สร้าง PDF/DOCX/PPTX/XLSX พร้อม preview</li>
-        <li>Execution Modes: Cloud (ต่อเนื่อง) / Local (ไฟล์ในเครื่อง) — ระบุค่าใช้จ่ายก่อนเริ่ม</li>
-        <li>Definition of Done 6 ข้อ + verification_report.json ทุกงาน</li>
-      </ul>
+
+    <div class="wb-main">
+      <div class="wb-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <strong style="font-size:13px">Enterprise Sales CRM + Revenue Dashboard (trace_crm_9821a)</strong>
+          <span class="wb-pill" style="background:rgba(16,185,129,.15);color:#34d399">VERIFIED 5/5 PASSED</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-variant-numeric:tabular-nums">
+          <div style="background:#121316;border:1px solid #25262c;border-radius:8px;padding:8px">
+            <div style="font-size:10.5px;color:#8f929a">Q4 Pipeline ARR</div>
+            <div style="font-size:14px;font-weight:700;margin-top:2px">฿14,820,000</div>
+          </div>
+          <div style="background:#121316;border:1px solid #25262c;border-radius:8px;padding:8px">
+            <div style="font-size:10.5px;color:#8f929a">Automated Tests</div>
+            <div style="font-size:14px;font-weight:700;color:#34d399;margin-top:2px">14/14 Passed</div>
+          </div>
+          <div style="background:#121316;border:1px solid #25262c;border-radius:8px;padding:8px">
+            <div style="font-size:10.5px;color:#8f929a">Deliverable Archive</div>
+            <div style="font-size:14px;font-weight:700;color:#7cb0ff;margin-top:2px">crm-v1.zip</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wb-card">
+        <div style="font-size:12px;font-weight:600;margin-bottom:6px">Claude-Style Artifacts Gallery & Designer Mode (Ask-First Brief)</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px">
+          <span class="wb-pill" style="background:#2b66e0;color:#fff">All (5)</span>
+          <span class="wb-pill" style="background:#121316;border:1px solid #25262c">Docs (DOCX/PDF)</span>
+          <span class="wb-pill" style="background:#121316;border:1px solid #25262c">Slides (16:9 PPTX)</span>
+          <span class="wb-pill" style="background:#121316;border:1px solid #25262c">Design System</span>
+          <span class="wb-pill" style="background:#121316;border:1px solid #25262c">BI Dashboard</span>
+          <span class="wb-pill" style="background:#121316;border:1px solid #25262c">3D Studio (PBR)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="wb-insp">
+      <div style="font-size:11.5px;font-weight:600;margin-bottom:8px;color:#34d399">✓ verification_report.json</div>
+      <div style="font-family:monospace;font-size:11px;color:#d2d3d8;line-height:1.6">
+        <div>✓ typecheck: 0 errors</div>
+        <div>✓ unit_tests: 14/14 (86.4%)</div>
+        <div>✓ build: 9 routes compiled</div>
+        <div>✓ playwright: 1440px & 390px</div>
+        <div>✓ deliverable: openable ZIP</div>
+      </div>
     </div>
   </div>
-
-  <div class="card" id="tasks" style="margin-top:16px">
-    <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">One Connected Experience — Teammate ↔ Work</h3><span class="badge">Handoff Packet</span></div>
-    <p style="color:var(--muted);font-size:14px">ผู้ใช้ไม่ต้องคัดลอกบริบท — Teammate ส่ง Handoff Packet (goal, context, files, prefs, deadline, deliverables, budget, verification criteria) ให้ Work อัตโนมัติ ผลลัพธ์กลับมาในบทสนทนาเดิม</p>
-    <div class="flow"><span class="step">User → Teammate</span><span class="arrow">→</span><span class="step">Intent Router</span><span class="arrow">→</span><span class="step">Work (Cloud/Local + Estimate)</span><span class="arrow">→</span><span class="step">Verify</span><span class="arrow">→</span><span class="step">Teammate สรุป + ส่งไฟล์</span></div>
-    <p style="font-size:12px;color:var(--muted)">Unified Tasks: Queued → Planning → In Progress → Waiting for User → Paused → Reviewing → Completed/Partially/Failed/Cancelled • Reverse delegation: Work → Teammate (แจ้ง/ขอข้อมูล/สร้าง Routine/ส่งอีเมล)</p>
-  </div>
-
-  <div id="pricing" class="pricing">
-    <div class="price"><div class="badge">Teammate</div><h4>Free</h4><b>0 THB</b><p style="color:var(--muted);font-size:13px">Cloud Computer 2h/day • Memory 7 วัน • Routines 3 • 200K tokens</p></div>
-    <div class="price" style="border-color:var(--fg)"><div class="badge">Teammate • แนะนำ</div><h4>Starter</h4><b>399 THB<span style="font-size:12px;color:var(--muted)">/เดือน</span></b><p style="color:var(--muted);font-size:13px">1 vCPU/2GB persistent • Memory ไม่จำกัด • Routines 20 • 2M tokens</p><div style="margin-top:8px"><a class="pill" href="#">เริ่มใช้ Teammate</a></div></div>
-    <div class="price"><div class="badge">Teammate + Work</div><h4>Pro</h4><b>999 THB<span style="font-size:12px;color:var(--muted)">/เดือน</span></b><p style="color:var(--muted);font-size:13px">2 vCPU/4GB • Team memory • Routines 100 • 10M tokens • Work estimate ก่อนเริ่ม</p></div>
-  </div>
-  <div class="card" style="margin-top:12px">
-    <b>Work Usage — แยก ledger โปร่งใส</b>
-    <p style="color:var(--muted);font-size:13px;margin:6px 0">Coding $0.02/1K + build $0.10/min • Research $0.015/search • Docs $0.50/doc • Video analysis $0.20/min • Video gen $0.30–2.00/sec (GPU pool แยก ไม่กระทบ Teammate) • Per-task cap $5 / Monthly cap $50 (ปรับได้)</p>
-    <div style="background:#f9fafb;border:1px dashed var(--border);border-radius:12px;padding:10px;font-size:12px">Estimate Card ตัวอย่าง: ประเมิน 18 นาที | ~$2.40 | ใช้ GPT-4o + FFmpeg | เกินงบ $5 จะหยุดรอคุณอนุมัติ [เริ่มเลย] [ปรับงบ]</div>
-  </div>
-
-  <div style="text-align:center;color:var(--muted);font-size:12px;margin:24px 0">woibot — Talk to your Teammate. Let Work handle the heavy lifting. • Multilingual by Design (ไทย/อังกฤษ) • Trust Through Verification</div>
 </div>
+<script>
+function setMode(m){
+  document.getElementById('view-tm').style.display = m==='tm' ? 'grid' : 'none';
+  document.getElementById('view-wk').style.display = m==='wk' ? 'grid' : 'none';
+  document.getElementById('btn-tm').className = m==='tm' ? 'wb-tab on' : 'wb-tab';
+  document.getElementById('btn-wk').className = m==='wk' ? 'wb-tab on' : 'wb-tab';
+}
+</script>
 </body>
 </html>
