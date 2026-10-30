@@ -17,7 +17,7 @@ export type ComputerStatus = {
   detail?: string;
 };
 
-async function call(path: string, init?: RequestInit) {
+async function call(path: string, init?: RequestInit, timeoutMs = 20000) {
   if (!MANAGER_URL) return null;
   try {
     const res = await fetch(`${MANAGER_URL}${path}`, {
@@ -28,7 +28,7 @@ async function call(path: string, init?: RequestInit) {
         ...(init?.headers || {}),
       },
       cache: "no-store",
-      signal: AbortSignal.timeout(20000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     if (!res.ok) return { ok: false, error: `manager_${res.status}` };
     return await res.json();
@@ -41,7 +41,7 @@ export async function ensureComputer(userId: string): Promise<ComputerStatus> {
   if (!MANAGER_URL) {
     return { configured: false, status: "simulated", detail: "MANAGER_URL not configured" };
   }
-  const out = await call(`/users/${encodeURIComponent(userId)}/ensure`, { method: "POST" });
+  const out = await call(`/users/${encodeURIComponent(userId)}/ensure`, { method: "POST" }, 150000);
   if (!out?.ok) {
     return { configured: true, status: "error", detail: out?.error || "ensure_failed" };
   }

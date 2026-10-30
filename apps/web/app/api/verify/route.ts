@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     // Move task to reviewing
     await prisma.task.update({ where: { id: taskId }, data: { status: "reviewing", progress: 85 } });
 
-    const report = await createVerificationReport(taskId, verifyType, body.opts);
+    const report = await createVerificationReport(taskId, verifyType, body.opts, { userId });
 
     // Save verification_report.json to task
     await prisma.task.update({

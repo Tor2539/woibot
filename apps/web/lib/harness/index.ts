@@ -133,7 +133,7 @@ export async function executeTask(taskId: string) {
 
   // 3) reviewing + verification
   await prisma.task.update({ where: { id: taskId }, data: { status: "reviewing", progress: 85 } });
-  const verification = await createVerificationReport(taskId, mapKindToVerifyType(task.workKind));
+  const verification = await createVerificationReport(taskId, mapKindToVerifyType(task.workKind), undefined, { userId: (task as any).userId });
   await prisma.task.update({
     where: { id: taskId },
     data: { verification: JSON.stringify(verification), progress: verification.passed ? 100 : 75 },
