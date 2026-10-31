@@ -1,9 +1,12 @@
+import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
 
-// The toolkit ships a matching chromium in its own browsers cache; use it when
-// the default ms-playwright cache is unavailable (offline / download blocked).
+// Some machines (offline / download blocked) keep a shared chromium cache;
+// use it only when it actually exists so other machines and CI fall back
+// to Playwright's normal browser lookup.
+const sharedBrowsers = "C:\\Users\\WINDOWS\\OpenHandsTools\\pw-browsers";
 process.env.PLAYWRIGHT_BROWSERS_PATH =
-  process.env.PLAYWRIGHT_BROWSERS_PATH || "C:\\Users\\WINDOWS\\OpenHandsTools\\pw-browsers";
+  process.env.PLAYWRIGHT_BROWSERS_PATH ?? (existsSync(sharedBrowsers) ? sharedBrowsers : undefined);
 
 export default defineConfig({
   testDir: "./e2e",

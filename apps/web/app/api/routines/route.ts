@@ -115,7 +115,7 @@ const CRON_BOUNDS: [number, number][] = [
   [0, 23], // hour
   [1, 31], // day-of-month
   [1, 12], // month
-  [0, 6], // day-of-week (7 normalized to 0)
+  [0, 6], // day-of-week (7 is a Sunday alias, normalized after range expansion)
 ];
 
 const FIELD_NAMES_TH = ["นาที", "ชั่วโมง", "วันที่ของเดือน", "เดือน", "วันของสัปดาห์"];
@@ -147,15 +147,22 @@ function parseCronField(part: string, index: number): CronField {
     if (!Number.isInteger(start) || !Number.isInteger(end)) {
       throw new Error(`${FIELD_NAMES_TH[index]}: ค่าไม่ใช่ตัวเลข "${piece}"`);
     }
+    // day-of-week: 7 is a Sunday alias. Expand ranges WITH the alias
+    // first, then normalize (7 -> 0): 5-7 = Fri,Sat,Sun; 1-7 = every day.
     if (index === 4) {
-      // day-of-week: 7 = Sunday = 0
-      start = start === 7 ? 0 : start;
-      end = end === 7 ? 0 : end;
+      if (rangeStr.includes("-")) {
+        if (start === 7) start = 0;
+        if (end === 7) end = 7; // keep 7 during expansion
+      } else if (start === 7) {
+        start = 0;
+        end = 0;
+      }
     }
     if (start < min || end > max || start > end) {
       throw new Error(`${FIELD_NAMES_TH[index]}: ค่านอกช่วง ${min}-${max} "${piece}"`);
     }
     for (let v = start; v <= end; v += step) values.add(v);
+    if (index === 4 && values.delete(7)) values.add(0);
   }
   if (values.size === 0) throw new Error(`${FIELD_NAMES_TH[index]}: ไม่มีค่าที่ถูกต้อง`);
   return { values, wildcard, min, max };
