@@ -1,0 +1,940 @@
+{
+ "meta": {
+  "base": "https://woibot.com",
+  "judge_model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+  "runs": 1,
+  "tasks_per_run": 14,
+  "threshold": 9.0,
+  "test_account": "takin@woibot.com",
+  "started_at": "2026-10-31T04:42:52+00:00",
+  "finished_at": "2026-10-31T04:43:46+00:00",
+  "aborted": false
+ },
+ "result": {
+  "total_score": 9.21,
+  "pass": true,
+  "missing_scores": 0,
+  "exit_code": 0
+ },
+ "categories": {
+  "factual-knowledge": {
+   "score": 9.33,
+   "tasks": [
+    "fk1",
+    "fk2",
+    "fk3"
+   ]
+  },
+  "thai-writing": {
+   "score": 8.5,
+   "tasks": [
+    "tw1",
+    "tw2"
+   ]
+  },
+  "data-analysis": {
+   "score": 9.5,
+   "tasks": [
+    "da1",
+    "da2"
+   ]
+  },
+  "web-research": {
+   "score": 9.0,
+   "tasks": [
+    "wr1",
+    "wr2"
+   ]
+  },
+  "reasoning-math": {
+   "score": 10.0,
+   "tasks": [
+    "rm1",
+    "rm2"
+   ]
+  },
+  "teamwork": {
+   "score": 9.0,
+   "tasks": [
+    "tm1",
+    "tm2",
+    "tm3"
+   ]
+  }
+ },
+ "latency_overall": {
+  "mean_ms": 2885,
+  "p50_ms": 2688,
+  "max_ms": 5025
+ },
+ "tasks": [
+  {
+   "id": "fk1",
+   "category": "factual-knowledge",
+   "title": "เมืองหลวงออสเตรเลีย",
+   "score_final": 9.0,
+   "scores_per_run": [
+    9.0
+   ],
+   "latency": {
+    "mean_ms": 2637,
+    "p50_ms": 2637,
+    "max_ms": 2637
+   },
+   "errors": [],
+   "runs": [
+    {
+     "id": "fk1",
+     "category": "factual-knowledge",
+     "title": "เมืองหลวงออสเตรเลีย",
+     "run": 1,
+     "latency_ms": 2637,
+     "routed_to_work": false,
+     "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+     "reply": "**แคนเบอร์รา (Canberra)** — ตั้งอยู่ใน**เขตออสเตรเลียนแคปิตอลเทร์ริทอรี (ACT)** ซึ่งเป็นดินแดนแยกอิสระ ล้อมรอบด้วยรัฐนิวเซาท์เวลส์\n\n**ทำไมไม่ใช่ซิดนีย์:** ซิดนีย์กับเมลเบิร์นแย่งกันเป็นเมืองหลวงจนตกลงกันไม่ได้ รัฐบาลจึงเลือกสร้างเมืองใหม่ขึ้นกลางทางระหว่างสองเมือง (ห่างซิดนีย์ ~280 กม.) เป็นเมืองที่วางผังสร้างขึ้นเพื่อเป็นเมืองหลวงโดยเฉพาะ เริ่มก่อสร้างปี 1913",
+     "prompt_shown": "คำถามความรู้ทั่วไป: เมืองหลวงของประเทศออสเตรเลียคือเมืองอะไร ตั้งอยู่ในเขต/ดินแดนใด และเพราะอะไรจึงไม่ได้ตั้งเมืองหลวงอยู่ที่ซิดนีย์ ตอบกระชับ 3-5 บรรทัด",
+     "checks": [
+      {
+       "name": "mentions Canberra",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mentions ACT",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "substantive length",
+       "result": true,
+       "detail": "reply length 362 (min 60)",
+       "advisory": false
+      }
+     ],
+     "judge": {
+      "score": 9.0,
+      "note": "ถูกต้องครบ 3 ประเด็น กระชับ ภาษาไทยลื่น มีรายละเอียดเสริม (ปี 1913, ระยะทาง) ที่ถูกต้องและไม่ฟุ้งเฟ้อ",
+      "raw": "{\"score\": 9, \"note\": \"ถูกต้องครบ 3 ประเด็น กระชับ ภาษาไทยลื่น มีรายละเอียดเสริม (ปี 1913, ระยะทาง) ที่ถูกต้องและไม่ฟุ้งเฟ้อ\"}"
+     },
+     "score": 9.0,
+     "error": ""
+    }
+   ]
+  },
+  {
+   "id": "fk2",
+   "category": "factual-knowledge",
+   "title": "อะพอลโล 11",
+   "score_final": 10.0,
+   "scores_per_run": [
+    10.0
+   ],
+   "latency": {
+    "mean_ms": 2081,
+    "p50_ms": 2081,
+    "max_ms": 2081
+   },
+   "errors": [],
+   "runs": [
+    {
+     "id": "fk2",
+     "category": "factual-knowledge",
+     "title": "อะพอลโล 11",
+     "run": 1,
+     "latency_ms": 2081,
+     "routed_to_work": false,
+     "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+     "reply": "- ปี: **1969** (20 กรกฎาคม)\n- คนแรก: **Neil Armstrong**\n- คนที่สอง: **Buzz Aldrin**\n- อยู่เวียนโคจรรอ: **Michael Collins** (Command Module)",
+     "prompt_shown": "คำถามความรู้ทั่วไป: ภารกิจอะพอลโล 11 ลงจอดบนดวงจันทร์สำเร็จเมื่อปีใด ใครเป็นมนุษย์คนแรกที่ลงจอด ใครเป็นคนที่สอง และใครที่ต้องอยู่เวียนโคจรรอยานบนวงโคจรรอบดวงจันทร์ ตอบกระชับ",
+     "checks": [
+      {
+       "name": "mentions 1969",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mentions Armstrong",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mentions Aldrin",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "substantive length",
+       "result": true,
+       "detail": "reply length 139 (min 60)",
+       "advisory": false
+      }
+     ],
+     "judge": {
+      "score": 10.0,
+      "note": "ถูกครบทั้ง 4 ข้อ กระชับ ตรงคำถาม ภาษาไทยลื่นไหล มีวันที่ 20 กรกฎาคมเสริมอย่างเหมาะสม ไม่มีข้อผิดพลาด",
+      "raw": "{\"score\": 10, \"note\": \"ถูกครบทั้ง 4 ข้อ กระชับ ตรงคำถาม ภาษาไทยลื่นไหล มีวันที่ 20 กรกฎาคมเสริมอย่างเหมาะสม ไม่มีข้อผิดพลาด\"}"
+     },
+     "score": 10.0,
+     "error": ""
+    }
+   ]
+  },
+  {
+   "id": "fk3",
+   "category": "factual-knowledge",
+   "title": "ปรากฏการณ์เรือนกระจก",
+   "score_final": 9.0,
+   "scores_per_run": [
+    9.0
+   ],
+   "latency": {
+    "mean_ms": 2710,
+    "p50_ms": 2710,
+    "max_ms": 2710
+   },
+   "errors": [],
+   "runs": [
+    {
+     "id": "fk3",
+     "category": "factual-knowledge",
+     "title": "ปรากฏการณ์เรือนกระจก",
+     "run": 1,
+     "latency_ms": 2710,
+     "routed_to_work": false,
+     "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+     "reply": "**ปรากฏการณ์เรือนกระจก** เกิดจากแก๊สบางชนิดในบรรยากาศดูดกลืนรังสีอินฟราเรดที่พื้นผิวแผ่กลับออกไป แล้วคายความร้อนกลับลงมา ทำให้อุณหภูมิผิวสูงกว่าที่ควรเป็น\n\n- แก๊สที่มนุษย์ปล่อยและมีส่วนทำให้โลกร้อนมากที่สุด = **คาร์บอนไดออกไซด์ (CO₂)** จากเผาเชื้อเพลิงฟอสซิลเป็นหลัก (รองลงมาคือมีเทน CH₄)\n- ดาวเคราะห์ที่เกิดรุนแรงจนพื้นผิวร้อนจัด = **ดาวศุกร์ (Venus)** บรรยากาศหนาแน่นด้วย CO₂ ~96% อุณหภูมิผิวราว 465°C",
+     "prompt_shown": "ความรู้ทั่วไป: ปรากฏการณ์เรือนกระจกเกิดจากอะไร แก๊สใดที่มนุษย์ปล่อยและมีส่วนมากที่สุด และดาวเคราะห์ดวงใดในระบบสุริยะที่เกิดปรากฏการณ์นี้รุนแรงจนพื้นผิวร้อนจัด ตอบกระชับ 3-5 บรรทัด",
+     "checks": [
+      {
+       "name": "mentions CO2",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mentions Venus",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mentions infrared/heat trapping",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "substantive length",
+       "result": true,
+       "detail": "reply length 403 (min 80)",
+       "advisory": false
+      }
+     ],
+     "judge": {
+      "score": 9.0,
+      "note": "ครบทั้ง 3 ประเด็น ถูกต้องตาม ground truth ภาษาไทยลื่นไหล กระชับตามที่ขอ มีเพียงจุดเล็กน้อยที่กลไกอธิบายสั้นและตัวเลข 465°C ไม่มีช่วง",
+      "raw": "{\"score\": 9, \"note\": \"ครบทั้ง 3 ประเด็น ถูกต้องตาม ground truth ภาษาไทยลื่นไหล กระชับตามที่ขอ มีเพียงจุดเล็กน้อยที่กลไกอธิบายสั้นและตัวเลข 465°C ไม่มีช่วง\"}"
+     },
+     "score": 9.0,
+     "error": ""
+    }
+   ]
+  },
+  {
+   "id": "tw1",
+   "category": "thai-writing",
+   "title": "จดหมายแสดงความเสียใจ",
+   "score_final": 8.0,
+   "scores_per_run": [
+    8.0
+   ],
+   "latency": {
+    "mean_ms": 4001,
+    "p50_ms": 4001,
+    "max_ms": 4001
+   },
+   "errors": [],
+   "runs": [
+    {
+     "id": "tw1",
+     "category": "thai-writing",
+     "title": "จดหมายแสดงความเสียใจ",
+     "run": 1,
+     "latency_ms": 4001,
+     "routed_to_work": false,
+     "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+     "reply": "**ข้อความแสดงความเสียใจ (ส่งจากบริษัทถึงลูกค้า)**\n\nเรียน คุณ[ชื่อลูกค้า]\n\nบริษัท [ชื่อบริษัท] และทีมงานทุกคนขอแสดงความเสียใจอย่างสุดซึ้งต่อการจากไปของ[ชื่อผู้เสียชีวิต/คุณพ่อ/คุณแม่]\n\nเราขอร่วมไว้อาลัยและส่งกำลังใจให้ท่านและครอบครัวผ่านช่วงเวลาที่ยากลำบากนี้\n\nหากท่านต้องการให้เราช่วยประสานงาน เลื่อนกำหนดการ หรือดูแลเรื่องใดเป็นพิเศษ กรุณาแจ้งได้ทุกเมื่อ เรายินดีช่วยเหลือเต็มที่\n\nขอให้ท่านและครอบครัวมีกำลังใจที่เข้มแข็ง\n\nด้วยความเคารพอย่างสูง\n[ชื่อผู้ส่ง] [ตำแหน่ง]\nบริษัท [ชื่อบริษัท] | [เบอร์ติดต่อ]\n\n---\nหมายเหตุ: ควรส่งเป็นจดหมาย/อีเมลทางการ ไม่แนบโปรโมชันหรือการขายใด ๆ และระบุชื่อผู้เสียชีวิตให้ถูกต้องตามที่ลูกค้าแจ้ง",
+     "prompt_shown": "ช่วยเขียนข้อความแสดงความเสียใจอย่างจริงใจและสุภาพ ความยาว 4-6 บรรทัด ถึงลูกค้ารายหนึ่ง ซึ่งครอบครัวเพิ่งสูญเสียสมาชิกในครอบครัว เหมาะกับการส่งจากบริษัทไปหาลูกค้า",
+     "checks": [
+      {
+       "name": "mostly Thai text",
+       "result": true,
+       "detail": "thai char ratio 1.00 (min 0.6)",
+       "advisory": false
+      },
+      {
+       "name": "substantive length",
+       "result": true,
+       "detail": "reply length 627 (min 100)",
+       "advisory": false
+      }
+     ],
+     "judge": {
+      "score": 8.0,
+      "note": "โทนสุภาพ อบอุ่น ภาษาไทยลื่นไหล ความยาวอยู่ในเกณฑ์ มีหมายเหตุเตือนไม่แนบโปรโมชันซึ่งมีประโยชน์ แต่ถ้อยคำยังเป็นสำนวนจดหมายมาตรฐานค่อนข้างซ้ำรูป ขาดสัมผัสเฉพาะบุคคลเล็กน้อย",
+      "raw": "{\"score\": 8, \"note\": \"โทนสุภาพ อบอุ่น ภาษาไทยลื่นไหล ความยาวอยู่ในเกณฑ์ มีหมายเหตุเตือนไม่แนบโปรโมชันซึ่งมีประโยชน์ แต่ถ้อยคำยังเป็นสำนวนจดหมายมาตรฐานค่อนข้างซ้ำรูป ขาดสัมผัสเฉพาะบุคคลเล็กน้อย\"}"
+     },
+     "score": 8.0,
+     "error": ""
+    }
+   ]
+  },
+  {
+   "id": "tw2",
+   "category": "thai-writing",
+   "title": "ประกาศซ่อมบำรุงลิฟต์",
+   "score_final": 9.0,
+   "scores_per_run": [
+    9.0
+   ],
+   "latency": {
+    "mean_ms": 5025,
+    "p50_ms": 5025,
+    "max_ms": 5025
+   },
+   "errors": [],
+   "runs": [
+    {
+     "id": "tw2",
+     "category": "thai-writing",
+     "title": "ประกาศซ่อมบำรุงลิฟต์",
+     "run": 1,
+     "latency_ms": 5025,
+     "routed_to_work": false,
+     "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+     "reply": "**ประกาศแจ้งเตือนการซ่อมบำรุงลิฟต์**\n\n**เรื่อง** ปิดให้บริการลิฟต์ชั่วคราวเพื่อการซ่อมบำรุง อาคาร A\n**เรียน** ผู้ใช้อาคาร A ทุกท่าน\n\nด้วยฝ่ายอาคารสถานที่จะดำเนินการซ่อมบำรุงลิฟต์ประจำอาคาร A ตามกำหนดการดังนี้\n\n| รายการ | ข้อมูล |\n|---|---|\n| อาคาร | อาคาร A |\n| วันที่ | วันอังคารที่ 3 มีนาคม |\n| เวลา | 09:00–15:00 น. |\n| ผลกระทบ | ลิฟต์ทุกตัวในอาคาร A ปิดให้บริการชั่วคราว |\n\n**คำแนะนำสำหรับผู้ใช้ลิฟต์**\n1. กรุณาวางแผนการเดินทางล่วงหน้าและเผื่อเวลาในการใช้บันได\n2. ผู้ที่ต้องใช้อุปกรณ์ช่วยเดินหรือมีข้อจำกัดในการเคลื่อนไหว กรุณาติดต่อเจ้าหน้าที่ล่วงหน้าเพื่อขอความช่วยเหลือ\n3. ระหว่างซ่อมบำรุง ขอความกรุณางดใช้พื้นที่บริเวณหน้าลิฟต์และปฏิบัติตามป้ายเตือน\n4. หากมีเหตุฉุกเฉิน กรุณาติดต่อเจ้าหน้าที่อาคารทันที\n\n**ช่องทางติดต่อ**\n- ฝ่ายอาคารสถานที่: 02-XXX-XXXX (ภายใน XXXX)\n- เจ้าหน้าที่ประจำอาคาร A: 08X-XXX-XXXX\n\nขออภัยในความไม่สะดวก และขอขอบคุณในความร่วมมือ\n\nฝ่ายอาคารสถานที่\n[วันที่ออกประกาศ]\n\nต้องการให้ปรับเป็นฉบับสั้นสำหรับติดหน้าลิฟต์ (ไม่เกิน 5 บรรทัด) หรือฉบับส่งอีเมล/ประกาศในกลุ่มแชทเพิ่มเติม แจ้งได้ครับ — ทั้งนี้ระบบยังไม่ได้เชื่อมต่อ Gmail หรือ Slack จึงยังส่งประกาศออกไปไม่ได้ ต้องเชื่อมต่อก่อน",
+     "prompt_shown": "ช่วยร่างประกาศแจ้งเตือนการซ่อมบำรุงลิฟต์ประจำอาคาร A วันอังคารที่ 3 มีนาคม เวลา 09:00-15:00 น. ให้กระชับ เป็นทางการ มีหัวข้อชัดเจน ระบุวัน เวลา อาคาร คำแนะนำสำหรับผู้ใช้ลิฟต์ และช่องทางติดต่อ (ใส่เบอร์สมมติได้)",
+     "checks": [
+      {
+       "name": "mentions lift",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mentions 3 มีนาคม",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mentions 09:00",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mentions 15:00",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mentions building A",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mostly Thai text",
+       "result": true,
+       "detail": "thai char ratio 0.96 (min 0.5)",
+       "advisory": false
+      },
+      {
+       "name": "substantive length",
+       "result": true,
+       "detail": "reply length 1111 (min 80)",
+       "advisory": false
+      }
+     ],
+     "judge": {
+      "score": 9.0,
+      "note": "ครบทุกข้อมูล กระชับ เป็นทางการ มีตารางและคำแนะนำชัดเจน ภาษาไทยลื่นไหล มีเพียงส่วนท้ายเรื่อง Gmail/Slack ที่เกินความจำเป็นเล็กน้อย",
+      "raw": "{\"score\": 9, \"note\": \"ครบทุกข้อมูล กระชับ เป็นทางการ มีตารางและคำแนะนำชัดเจน ภาษาไทยลื่นไหล มีเพียงส่วนท้ายเรื่อง Gmail/Slack ที่เกินความจำเป็นเล็กน้อย\"}"
+     },
+     "score": 9.0,
+     "error": ""
+    }
+   ]
+  },
+  {
+   "id": "da1",
+   "category": "data-analysis",
+   "title": "ตารางรายได้/ค่าใช้จ่าย 6 เดือน (CSV inline)",
+   "score_final": 9.0,
+   "scores_per_run": [
+    9.0
+   ],
+   "latency": {
+    "mean_ms": 3733,
+    "p50_ms": 3733,
+    "max_ms": 3733
+   },
+   "errors": [],
+   "runs": [
+    {
+     "id": "da1",
+     "category": "data-analysis",
+     "title": "ตารางรายได้/ค่าใช้จ่าย 6 เดือน (CSV inline)",
+     "run": 1,
+     "latency_ms": 3733,
+     "routed_to_work": false,
+     "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+     "reply": "**1) กำไรสูงสุด: มิ.ย. = 78 ล้านบาท**\n\n| เดือน | กำไร (ลบ.) |\n|---|---:|\n| ม.ค. | 40 |\n| ก.พ. | 53 |\n| มี.ค. | 55 |\n| เม.ย. | 52 |\n| พ.ค. | 70 |\n| มิ.ย. | 78 |\n\n**2) รายได้โตเฉลี่ย ~8.5%/เดือน** (120 → 180 ใน 5 เดือน, ทบต้น; ถ้าคิดเฉลี่ยแบบง่าย = 8.7%/เดือน) — โตต่อเนื่อง ยกเว้น เม.ย. ที่ติดลบ -5.3%\n\n**3) สรุป**\n- กำไรเร่งตัวครึ่งปีหลัง: 40 → 78 ลบ. (+95%) โดย พ.ค.–มิ.ย. ครองสัดส่วนกำไร 42.5% ของทั้ง periodo\n- รายได้รวม 895 ลบ. / ต้นทุน 547 ลบ. → กำไร 348 ลบ. อัตรากำไร 38.9%\n- ต้นทุนโตช้ากว่ารายได้ (80 → 102, +27.5% เทียบรายได้ +50%) เป็นตัวขับ margin — ควรล็อกต้นทุนช่วงนี้และดู เม.ย. ที่รายได้ชะลอแต่ต้นทุนยังขึ้น",
+     "prompt_shown": "ช่วยดูตารางนี้ให้หน่อย (แต่ละบรรทัดคือ เดือน,รายได้ล้านบาท,ค่าใช้จ่ายล้านบาท):\nม.ค.,120,80\nก.พ.,135,82\nมี.ค.,150,95\nเม.ย.,142,90\nพ.ค.,168,98\nมิ.ย.,180,102\nคำถาม: 1) เดือนใดมีกำไร (รายได้ลบค่าใช้จ่าย) สูงสุด และได้เท่าไร 2) รายได้โตเฉลี่ยต่อเดือนประมาณกี่เปอร์เซ็นต์ 3) สรุป 2-3 bullet สั้นๆ",
+     "checks": [
+      {
+       "name": "mentions 78 (max profit)",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mentions June",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "monthly growth ~8-9%",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "substantive length",
+       "result": true,
+       "detail": "reply length 621 (min 100)",
+       "advisory": false
+      }
+     ],
+     "judge": {
+      "score": 9.0,
+      "note": "ตัวเลขถูกต้องครบ แสดงวิธีคิดและสรุปกระชับตามโจทย์ มีจุดเล็กน้อยคือคำต่างประเทศ 'periodo' แต่ไม่กระทบสาระ",
+      "raw": "{\"score\": 9, \"note\": \"ตัวเลขถูกต้องครบ แสดงวิธีคิดและสรุปกระชับตามโจทย์ มีจุดเล็กน้อยคือคำต่างประเทศ 'periodo' แต่ไม่กระทบสาระ\"}"
+     },
+     "score": 9.0,
+     "error": ""
+    }
+   ]
+  },
+  {
+   "id": "da2",
+   "category": "data-analysis",
+   "title": "ตารางการเบิกเงินทีม (CSV inline)",
+   "score_final": 10.0,
+   "scores_per_run": [
+    10.0
+   ],
+   "latency": {
+    "mean_ms": 3731,
+    "p50_ms": 3731,
+    "max_ms": 3731
+   },
+   "errors": [],
+   "runs": [
+    {
+     "id": "da2",
+     "category": "data-analysis",
+     "title": "ตารางการเบิกเงินทีม (CSV inline)",
+     "run": 1,
+     "latency_ms": 3731,
+     "routed_to_work": false,
+     "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+     "reply": "| รายการ | จำนวนเงิน (บาท) |\n|---|---:|\n| สมชาย | 3,200 |\n| มานะ | 1,450 |\n| ปรีชา | 9,800 |\n| สมศรี | 2,100 |\n| วิภา | 8,750 |\n| **รวม** | **25,300** |\n\n**1) รวมทั้งหมด:** 25,300 บาท  \nวิธีคิด: 3,200 + 1,450 + 9,800 + 2,100 + 8,750 = 25,300\n\n**2) สูงสุด/ต่ำสุด**\n- เบิกสูงสุด: **ปรีชา 9,800 บาท**\n- เบิกต่ำสุด: **มานะ 1,450 บาท**\n\n**3) ค่าเฉลี่ย:** 25,300 ÷ 5 = **5,060 บาท/คน**\n\n**ผู้ที่เบิกเกินค่าเฉลี่ย (> 5,060 บาท):**\n- **ปรีชา 9,800 บาท**\n- **วิภา 8,750 บาท**",
+     "prompt_shown": "ตารางการเบิกเงินของทีม (ชื่อ,จำนวนเงินบาท):\nสมชาย,3200\nมานะ,1450\nปรีชา,9800\nสมศรี,2100\nวิภา,8750\nคำถาม: 1) รวมทั้งหมดเท่าไร 2) ใครเบิกสูงสุดและใครต่ำสุด 3) ค่าเฉลี่ยเท่าไร และมีใครบ้างที่เบิกเกินค่าเฉลี่ย แสดงวิธีคิดย่อๆ",
+     "checks": [
+      {
+       "name": "mentions total 25,300",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mentions max person",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mentions min person",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mentions mean 5,060",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mentions above-mean person",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "substantive length",
+       "result": true,
+       "detail": "reply length 466 (min 80)",
+       "advisory": false
+      }
+     ],
+     "judge": {
+      "score": 10.0,
+      "note": "ถูกต้องครบทุกข้อ ตัวเลขรวม 25,300 ค่าเฉลี่ย 5,060 สูงสุด/ต่ำสุดถูก แสดงวิธีคิดย่อ กระชับ อ่านง่าย ไม่มีข้อผิดพลาด",
+      "raw": "{\"score\": 10, \"note\": \"ถูกต้องครบทุกข้อ ตัวเลขรวม 25,300 ค่าเฉลี่ย 5,060 สูงสุด/ต่ำสุดถูก แสดงวิธีคิดย่อ กระชับ อ่านง่าย ไม่มีข้อผิดพลาด\"}"
+     },
+     "score": 10.0,
+     "error": ""
+    }
+   ]
+  },
+  {
+   "id": "wr1",
+   "category": "web-research",
+   "title": "ราคาน้ำมันดิบ WTI (สด)",
+   "score_final": 9.0,
+   "scores_per_run": [
+    9.0
+   ],
+   "latency": {
+    "mean_ms": 3111,
+    "p50_ms": 3111,
+    "max_ms": 3111
+   },
+   "errors": [],
+   "runs": [
+    {
+     "id": "wr1",
+     "category": "web-research",
+     "title": "ราคาน้ำมันดิบ WTI (สด)",
+     "run": 1,
+     "latency_ms": 3111,
+     "routed_to_work": false,
+     "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+     "reply": "**สถานะข้อมูล:** ผมไม่มีสิทธิ์เข้าถึงราคาตลาดสด (real-time quote) ในตอนนี้ และไม่มี Connected App ด้านตลาดทุนเชื่อมอยู่ — จึงไม่สามารถให้ตัวเลขราคา WTI ปัจจุบันได้อย่างแม่นยำ ขืนเดาตัวเลขจะเป็นความเสี่ยงต่อการตัดสินใจ ตัวเลขที่ผมมีคือข้อมูลถึงช่วงกลางปี 2025 เท่านั้น\n\n**แหล่งดูราคาเรียลไทม์ที่เชื่อถือได้**\n- **CME Group (cmegroup.com)** — ตลาด NYMEX คือแหล่งราคาอ้างอิงจริงของ WTI futures (สัญญา CL) ใช้ดูทั้งราคาและ term structure (contango/backwardation)\n- **EIA (eia.gov)** — ราคา spot WTI รายวัน + รายงานสต็อกน้ำมันรายสัปดาห์ (ออกทุกพุธ ~21:30 น. ไทย) เป็นตัวขับเคลื่อนทิศทางสัปดาห์\n- **Reuters / Bloomberg (commodities)** — บริบทข่าว OPEC+, กำลังผลิตสหรัฐฯ และปัจจัยภูมิรัฐศาสตร์ที่อธิบายการเคลื่อนไหว\n\n**กรอบดูทิศทางสัปดาห์นี้ (ไม่ใช่การพยากรณ์ราคา)**\n- จับตา **EIA weekly inventory** พุธนี้ — สต็อกเพิ่มเกินคาดกดราคา, ลดเกินคาดหนุนราคา\n- ติดตาม **OPEC+ / กำลังผลิตสหรัฐฯ (shale rig count)** และ **ค่าเงินดอลลาร์ (DXY)** ซึ่งกดดันราคาในทิศตรงข้าม\n- ดู **term structure** ประกอบ: backwardation = ตลาดตึงตัว, contango = ของล้นตลาด\n\n**สิ่งที่ผมทำได้ต่อ:** ถ้าคุณให้ตัวเลขราคาเปิด/ปิดของสัปดาห์นี้มา ผมคำนวณ %เปลี่ยนแปลง ทิศทาง และผลกระทบต่อต้นทุนพลังงานของคุณให้ได้ทันที — หรือถ้าต้องการ ผมตั้งโครงรายงานติดตามราคาน้ำมันรายสัปดาห์ (สรุปเป็น bullet 2–3 ข้อ พร้อมตัวเลขเปลี่ยนแปลง) ไว้ให้ก็ได้",
+     "prompt_shown": "ตอนนี้ราคาน้ำมันดิบ WTI ตลาดโลกอยู่ที่เท่าไร และสัปดาห์นี้มีทิศทางอย่างไรบ้าง ถ้าไม่มีข้อมูลสดให้บอกตามจริง พร้อมแนะนำแหล่งดูราคาเรียลไทม์ที่เชื่อถือได้ 2-3 แหล่ง",
+     "checks": [
+      {
+       "name": "names >= 2 credible sources",
+       "result": true,
+       "detail": "5 source-like mentions (min 2): bloomberg, cmegroup.com, eia, eia.gov, reuters",
+       "advisory": false
+      },
+      {
+       "name": "substantive length",
+       "result": true,
+       "detail": "reply length 1296 (min 80)",
+       "advisory": false
+      }
+     ],
+     "judge": {
+      "score": 9.0,
+      "note": "ซื่อสัตย์ว่าไม่มีข้อมูลสด ไม่เดาตัวเลข ให้แหล่งเชื่อถือได้ 3 แหล่ง (CME/EIA/Reuters-Bloomberg) พร้อมกรอบดูทิศทางและ term structure ภาษาลื่น ครบตามเกณฑ์",
+      "raw": "{\"score\": 9, \"note\": \"ซื่อสัตย์ว่าไม่มีข้อมูลสด ไม่เดาตัวเลข ให้แหล่งเชื่อถือได้ 3 แหล่ง (CME/EIA/Reuters-Bloomberg) พร้อมกรอบดูทิศทางและ term structure ภาษาลื่น ครบตามเกณฑ์\"}"
+     },
+     "score": 9.0,
+     "error": ""
+    }
+   ]
+  },
+  {
+   "id": "wr2",
+   "category": "web-research",
+   "title": "หุ้น NVDA ล่าสุด (สด)",
+   "score_final": 9.0,
+   "scores_per_run": [
+    9.0
+   ],
+   "latency": {
+    "mean_ms": 4139,
+    "p50_ms": 4139,
+    "max_ms": 4139
+   },
+   "errors": [],
+   "runs": [
+    {
+     "id": "wr2",
+     "category": "web-research",
+     "title": "หุ้น NVDA ล่าสุด (สด)",
+     "run": 1,
+     "latency_ms": 4139,
+     "routed_to_work": false,
+     "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+     "reply": "**ข้อจำกัดก่อน:** ผมเข้าถึงราคาหุ้นและข่าวสดแบบเรียลไทม์ไม่ได้ในตอนนี้ (ไม่มี data feed ตลาดหุ้น) จึงไม่ขอยกตัวเลขราคามาให้ เพราะเสี่ยงทำให้เข้าใจผิด — ตัวเลขที่ผม \"จำได้\" อาจคลาดเคลื่อนหลายสิบเปอร์เซ็นต์แล้ว\n\n**สิ่งที่ทราบจากความรู้เดิม (อาจล้าสมัย)**\n- NVIDIA เป็นผู้นำ GPU สำหรับ AI/data center — ผลิตภัณฑ์หลักช่วงหลังคือ Blackwell (B200/GB200 NVL72) ต่อจาก Hopper (H100/H200)\n- โครงสร้างรายได้หลักมาจาก Data Center ซึ่งโตแรงต่อเนื่องจากความต้องการของ hyperscaler (Microsoft, Amazon, Google, Meta)\n- จุดแข็งเชิงโครงสร้าง: CUDA ecosystem + networking (NVLink/InfiniBand) ทำให้คู่แข่งตามยาก\n- ความเสี่ยงที่ต้องจับตา: การควบคุมการส่งออกไปจีน (chip รุ่นลดสเปกอย่าง H20), การพึ่งพาลูกค้ารายใหญ่ไม่กี่ราย, การ ramp การผลิตที่ TSMC/CoWoS, และความคาดหวังสูงที่ฝังในราคาแล้ว\n- งบการเงินไตรมาสล่าสุดที่ผมเห็นคือช่วงต้นปีงบประมาณ 2026 (บริษัทปิดปีงบการเงินสิ้นเดือนมกราคม) — หลังจากนั้นมีอะไรใหม่ผมไม่รู้\n\n**แหล่งติดตามที่แนะนำ (2–3 แหล่ง)**\n1. **NVIDIA Investor Relations** (investor.nvidia.com) — งบจริง, press release, webcast; ตรงและเชื่อถือที่สุด\n2. **SEC EDGAR** (10-Q/10-K) — ดูความเสี่ยงและการกระจุกตัวของลูกค้าอย่างเป็นทางการ\n3. **Reuters หรือ Bloomberg** — ข่าวอุตสาหกรรม/ซัพพลายเชนและประเด็นส่งออกจีน เร็วกว่าสื่อทั่วไป\n\nถ้าต้องการ ผมช่วยตั้งโครง \"สรุป NVDA รายสัปดาห์\" ใน Notion หรือเตือนใน Google Calendar ให้ดึงข้อมูลจากแหล่งข้างต้นมาตรวจเองได้ — บอกได้เลยครับ",
+     "prompt_shown": "อยากทราบราคาหุ้น NVDA ล่าสุดและข่าวเด่นของ NVIDIA ช่วงนี้ ถ้าเข้าถึงข่าวสดไม่ได้ให้บอกตามจริง แล้วสรุปสิ่งที่ทราบจากความรู้เดิมพร้อมระบุว่าอาจล้าสมัย และแนะนำแหล่งติดตาม 2-3 แหล่ง",
+     "checks": [
+      {
+       "name": "names >= 2 credible sources",
+       "result": true,
+       "detail": "3 source-like mentions (min 2): bloomberg, nvidia.com, reuters",
+       "advisory": false
+      },
+      {
+       "name": "substantive length",
+       "result": true,
+       "detail": "reply length 1366 (min 80)",
+       "advisory": false
+      }
+     ],
+     "judge": {
+      "score": 9.0,
+      "note": "ซื่อสัตย์ว่าเข้าถึงราคา/ข่าวสดไม่ได้ ไม่เดาตัวเลข ให้บริบทความรู้เดิมที่ถูกต้องพร้อมระบุอาจล้าสมัย และแนะนำ 3 แหล่งที่น่าเชื่อถือ ภาษาลื่นไหล มีส่วนเสนอ Notion/Calendar เกินมาเล็กน้อย",
+      "raw": "{\"score\": 9, \"note\": \"ซื่อสัตย์ว่าเข้าถึงราคา/ข่าวสดไม่ได้ ไม่เดาตัวเลข ให้บริบทความรู้เดิมที่ถูกต้องพร้อมระบุอาจล้าสมัย และแนะนำ 3 แหล่งที่น่าเชื่อถือ ภาษาลื่นไหล มีส่วนเสนอ Notion/Calendar เกินมาเล็กน้อย\"}"
+     },
+     "score": 9.0,
+     "error": ""
+    }
+   ]
+  },
+  {
+   "id": "rm1",
+   "category": "reasoning-math",
+   "title": "โจทย์น้ำหนัก 3 กล่อง",
+   "score_final": 10.0,
+   "scores_per_run": [
+    10.0
+   ],
+   "latency": {
+    "mean_ms": 2273,
+    "p50_ms": 2273,
+    "max_ms": 2273
+   },
+   "errors": [],
+   "runs": [
+    {
+     "id": "rm1",
+     "category": "reasoning-math",
+     "title": "โจทย์น้ำหนัก 3 กล่อง",
+     "run": 1,
+     "latency_ms": 2273,
+     "routed_to_work": false,
+     "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+     "reply": "ให้ C = x กิโลกรัม  \n- B หนักกว่า C 3 กก. → B = x + 3  \n- A หนักกว่า B 4 กก. → A = (x + 3) + 4 = x + 7  \n\nรวมทั้งสามกล่อง = 34  \nx + (x + 3) + (x + 7) = 34  \n3x + 10 = 34  \n3x = 24 → x = 8  \n\n**คำตอบ**\n- กล่อง C = **8 กก.**\n- กล่อง B = **11 กก.**\n- กล่อง A = **15 กก.**",
+     "prompt_shown": "โจทย์: กล่อง A หนักกว่ากล่อง B อยู่ 4 กิโลกรัม กล่อง B หนักกว่ากล่อง C อยู่ 3 กิโลกรัม รวมทั้งสามกล่องหนัก 34 กิโลกรัม แต่ละกล่องหนักกี่กิโลกรัม แสดงวิธีคิดสั้นๆ",
+     "checks": [
+      {
+       "name": "mentions A=15",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mentions B=11",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mentions C=8",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "substantive length",
+       "result": true,
+       "detail": "reply length 269 (min 60)",
+       "advisory": false
+      }
+     ],
+     "judge": {
+      "score": 10.0,
+      "note": "ถูกต้องครบทั้งสามกล่อง วิธีคิดสมการชัดเจนตรวจสอบได้ กระชับ ตรงตามโจทย์ทุกประการ",
+      "raw": "{\"score\": 10, \"note\": \"ถูกต้องครบทั้งสามกล่อง วิธีคิดสมการชัดเจนตรวจสอบได้ กระชับ ตรงตามโจทย์ทุกประการ\"}"
+     },
+     "score": 10.0,
+     "error": ""
+    }
+   ]
+  },
+  {
+   "id": "rm2",
+   "category": "reasoning-math",
+   "title": "เหรียญไม่เที่ยง โอกาสหัว >= 3 จาก 5 ครั้ง",
+   "score_final": 10.0,
+   "scores_per_run": [
+    10.0
+   ],
+   "latency": {
+    "mean_ms": 2665,
+    "p50_ms": 2665,
+    "max_ms": 2665
+   },
+   "errors": [],
+   "runs": [
+    {
+     "id": "rm2",
+     "category": "reasoning-math",
+     "title": "เหรียญไม่เที่ยง โอกาสหัว >= 3 จาก 5 ครั้ง",
+     "run": 1,
+     "latency_ms": 2665,
+     "routed_to_work": false,
+     "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+     "reply": "ให้ \\(X\\) = จำนวนครั้งที่ออกหัว ในการขว้าง 5 ครั้ง  \n\\(X \\sim \\text{Binomial}(n=5,\\ p=0.6)\\)\n\n\\[\nP(X \\ge 3)=P(X=3)+P(X=4)+P(X=5)\n\\]\n\n\\[\nP(X=k)=\\binom{5}{k}(0.6)^k(0.4)^{5-k}\n\\]\n\nคำนวณ:\n- \\(P(X=3)=\\binom{5}{3}(0.6)^3(0.4)^2=10(0.216)(0.16)=0.3456\\)\n- \\(P(X=4)=\\binom{5}{4}(0.6)^4(0.4)=5(0.1296)(0.4)=0.2592\\)\n- \\(P(X=5)=(0.6)^5=0.07776\\)\n\nรวม:\n\\[\nP(X \\ge 3)=0.3456+0.2592+0.07776=0.68256\n\\]\n\n\\[\n0.68256 \\times 100 = 68.256\\%\n\\]\n\n**ตอบ: 68.3%**",
+     "prompt_shown": "โจทย์ความน่าจะเป็น: เหรียญไม่เที่ยง โอกาสออกหัว 60% ขว้าง 5 ครั้ง ให้หาโอกาสที่ได้หัวอย่างน้อย 3 ครั้ง แสดงวิธีคิดและตอบเป็นเปอร์เซ็นต์ปัดเศษทศนิยม 1 ตำแหน่ง",
+     "checks": [
+      {
+       "name": "mentions ~68.3%",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "substantive length",
+       "result": true,
+       "detail": "reply length 442 (min 80)",
+       "advisory": false
+      }
+     ],
+     "judge": {
+      "score": 10.0,
+      "note": "ใช้ทวินามถูกต้อง คำนวณครบทุกเทอม 0.3456+0.2592+0.07776=0.68256 ปัดเป็น 68.3% ตรงตามเฉลย โครงสร้างชัดเจน กระชับ ไม่มีข้อผิดพลาด",
+      "raw": "{\"score\": 10, \"note\": \"ใช้ทวินามถูกต้อง คำนวณครบทุกเทอม 0.3456+0.2592+0.07776=0.68256 ปัดเป็น 68.3% ตรงตามเฉลย โครงสร้างชัดเจน กระชับ ไม่มีข้อผิดพลาด\"}"
+     },
+     "score": 10.0,
+     "error": ""
+    }
+   ]
+  },
+  {
+   "id": "tm1",
+   "category": "teamwork",
+   "title": "สร้างห้องกลุ่ม 3 บอทจริง",
+   "score_final": 9.0,
+   "scores_per_run": [
+    9.0
+   ],
+   "latency": {
+    "mean_ms": 141,
+    "p50_ms": 141,
+    "max_ms": 141
+   },
+   "errors": [],
+   "runs": [
+    {
+     "id": "tm1",
+     "category": "teamwork",
+     "title": "สร้างห้องกลุ่ม 3 บอทจริง",
+     "run": 1,
+     "latency_ms": 141,
+     "routed_to_work": null,
+     "model": "api:team/groups",
+     "reply": "ผู้ใช้ขอ: สร้างห้องกลุ่มทีมชื่อ 'Benchmark War Room (run 1)' จากบอทจริงของบัญชี 3 ตัว (main + 2 specialists)\n\nคำขอ: POST /api/team/groups\n{\n \"name\": \"Benchmark War Room (run 1)\",\n \"memberIds\": [\n  \"tm_main_jgsn11\",\n  \"tm_ops_jgsn11\",\n  \"tm_exec_jgsn11\"\n ],\n \"tone\": \"ตรงไปตรงมา กระชับ\"\n}\n\nผลลัพธ์จากระบบ (HTTP 200, ok=true):\n{\n \"group\": {\n  \"id\": \"grp_mvvx1nc9_ytg55\",\n  \"name\": \"Benchmark War Room (run 1)\",\n  \"role\": \"Group · 3 bots\",\n  \"memberIds\": [\n   \"tm_main_jgsn11\",\n   \"tm_ops_jgsn11\",\n   \"tm_exec_jgsn11\"\n  ],\n  \"members\": [\n   {\n    \"id\": \"tm_main_jgsn11\",\n    \"name\": \"Woibot Main\",\n    \"role\": \"Chief Personal Teammate\"\n   },\n   {\n    \"id\": \"tm_ops_jgsn11\",\n    \"name\": \"Ops & Finance\",\n    \"role\": \"Invoice & KPI Auditor\"\n   },\n   {\n    \"id\": \"tm_exec_jgsn11\",\n    \"name\": \"Exec Chief\",\n    \"role\": \"Executive & Calendar\"\n   }\n  ],\n  \"memories\": []\n }\n}\n\nบอทที่ขอให้เป็นสมาชิก: Woibot Main (Chief Personal Teammate), Ops & Finance (Invoice & KPI Auditor), Exec Chief (Executive & Calendar)",
+     "prompt_shown": "POST /api/team/groups — สร้างห้องกลุ่มชื่อ 'Benchmark War Room' ที่มีสมาชิกเป็นบอทจริงของบัญชี (main teammate + 2 specialist bots) พร้อม tone ที่กำหนด",
+     "checks": [
+      {
+       "name": "group created (ok + grp_ id)",
+       "result": true,
+       "detail": "id=grp_mvvx1nc9_ytg55 name='Benchmark War Room (run 1)'",
+       "advisory": false
+      },
+      {
+       "name": "members resolved exactly as requested",
+       "result": true,
+       "detail": "requested=['tm_main_jgsn11', 'tm_ops_jgsn11', 'tm_exec_jgsn11'] resolved=['tm_main_jgsn11', 'tm_ops_jgsn11', 'tm_exec_jgsn11']",
+       "advisory": false
+      }
+     ],
+     "judge": {
+      "score": 9.0,
+      "note": "สร้างกลุ่มสำเร็จ ok=true, id ขึ้นต้น grp_, ชื่อตรง, สมาชิก resolve ครบ 3 ตัวตรงตามขอ ไม่มีบอทปลอม และ memories ว่างตามคาด; จุดเล็กน้อยคือ response ไม่สะท้อน tone ที่กำหนด",
+      "raw": "{\"score\": 9, \"note\": \"สร้างกลุ่มสำเร็จ ok=true, id ขึ้นต้น grp_, ชื่อตรง, สมาชิก resolve ครบ 3 ตัวตรงตามขอ ไม่มีบอทปลอม และ memories ว่างตามคาด; จุดเล็กน้อยคือ response ไม่สะท้อน tone ที่กำหนด\"}"
+     },
+     "score": 9.0,
+     "error": "",
+     "_extras": {
+      "group_created": {
+       "ok": true,
+       "detail": "id=grp_mvvx1nc9_ytg55 name='Benchmark War Room (run 1)'"
+      },
+      "members_match": {
+       "ok": true,
+       "detail": "requested=['tm_main_jgsn11', 'tm_ops_jgsn11', 'tm_exec_jgsn11'] resolved=['tm_main_jgsn11', 'tm_ops_jgsn11', 'tm_exec_jgsn11']"
+      }
+     },
+     "transcript": "ผู้ใช้ขอ: สร้างห้องกลุ่มทีมชื่อ 'Benchmark War Room (run 1)' จากบอทจริงของบัญชี 3 ตัว (main + 2 specialists)\n\nคำขอ: POST /api/team/groups\n{\n \"name\": \"Benchmark War Room (run 1)\",\n \"memberIds\": [\n  \"tm_main_jgsn11\",\n  \"tm_ops_jgsn11\",\n  \"tm_exec_jgsn11\"\n ],\n \"tone\": \"ตรงไปตรงมา กระชับ\"\n}\n\nผลลัพธ์จากระบบ (HTTP 200, ok=true):\n{\n \"group\": {\n  \"id\": \"grp_mvvx1nc9_ytg55\",\n  \"name\": \"Benchmark War Room (run 1)\",\n  \"role\": \"Group · 3 bots\",\n  \"memberIds\": [\n   \"tm_main_jgsn11\",\n   \"tm_ops_jgsn11\",\n   \"tm_exec_jgsn11\"\n  ],\n  \"members\": [\n   {\n    \"id\": \"tm_main_jgsn11\",\n    \"name\": \"Woibot Main\",\n    \"role\": \"Chief Personal Teammate\"\n   },\n   {\n    \"id\": \"tm_ops_jgsn11\",\n    \"name\": \"Ops & Finance\",\n    \"role\": \"Invoice & KPI Auditor\"\n   },\n   {\n    \"id\": \"tm_exec_jgsn11\",\n    \"name\": \"Exec Chief\",\n    \"role\": \"Executive & Calendar\"\n   }\n  ],\n  \"memories\": []\n }\n}\n\nบอทที่ขอให้เป็นสมาชิก: Woibot Main (Chief Personal Teammate), Ops & Finance (Invoice & KPI Auditor), Exec Chief (Executive & Calendar)"
+    }
+   ]
+  },
+  {
+   "id": "tm2",
+   "category": "teamwork",
+   "title": "แชร์กฎทีมเข้ากลุ่ม + ตรวจการมองเห็น",
+   "score_final": 9.0,
+   "scores_per_run": [
+    9.0
+   ],
+   "latency": {
+    "mean_ms": 2623,
+    "p50_ms": 2623,
+    "max_ms": 2623
+   },
+   "errors": [],
+   "runs": [
+    {
+     "id": "tm2",
+     "category": "teamwork",
+     "title": "แชร์กฎทีมเข้ากลุ่ม + ตรวจการมองเห็น",
+     "run": 1,
+     "latency_ms": 2623,
+     "routed_to_work": null,
+     "model": "api:team/groups+memories/search",
+     "reply": "ผู้ใช้ขอ: แชร์กฎทีม 'benchmark_rule' จาก Woibot Main เข้าห้อง 'Benchmark War Room (run 1)'\n\nคำขอ: POST /api/team/groups (action=share_memory)\n{\n \"groupId\": \"grp_mvvx1nc9_ytg55\",\n \"fromTeammateId\": \"tm_main_jgsn11\",\n \"key\": \"benchmark_rule\",\n \"value\": \"กฎทีม: ทุกบอทในห้องนี้ตอบเป็นภาษาไทย กระชับ ตรงประเด็น และปิดท้ายด้วยบรรทัดสรุป 1 บรรทัด\"\n}\n\nผลลัพธ์จากระบบ (HTTP 200):\n{\n \"memory\": {\n  \"id\": \"mem_mvvx1opq_4mkky8\",\n  \"key\": \"benchmark_rule\",\n  \"value\": \"กฎทีม: ทุกบอทในห้องนี้ตอบเป็นภาษาไทย กระชับ ตรงประเด็น และปิดท้ายด้วยบรรทัดสรุป 1 บรรทัด\",\n  \"scope\": \"team\",\n  \"groupId\": \"grp_mvvx1nc9_ytg55\",\n  \"fromTeammateId\": \"tm_main_jgsn11\",\n  \"fromName\": \"Woibot Main\",\n  \"updatedAt\": \"2026-10-31T04:43:39.998Z\"\n },\n \"group\": {\n  \"id\": \"grp_mvvx1nc9_ytg55\",\n  \"name\": \"Benchmark War Room (run 1)\",\n  \"memories\": [\n   {\n    \"id\": \"mem_mvvx1opq_4mkky8\",\n    \"key\": \"benchmark_rule\",\n    \"value\": \"กฎทีม: ทุกบอทในห้องนี้ตอบเป็นภาษาไทย กระชับ ตรงประเด็น และปิดท้ายด้วยบรรทัดสรุป 1 บรรทัด\",\n    \"scope\": \"team\",\n    \"groupId\": \"grp_mvvx1nc9_ytg55\",\n    \"fromTeammateId\": \"tm_main_jgsn11\",\n    \"fromName\": \"Woibot Main\",\n    \"updatedAt\": \"2026-10-31T04:43:39.998Z\"\n   }\n  ]\n }\n}\n\nการตรวจซ้ำด้วย GET /api/team/groups: มองเห็นกฎในกลุ่ม = True",
+     "prompt_shown": "POST /api/team/groups {action:'share_memory'} — แชร์กฎทีม (key: benchmark_rule) จาก main teammate เข้าห้องกลุ่ม แล้วตรวจด้วย GET /api/team/groups ว่ากฎมองเห็นในกลุ่ม และ (advisory) ค้นเจอผ่าน /api/memories/search",
+     "checks": [
+      {
+       "name": "team memory saved (scope=team, groupId match)",
+       "result": true,
+       "detail": "key='benchmark_rule' scope='team' groupId=grp_mvvx1nc9_ytg55 from=Woibot Main",
+       "advisory": false
+      },
+      {
+       "name": "memory visible in group listing",
+       "result": true,
+       "detail": "key found in GET /api/team/groups under the group",
+       "advisory": false
+      },
+      {
+       "name": "memory searchable (semantic search)",
+       "result": false,
+       "detail": "search keys=['rule_s89m', 'rule_0mcz', 'communication_style', 'pending_decision_old_memory_code', 'reporting_preference_thai_bullets']",
+       "advisory": true
+      }
+     ],
+     "judge": {
+      "score": 9.0,
+      "note": "แชร์กฎสำเร็จ scope=team groupId ตรง มี attribution ถึง Woibot Main และยืนยันเห็นใน group listing ครบ; search FAIL เป็น advisory จึงไม่หักคะแนน",
+      "raw": "{\"score\": 9, \"note\": \"แชร์กฎสำเร็จ scope=team groupId ตรง มี attribution ถึง Woibot Main และยืนยันเห็นใน group listing ครบ; search FAIL เป็น advisory จึงไม่หักคะแนน\"}"
+     },
+     "score": 9.0,
+     "error": "",
+     "_extras": {
+      "memory_saved": {
+       "ok": true,
+       "detail": "key='benchmark_rule' scope='team' groupId=grp_mvvx1nc9_ytg55 from=Woibot Main"
+      },
+      "memory_visible": {
+       "ok": true,
+       "detail": "key found in GET /api/team/groups under the group"
+      },
+      "memory_searchable": {
+       "ok": false,
+       "advisory": true,
+       "detail": "search keys=['rule_s89m', 'rule_0mcz', 'communication_style', 'pending_decision_old_memory_code', 'reporting_preference_thai_bullets']"
+      }
+     },
+     "transcript": "ผู้ใช้ขอ: แชร์กฎทีม 'benchmark_rule' จาก Woibot Main เข้าห้อง 'Benchmark War Room (run 1)'\n\nคำขอ: POST /api/team/groups (action=share_memory)\n{\n \"groupId\": \"grp_mvvx1nc9_ytg55\",\n \"fromTeammateId\": \"tm_main_jgsn11\",\n \"key\": \"benchmark_rule\",\n \"value\": \"กฎทีม: ทุกบอทในห้องนี้ตอบเป็นภาษาไทย กระชับ ตรงประเด็น และปิดท้ายด้วยบรรทัดสรุป 1 บรรทัด\"\n}\n\nผลลัพธ์จากระบบ (HTTP 200):\n{\n \"memory\": {\n  \"id\": \"mem_mvvx1opq_4mkky8\",\n  \"key\": \"benchmark_rule\",\n  \"value\": \"กฎทีม: ทุกบอทในห้องนี้ตอบเป็นภาษาไทย กระชับ ตรงประเด็น และปิดท้ายด้วยบรรทัดสรุป 1 บรรทัด\",\n  \"scope\": \"team\",\n  \"groupId\": \"grp_mvvx1nc9_ytg55\",\n  \"fromTeammateId\": \"tm_main_jgsn11\",\n  \"fromName\": \"Woibot Main\",\n  \"updatedAt\": \"2026-10-31T04:43:39.998Z\"\n },\n \"group\": {\n  \"id\": \"grp_mvvx1nc9_ytg55\",\n  \"name\": \"Benchmark War Room (run 1)\",\n  \"memories\": [\n   {\n    \"id\": \"mem_mvvx1opq_4mkky8\",\n    \"key\": \"benchmark_rule\",\n    \"value\": \"กฎทีม: ทุกบอทในห้องนี้ตอบเป็นภาษาไทย กระชับ ตรงประเด็น และปิดท้ายด้วยบรรทัดสรุป 1 บรรทัด\",\n    \"scope\": \"team\",\n    \"groupId\": \"grp_mvvx1nc9_ytg55\",\n    \"fromTeammateId\": \"tm_main_jgsn11\",\n    \"fromName\": \"Woibot Main\",\n    \"updatedAt\": \"2026-10-31T04:43:39.998Z\"\n   }\n  ]\n }\n}\n\nการตรวจซ้ำด้วย GET /api/team/groups: มองเห็นกฎในกลุ่ม = True"
+    }
+   ]
+  },
+  {
+   "id": "tm3",
+   "category": "teamwork",
+   "title": "มอบงานข้ามบอทภายในกลุ่ม",
+   "score_final": 9.0,
+   "scores_per_run": [
+    9.0
+   ],
+   "latency": {
+    "mean_ms": 1517,
+    "p50_ms": 1517,
+    "max_ms": 1517
+   },
+   "errors": [],
+   "runs": [
+    {
+     "id": "tm3",
+     "category": "teamwork",
+     "title": "มอบงานข้ามบอทภายในกลุ่ม",
+     "run": 1,
+     "latency_ms": 1517,
+     "routed_to_work": null,
+     "model": "api:team/delegate provider=together",
+     "reply": "กำไรสุทธิ = 84,000 - 61,500 = 22,500 บาท  \nอัตรากำไรสุทธิ = (22,500 ÷ 84,000) × 100 = 26.79%\n\nHAND-BACK → ตรวจแล้ว: กำไรสุทธิ 22,500 บาท อัตรากำไร 26.79% ตาม benchmark_rule",
+     "prompt_shown": "POST /api/team/delegate — main teammate มอบงานคำนวณการเงินเล็กๆ ให้ specialist bot (Ops/Finance) ภายในห้องกลุ่ม โดยอ้างอิงกฎทีมที่แชร์ไว้ (benchmark_rule)",
+     "checks": [
+      {
+       "name": "delegation ok + non-empty reply",
+       "result": true,
+       "detail": "reply 172 chars, provider=together",
+       "advisory": false
+      },
+      {
+       "name": "shared rule used (memoriesUsed)",
+       "result": true,
+       "detail": "memoriesUsed=['benchmark_rule']",
+       "advisory": false
+      },
+      {
+       "name": "HAND-BACK line present",
+       "result": true,
+       "detail": "HAND-BACK line present",
+       "advisory": false
+      },
+      {
+       "name": "mentions 22,500 profit",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "mentions ~26.8% margin",
+       "result": true,
+       "detail": "all keyword groups found",
+       "advisory": false
+      },
+      {
+       "name": "reply mostly Thai",
+       "result": true,
+       "detail": "thai char ratio 0.73 (min 0.3)",
+       "advisory": false
+      },
+      {
+       "name": "substantive length",
+       "result": true,
+       "detail": "reply length 172 (min 20)",
+       "advisory": false
+      }
+     ],
+     "judge": {
+      "score": 9.0,
+      "note": "ตัวเลขถูกต้องครบ (22,500 / 26.79%) ภาษาไทยลื่น มีบรรทัด HAND-BACK และอ้าง benchmark_rule ตามกฎทีม จุดเล็กน้อย: บทบาทผู้รับงานสื่อผ่านคำว่า 'ตรวจแล้ว' ทางอ้อม ไม่ได้ระบุชัดว่าเป็น Ops/Finance",
+      "raw": "{\"score\": 9, \"note\": \"ตัวเลขถูกต้องครบ (22,500 / 26.79%) ภาษาไทยลื่น มีบรรทัด HAND-BACK และอ้าง benchmark_rule ตามกฎทีม จุดเล็กน้อย: บทบาทผู้รับงานสื่อผ่านคำว่า 'ตรวจแล้ว' ทางอ้อม ไม่ได้ระบุชัดว่าเป็น Ops/Finance\"}"
+     },
+     "score": 9.0,
+     "error": "",
+     "_extras": {
+      "delegate_ok": {
+       "ok": true,
+       "detail": "reply 172 chars, provider=together"
+      },
+      "memories_used": {
+       "ok": true,
+       "detail": "memoriesUsed=['benchmark_rule']"
+      }
+     },
+     "transcript": "ผู้ใช้ขอ: Woibot Main (Chief Personal Teammate) มอบงานให้ Ops & Finance (Invoice & KPI Auditor) ภายในห้อง 'Benchmark War Room (run 1)'\n\nคำขอ: POST /api/team/delegate\n{\n \"fromId\": \"tm_main_jgsn11\",\n \"toId\": \"tm_ops_jgsn11\",\n \"groupId\": \"grp_mvvx1nc9_ytg55\",\n \"message\": \"ตามกฎทีมที่แชร์ไว้ (benchmark_rule) ช่วยตรวจตัวเลขนี้: รายรับ 84,000 บาท รายจ่าย 61,500 บาท บอกกำไรสุทธิและอัตรากำไรเป็นเปอร์เซ็นต์ แล้วปิดท้ายด้วยบรรทัดสรุปตามกฎทีม\"\n}\n\nผลลัพธ์จากระบบ: ok=True provider=together memoriesUsed=[\n \"benchmark_rule\"\n]\n\nคำตอบของ Ops & Finance:\nกำไรสุทธิ = 84,000 - 61,500 = 22,500 บาท  \nอัตรากำไรสุทธิ = (22,500 ÷ 84,000) × 100 = 26.79%\n\nHAND-BACK → ตรวจแล้ว: กำไรสุทธิ 22,500 บาท อัตรากำไร 26.79% ตาม benchmark_rule"
+    }
+   ]
+  }
+ ]
+}
