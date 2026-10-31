@@ -21,9 +21,9 @@ export function DeliverableCards({ items, taskId }: { items: Deliverable[]; task
           </div>
           <div style={{ fontSize: 13, fontWeight: 700, marginTop: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.fileName}</div>
           <div style={{ fontSize: 11, color: "#6b7280" }}>{d.mimeType} {d.size ? `• ${d.size}` : ""}</div>
-          <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-            <a href={d.fileUrl} style={{ flex: 1, textAlign: "center", fontSize: 12, fontWeight: 700, padding: "7px 8px", borderRadius: 8, background: "#0f172a", color: "#fff", textDecoration: "none" }}>Download</a>
-            <a href={d.fileUrl} target="_blank" style={{ fontSize: 12, padding: "7px 10px", borderRadius: 8, border: "1px solid #e5e7eb", textDecoration: "none", color: "#111827" }}>Preview</a>
+          <div style={{ display: "flex", gap: 6, marginTop: 10, alignItems: "stretch" }}>
+            <a href={d.fileUrl} style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", textAlign: "center", fontSize: 12, fontWeight: 700, padding: "7px 8px", minHeight: 40, borderRadius: 8, background: "#0f172a", color: "#fff", textDecoration: "none" }}>Download</a>
+            <a href={d.fileUrl} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 12, padding: "7px 10px", minHeight: 40, borderRadius: 8, border: "1px solid #e5e7eb", textDecoration: "none", color: "#111827" }}>Preview</a>
           </div>
         </div>
       ))}

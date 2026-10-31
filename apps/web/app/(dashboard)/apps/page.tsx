@@ -110,7 +110,7 @@ export default function ConnectedAppsVaultPage() {
                 <button
                   type="button"
                   onClick={() => toggleApp(app)}
-                  className={`w-full rounded-[7px] py-1.5 text-[12px] font-medium transition-colors ${
+                  className={`min-h-[40px] sm:min-h-0 w-full rounded-[7px] py-1.5 text-[12px] font-medium transition-colors ${
                     connected
                       ? "bg-[var(--wb-panel)] border border-[var(--wb-line)] text-[var(--wb-fg-soft)] hover:text-red-400"
                       : "bg-[#2b66e0] text-white hover:bg-[#2458c6]"
@@ -147,25 +147,25 @@ export default function ConnectedAppsVaultPage() {
             value={secName}
             onChange={(e) => setSecName(e.target.value)}
             placeholder="SECRET_NAME (e.g. STRIPE_LIVE_KEY)"
-            className="rounded-[8px] px-3 py-2 font-mono text-[12px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
+            className="min-h-[40px] sm:min-h-0 rounded-[8px] px-3 py-2 font-mono text-[12px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
           />
           <input
             type="text"
             value={secHost}
             onChange={(e) => setSecHost(e.target.value)}
             placeholder="Allowed Host (*.stripe.com)"
-            className="rounded-[8px] px-3 py-2 font-mono text-[12px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
+            className="min-h-[40px] sm:min-h-0 rounded-[8px] px-3 py-2 font-mono text-[12px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
           />
           <input
             type="password"
             value={secVal}
             onChange={(e) => setSecVal(e.target.value)}
             placeholder="Secret / Password Value..."
-            className="rounded-[8px] px-3 py-2 text-[12px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
+            className="min-h-[40px] sm:min-h-0 rounded-[8px] px-3 py-2 text-[12px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
           />
           <button
             type="submit"
-            className="rounded-[8px] bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-[12.5px] font-semibold text-white"
+            className="min-h-[40px] sm:min-h-0 rounded-[8px] bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-[12.5px] font-semibold text-white"
           >
             + Store in Vault
           </button>
@@ -175,16 +175,16 @@ export default function ConnectedAppsVaultPage() {
           {secrets.map((sec) => (
             <div
               key={sec.id}
-              className="flex items-center justify-between rounded-[9px] px-3.5 py-2.5"
+              className="flex items-center justify-between gap-2 rounded-[9px] px-3.5 py-2.5"
               style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
             >
-              <div>
-                <div className="font-mono text-[12.5px] font-semibold text-[#7cb0ff]">{sec.name}</div>
-                <div className="font-mono text-[11px] text-[var(--wb-muted)]">
+              <div className="min-w-0">
+                <div className="font-mono text-[12.5px] font-semibold text-[#7cb0ff] break-words">{sec.name}</div>
+                <div className="font-mono text-[11px] text-[var(--wb-muted)] break-words">
                   Allowed Host: {sec.hostAllowlist} · {sec.maskedValue}
                 </div>
               </div>
-              <span className="rounded bg-emerald-500/15 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
+              <span className="shrink-0 rounded bg-emerald-500/15 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
                 Write-Only
               </span>
             </div>

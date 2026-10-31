@@ -36,7 +36,7 @@ export default function FilesLibraryPage() {
         <button
           type="button"
           onClick={() => router.push("/work?area=artifacts")}
-          className="rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] px-3.5 py-2 text-[12.5px] font-semibold text-white"
+          className="min-h-[40px] sm:min-h-0 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] px-3.5 py-2 text-[12.5px] font-semibold text-white"
         >
           Open Artifacts Studio →
         </button>
@@ -64,7 +64,7 @@ export default function FilesLibraryPage() {
               <button
                 type="button"
                 onClick={() => setPreviewItem(item)}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-[7px] py-1.5 text-[12px] font-medium hover:bg-[var(--wb-hover)]"
+                className="min-h-[40px] sm:min-h-0 flex-1 inline-flex items-center justify-center gap-1.5 rounded-[7px] py-1.5 text-[12px] font-medium hover:bg-[var(--wb-hover)]"
                 style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
               >
                 <Eye className="h-3.5 w-3.5" />
@@ -72,7 +72,7 @@ export default function FilesLibraryPage() {
               </button>
               <a
                 href={`/api/artifacts?download=${item.id}`}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-[7px] bg-[#2b66e0] hover:bg-[#2458c6] py-1.5 text-[12px] font-medium text-white"
+                className="min-h-[40px] sm:min-h-0 flex-1 inline-flex items-center justify-center gap-1.5 rounded-[7px] bg-[#2b66e0] hover:bg-[#2458c6] py-1.5 text-[12px] font-medium text-white"
               >
                 <Download className="h-3.5 w-3.5" />
                 <span>Download</span>
@@ -85,15 +85,15 @@ export default function FilesLibraryPage() {
       {previewItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65">
           <div
-            className="w-full max-w-[680px] rounded-[12px] p-5 space-y-3"
+            className="max-h-[90vh] w-full max-w-[680px] overflow-y-auto rounded-[12px] p-5 space-y-3"
             style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line-strong)" }}
           >
-            <div className="flex items-center justify-between">
-              <div className="text-[15px] font-semibold">{previewItem.title}</div>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 text-[15px] font-semibold break-words">{previewItem.title}</div>
               <button
                 type="button"
                 onClick={() => setPreviewItem(null)}
-                className="rounded px-2.5 py-1 text-xs text-[var(--wb-muted)] hover:bg-[var(--wb-hover)]"
+                className="shrink-0 rounded px-2.5 py-1 text-xs text-[var(--wb-muted)] hover:bg-[var(--wb-hover)]"
               >
                 Close
               </button>

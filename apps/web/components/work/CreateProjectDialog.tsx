@@ -77,7 +77,7 @@ export function CreateProjectDialog({
 
           <div style={{ marginTop: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 700 }}>3) เลือกสถานที่ทำงาน — Cloud vs Local</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 8, marginTop: 8 }}>
               <button onClick={() => { setExecutionMode("cloud"); setLocalWarning(false); }} style={{ padding: 12, borderRadius: 10, border: executionMode === "cloud" ? "2px solid #0f172a" : "1px solid #e5e7eb", background: executionMode === "cloud" ? "#f8fafc" : "#fff", textAlign: "left", cursor: "pointer" }}>
                 <div style={{ fontSize: 13, fontWeight: 800 }}>☁ Cloud Work</div>
                 <div style={{ fontSize: 11, color: "#6b7280" }}>ไม่ต้องเปิดเครื่องค้าง • ทำต่อเมื่อออฟไลน์ • เข้าถึงจากหลายอุปกรณ์</div>
@@ -107,14 +107,14 @@ export function CreateProjectDialog({
           </div>
         </div>
 
-        <div style={{ padding: 14, borderTop: "1px solid #e5e7eb", display: "flex", gap: 8, justifyContent: "flex-end", background: "#f9fafb" }}>
+        <div style={{ padding: 14, borderTop: "1px solid #e5e7eb", display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "flex-end", background: "#f9fafb" }}>
           <button onClick={onClose} style={{ padding: "9px 14px", borderRadius: 8, border: "1px solid #d1d5db", background: "#fff", cursor: "pointer" }}>ยกเลิก</button>
           <button
             onClick={() => {
               if (!goal.trim()) { alert("กรุณาใส่เป้าหมายโปรเจกต์"); return; }
               onCreate({ title: title || goal.slice(0, 60), goal, kind, executionMode, cost: est.cost });
             }}
-            style={{ padding: "9px 16px", borderRadius: 8, border: 0, background: "#0f172a", color: "#fff", fontWeight: 700, cursor: "pointer" }}
+            style={{ padding: "9px 16px", minHeight: 40, borderRadius: 8, border: 0, background: "#0f172a", color: "#fff", fontWeight: 700, cursor: "pointer" }}
           >
             สร้างโปรเจกต์ • {formatCost(est.cost)} / {est.minutes} min — ต้องอนุมัติอีกครั้งใน workspace ก่อนรัน
           </button>

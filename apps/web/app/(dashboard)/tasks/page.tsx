@@ -106,7 +106,7 @@ export default function UnifiedTasksPage() {
           <button
             type="button"
             onClick={() => router.push("/work?area=code")}
-            className="inline-flex items-center gap-1.5 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] px-3.5 py-2 text-[12.5px] font-semibold text-white"
+            className="min-h-[40px] sm:min-h-0 inline-flex items-center gap-1.5 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] px-3.5 py-2 text-[12.5px] font-semibold text-white"
           >
             <Plus className="h-4 w-4" />
             <span>New Work Project</span>
@@ -304,7 +304,7 @@ export default function UnifiedTasksPage() {
                   <span className="font-mono text-[var(--wb-muted)]">{t.traceId}</span>
                   <span className="capitalize text-emerald-400">{t.status.replace(/_/g, " ")}</span>
                 </div>
-                <div className="flex gap-2 pt-1">
+                <div className="flex flex-col gap-2 pt-1 sm:flex-row">
                   {t.status === "waiting_for_user" && (
                     <button
                       type="button"
@@ -312,7 +312,7 @@ export default function UnifiedTasksPage() {
                         await handleTransition(t.id, "queued", true);
                         await handleRun(t.id);
                       }}
-                      className="flex-1 rounded-[6px] bg-amber-500 py-1.5 text-[11.5px] font-semibold text-black"
+                      className="min-h-[40px] flex-1 rounded-[6px] bg-amber-500 py-2 text-[11.5px] font-semibold text-black"
                     >
                       Approve
                     </button>
@@ -320,7 +320,7 @@ export default function UnifiedTasksPage() {
                   <button
                     type="button"
                     onClick={() => router.push(t.product === "work" ? `/work/${t.id}` : "/teammate")}
-                    className="flex-1 rounded-[6px] bg-[#2b66e0] py-1.5 text-[11.5px] font-medium text-white"
+                    className="min-h-[40px] flex-1 rounded-[6px] bg-[#2b66e0] py-2 text-[11.5px] font-medium text-white"
                   >
                     Open Workspace →
                   </button>
@@ -335,17 +335,17 @@ export default function UnifiedTasksPage() {
       {selectedTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65">
           <div
-            className="w-full max-w-[620px] rounded-[12px] p-4 space-y-3"
+            className="max-h-[90vh] w-full max-w-[620px] overflow-y-auto rounded-[12px] p-4 space-y-3"
             style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line-strong)" }}
           >
-            <div className="flex items-center justify-between">
-              <div className="text-[14px] font-semibold">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 text-[14px] font-semibold break-words">
                 HandoffPacket & Verification Spec · {selectedTask.traceId}
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedTask(null)}
-                className="rounded px-2 py-1 text-xs text-[var(--wb-muted)] hover:bg-[var(--wb-hover)]"
+                className="shrink-0 rounded px-2 py-1 text-xs text-[var(--wb-muted)] hover:bg-[var(--wb-hover)]"
               >
                 Close
               </button>

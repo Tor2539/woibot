@@ -72,12 +72,12 @@ export default function RoutinesPage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="ชื่อ Routine (เช่น สรุปยอดขายทุกเช้าวันจันทร์)..."
-            className="rounded-[8px] px-3 py-2 text-[12.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
+            className="min-h-[40px] sm:min-h-0 rounded-[8px] px-3 py-2 text-[12.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
           />
           <select
             value={triggerType}
             onChange={(e) => setTriggerType(e.target.value)}
-            className="rounded-[8px] px-3 py-2 text-[12.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
+            className="min-h-[40px] sm:min-h-0 rounded-[8px] px-3 py-2 text-[12.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
           >
             <option value="cron">Schedule (Cron / Timezone)</option>
             <option value="email_inbox">When Email Arrives at Bot Inbox</option>
@@ -89,7 +89,7 @@ export default function RoutinesPage() {
             value={triggerExpr}
             onChange={(e) => setTriggerExpr(e.target.value)}
             placeholder="0 8 * * 1-5 หรือ invoices@woibot.com"
-            className="rounded-[8px] px-3 py-2 font-mono text-[12px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
+            className="min-h-[40px] sm:min-h-0 rounded-[8px] px-3 py-2 font-mono text-[12px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
           />
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
@@ -98,11 +98,11 @@ export default function RoutinesPage() {
             value={template}
             onChange={(e) => setTemplate(e.target.value)}
             placeholder="ขั้นตอนที่ให้ Teammate หรือ Work ดำเนินการอัตโนมัติ..."
-            className="flex-1 rounded-[8px] px-3 py-2 text-[12.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
+            className="min-h-[40px] sm:min-h-0 flex-1 rounded-[8px] px-3 py-2 text-[12.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
           />
           <button
             type="submit"
-            className="rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] px-4 py-2 text-[12.5px] font-semibold text-white shrink-0"
+            className="min-h-[40px] sm:min-h-0 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] px-4 py-2 text-[12.5px] font-semibold text-white shrink-0"
           >
             Save Routine
           </button>

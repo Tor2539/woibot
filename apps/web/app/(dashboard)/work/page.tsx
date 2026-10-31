@@ -406,7 +406,7 @@ function WorkStudioInner() {
               <select
                 value={newKind}
                 onChange={(e) => setNewKind(e.target.value as any)}
-                className="rounded-[8px] px-3 py-2 text-[12.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
+                className="min-h-[40px] sm:min-h-0 rounded-[8px] px-3 py-2 text-[12.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
               >
                 <option value="coding">Coding — สร้างเว็บ/แอป + screenshot หลักฐาน</option>
                 <option value="doc">Documents — DOCX + PDF (จัดหน้าให้จริง)</option>
@@ -420,12 +420,12 @@ function WorkStudioInner() {
                 value={newGoal}
                 onChange={(e) => setNewGoal(e.target.value)}
                 placeholder="สั่งโปรเจกต์ให้ Work ลงมือทำจนจบ (เช่น สร้างระบบ CRM พร้อม Login, Dashboard และ Playwright Tests)..."
-                className="flex-1 rounded-[8px] px-3.5 py-2 text-[13.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)] text-[var(--wb-fg)] placeholder:text-[var(--wb-muted)]"
+                className="min-h-[40px] sm:min-h-0 flex-1 rounded-[8px] px-3.5 py-2 text-[13.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)] text-[var(--wb-fg)] placeholder:text-[var(--wb-muted)]"
               />
               <button
                 type="submit"
                 disabled={!newGoal.trim() || creatingJob}
-                className="inline-flex items-center justify-center gap-1.5 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] disabled:opacity-40 px-4 py-2 text-[12.5px] font-semibold text-white shrink-0"
+                className="min-h-[40px] sm:min-h-0 inline-flex items-center justify-center gap-1.5 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] disabled:opacity-40 px-4 py-2 text-[12.5px] font-semibold text-white shrink-0"
               >
                 <Plus className="h-4 w-4" />
                 <span>{creatingJob ? "Creating..." : "Approve & Launch Job"}</span>
@@ -500,7 +500,7 @@ function WorkStudioInner() {
                               e.stopPropagation();
                               handleApproveAndRunTask(t);
                             }}
-                            className="w-full rounded-[7px] bg-amber-500 hover:bg-amber-400 py-1.5 text-[11.5px] font-semibold text-black"
+                            className="min-h-[40px] sm:min-h-0 w-full rounded-[7px] bg-amber-500 hover:bg-amber-400 py-1.5 text-[11.5px] font-semibold text-black"
                           >
                             {verifyingId === t.id
                               ? "Executing & Running Verification..."
@@ -544,11 +544,11 @@ function WorkStudioInner() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => handleApproveAndRunTask(activeTask)}
-                      className="inline-flex items-center gap-1.5 rounded-[7px] px-2.5 py-1.5 text-[11.5px] font-medium hover:bg-[var(--wb-hover)]"
+                      className="min-h-[40px] sm:min-h-0 inline-flex items-center gap-1.5 rounded-[7px] px-2.5 py-1.5 text-[11.5px] font-medium hover:bg-[var(--wb-hover)]"
                       style={{ border: "1px solid var(--wb-line)", backgroundColor: "var(--wb-raised)" }}
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${verifyingId === activeTask.id ? "animate-spin" : ""}`} />
@@ -556,7 +556,7 @@ function WorkStudioInner() {
                     </button>
                     <a
                       href={`/api/artifacts?download=del_crm_zip`}
-                      className="inline-flex items-center gap-1.5 rounded-[7px] bg-[#2b66e0] hover:bg-[#2458c6] px-3 py-1.5 text-[11.5px] font-medium text-white"
+                      className="min-h-[40px] sm:min-h-0 inline-flex items-center gap-1.5 rounded-[7px] bg-[#2b66e0] hover:bg-[#2458c6] px-3 py-1.5 text-[11.5px] font-medium text-white"
                     >
                       <Download className="h-3.5 w-3.5" />
                       <span>Download .ZIP</span>
@@ -566,7 +566,7 @@ function WorkStudioInner() {
 
                 {/* Inspector Tabs: Live App Preview | Code & Diff | Container Terminal | Verification Report */}
                 <div
-                  className="flex items-center gap-1 px-3 py-1.5"
+                  className="flex flex-wrap items-center gap-1 px-3 py-1.5"
                   style={{ borderBottom: "1px solid var(--wb-line)", backgroundColor: "var(--wb-sidebar)" }}
                 >
                   {[
@@ -830,7 +830,7 @@ function WorkStudioInner() {
                   border: "1px solid var(--wb-line-strong)",
                 }}
               >
-                <div className="flex items-center justify-between text-[11.5px] font-mono text-white/80">
+                <div className="flex flex-wrap items-center justify-between gap-1.5 text-[11.5px] font-mono text-white/80">
                   <span className="rounded bg-black/50 px-2.5 py-1">
                     SHOT {currentScene.shot} · {currentScene.time} · {videoRatio}
                   </span>
@@ -856,16 +856,16 @@ function WorkStudioInner() {
               </div>
 
               {/* Timeline Transport & Scene Strip */}
-              <div className="flex items-center justify-between gap-3 pt-1">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => setVideoPlaying((p) => !p)}
-                  className="inline-flex items-center gap-1.5 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] px-4 py-2 text-[12.5px] font-semibold text-white"
+                  className="min-h-[40px] sm:min-h-0 inline-flex items-center gap-1.5 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] px-4 py-2 text-[12.5px] font-semibold text-white"
                 >
                   {videoPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   <span>{videoPlaying ? "Pause Preview" : "Play 30s Master"}</span>
                 </button>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <a
                     href="/api/artifacts?download=del_vid_169"
                     className="inline-flex items-center gap-1.5 rounded-[8px] px-3 py-2 text-[12px] font-medium hover:bg-[var(--wb-hover)]"
@@ -905,7 +905,7 @@ function WorkStudioInner() {
                         border: "1px solid var(--wb-line)",
                       }}
                     >
-                      <div className="flex items-center justify-between text-[11.5px]">
+                      <div className="flex flex-wrap items-center justify-between gap-1">
                         <span className="font-mono font-bold text-[#7cb0ff]">
                           SHOT {sc.shot} ({sc.time})
                         </span>
@@ -931,7 +931,7 @@ function WorkStudioInner() {
                 className="rounded-[12px] p-4 space-y-2"
                 style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
                   <span className="text-[12.5px] font-semibold text-emerald-400">
                     ✓ Video Verification Report (ffprobe + Subtitles)
                   </span>
@@ -1058,12 +1058,12 @@ function WorkStudioInner() {
                   value={briefPrompt}
                   onChange={(e) => setBriefPrompt(e.target.value)}
                   placeholder="ระบุหัวข้อหรือรายละเอียดที่ต้องการสร้าง (เช่น ข้อเสนอโครงการ AI Transformation สำหรับลูกค้าองค์กร)..."
-                  className="flex-1 rounded-[8px] px-3 py-2 text-[13px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
+                  className="min-h-[40px] sm:min-h-0 flex-1 rounded-[8px] px-3 py-2 text-[13px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
                 />
                 <button
                   type="submit"
                   disabled={!briefPrompt.trim() || generatingArtifact}
-                  className="rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] disabled:opacity-40 px-4 py-2 text-[12.5px] font-semibold text-white shrink-0"
+                  className="min-h-[40px] sm:min-h-0 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] disabled:opacity-40 px-4 py-2 text-[12.5px] font-semibold text-white shrink-0"
                 >
                   {generatingArtifact ? "Generating Artifact..." : "Create Artifact →"}
                 </button>
@@ -1132,11 +1132,11 @@ function WorkStudioInner() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <select
                     value={artZoom}
                     onChange={(e) => setArtZoom(Number(e.target.value))}
-                    className="rounded px-2 py-1 text-[11px] bg-[var(--wb-raised)] border border-[var(--wb-line)] font-mono"
+                    className="min-h-[40px] sm:min-h-0 rounded px-2 py-1 text-[11px] bg-[var(--wb-raised)] border border-[var(--wb-line)] font-mono"
                   >
                     <option value={90}>90%</option>
                     <option value={100}>100%</option>
@@ -1145,7 +1145,7 @@ function WorkStudioInner() {
                   <button
                     type="button"
                     onClick={() => setArtFull((f) => !f)}
-                    className="flex h-7 w-7 items-center justify-center rounded bg-[var(--wb-raised)] border border-[var(--wb-line)] text-[var(--wb-muted)] hover:text-[var(--wb-fg)]"
+                    className="flex h-10 w-10 sm:h-7 sm:w-7 items-center justify-center rounded bg-[var(--wb-raised)] border border-[var(--wb-line)] text-[var(--wb-muted)] hover:text-[var(--wb-fg)]"
                     title="Toggle Fullscreen Artifact View"
                   >
                     {artFull ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
@@ -1153,13 +1153,13 @@ function WorkStudioInner() {
                   <button
                     type="button"
                     onClick={handleSaveArtifactEdit}
-                    className="rounded-[6px] bg-[#2b66e0] hover:bg-[#2458c6] px-2.5 py-1 text-[11.5px] font-medium text-white"
+                    className="min-h-[40px] sm:min-h-0 rounded-[6px] bg-[#2b66e0] hover:bg-[#2458c6] px-2.5 py-1 text-[11.5px] font-medium text-white"
                   >
                     {savingArtifact ? "Saving..." : "Save v+1"}
                   </button>
                   <a
                     href={`/api/artifacts?download=${selectedArtifact.id}`}
-                    className="rounded-[6px] bg-[var(--wb-raised)] border border-[var(--wb-line)] px-2.5 py-1 text-[11.5px] font-medium hover:bg-[var(--wb-hover)]"
+                    className="min-h-[40px] sm:min-h-0 inline-flex items-center rounded-[6px] bg-[var(--wb-raised)] border border-[var(--wb-line)] px-2.5 py-1 text-[11.5px] font-medium hover:bg-[var(--wb-hover)]"
                   >
                     Export
                   </a>

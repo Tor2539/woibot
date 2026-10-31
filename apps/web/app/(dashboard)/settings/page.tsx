@@ -42,7 +42,7 @@ export default function SettingsBillingPage() {
           className="rounded-[12px] p-5 space-y-3"
           style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-1.5">
             <span className="rounded bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-400">
               LEDGER A · TEAMMATE SUBSCRIPTION
             </span>
@@ -61,7 +61,7 @@ export default function SettingsBillingPage() {
           className="rounded-[12px] p-5 space-y-3"
           style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line-strong)" }}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-1.5">
             <span className="rounded bg-[#2b66e0]/20 px-2.5 py-0.5 text-[11px] font-semibold text-[#7cb0ff]">
               LEDGER B · WORK METERED EXECUTION
             </span>
@@ -78,7 +78,7 @@ export default function SettingsBillingPage() {
                 step="0.5"
                 value={perTaskCap}
                 onChange={(e) => setPerTaskCap(Number(e.target.value))}
-                className="w-full rounded-[7px] px-2.5 py-1.5 font-mono text-[12.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)] tabular-nums"
+                className="min-h-[40px] sm:min-h-0 w-full rounded-[7px] px-2.5 py-1.5 font-mono text-[12.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)] tabular-nums"
               />
             </div>
             <div>
@@ -88,13 +88,13 @@ export default function SettingsBillingPage() {
                 step="5"
                 value={monthlyCap}
                 onChange={(e) => setMonthlyCap(Number(e.target.value))}
-                className="w-full rounded-[7px] px-2.5 py-1.5 font-mono text-[12.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)] tabular-nums"
+                className="min-h-[40px] sm:min-h-0 w-full rounded-[7px] px-2.5 py-1.5 font-mono text-[12.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)] tabular-nums"
               />
             </div>
             <div className="flex items-end">
               <button
                 type="submit"
-                className="w-full rounded-[7px] bg-[#2b66e0] hover:bg-[#2458c6] py-1.5 text-[12px] font-semibold text-white"
+                className="min-h-[40px] sm:min-h-0 w-full rounded-[7px] bg-[#2b66e0] hover:bg-[#2458c6] py-1.5 text-[12px] font-semibold text-white"
               >
                 {savedNotice ? "✓ Saved Guardrails" : "Save Guardrails"}
               </button>
@@ -110,7 +110,7 @@ export default function SettingsBillingPage() {
       >
         <div className="text-[14px] font-semibold">Isolated Usage Ledger (Teammate vs Work Events)</div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-[12.5px] tabular-nums">
+          <table className="w-full min-w-[560px] text-left border-collapse text-[12.5px] tabular-nums">
             <thead>
               <tr
                 className="text-[11px] uppercase tracking-wider text-[var(--wb-muted)]"

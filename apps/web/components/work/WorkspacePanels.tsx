@@ -51,13 +51,13 @@ export function FileTree({ files }: { files: { path: string; lang?: string; size
       <div style={{ fontSize: 12, fontWeight: 800 }}>Files • ไฟล์</div>
       <div style={{ marginTop: 8 }}>
         {files.map(f => (
-          <div key={f.path} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #f3f4f6", fontSize: 12 }}>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <span style={{ fontSize: 11, background: "#f3f4f6", borderRadius: 4, padding: "1px 6px" }}>{f.lang ?? "file"}</span>
-              <span style={{ fontWeight: 600 }}>{f.path}</span>
-              {f.status && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 999, background: f.status === "new" ? "#dcfce7" : f.status === "modified" ? "#fef3c7" : "#f3f4f6", color: f.status === "new" ? "#065f46" : f.status === "modified" ? "#92400e" : "#6b7280" }}>{f.status}</span>}
+          <div key={f.path} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f3f4f6", fontSize: 12 }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, minWidth: 0 }}>
+              <span style={{ fontSize: 11, background: "#f3f4f6", borderRadius: 4, padding: "1px 6px", flexShrink: 0 }}>{f.lang ?? "file"}</span>
+              <span style={{ fontWeight: 600, overflowWrap: "anywhere" }}>{f.path}</span>
+              {f.status && <span style={{ fontSize: 10, flexShrink: 0, padding: "1px 6px", borderRadius: 999, background: f.status === "new" ? "#dcfce7" : f.status === "modified" ? "#fef3c7" : "#f3f4f6", color: f.status === "new" ? "#065f46" : f.status === "modified" ? "#92400e" : "#6b7280" }}>{f.status}</span>}
             </div>
-            <span style={{ fontSize: 11, color: "#6b7280" }}>{f.size}</span>
+            <span style={{ fontSize: 11, color: "#6b7280", flexShrink: 0 }}>{f.size}</span>
           </div>
         ))}
       </div>
@@ -155,9 +155,9 @@ export function FeedbackPanel({ onSend }: { onSend: (msg: string) => void }) {
         {presets.map(p => <button key={p} onClick={() => setText(p)} style={{ fontSize: 11, padding: "4px 8px", borderRadius: 999, border: "1px solid #e5e7eb", background: "#f9fafb", cursor: "pointer" }}>{p}</button>)}
       </div>
       <textarea value={text} onChange={e => setText(e.target.value)} placeholder="พิมพ์สิ่งที่อยากให้แก้… เช่น ขอแก้เฉพาะส่วน header, ไม่ต้องทำใหม่ทั้งหมด" rows={3} style={{ width: "100%", marginTop: 10, padding: 10, borderRadius: 8, border: "1px solid #d1d5db", fontSize: 12 }} />
-      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-        <button onClick={() => { if (!text.trim()) return; onSend(text); setText(""); }} style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: 0, background: "#0f172a", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>ส่ง Feedback → Work จะแก้ไขเฉพาะส่วน</button>
-        <button onClick={() => setText("")} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e5e7eb", background: "#fff", cursor: "pointer", fontSize: 12 }}>ล้าง</button>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+        <button onClick={() => { if (!text.trim()) return; onSend(text); setText(""); }} style={{ flex: 1, minWidth: 200, padding: "10px 12px", minHeight: 40, borderRadius: 8, border: 0, background: "#0f172a", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>ส่ง Feedback → Work จะแก้ไขเฉพาะส่วน</button>
+        <button onClick={() => setText("")} style={{ padding: "10px 12px", minHeight: 40, borderRadius: 8, border: "1px solid #e5e7eb", background: "#fff", cursor: "pointer", fontSize: 12 }}>ล้าง</button>
       </div>
       <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 6 }}>ข้อสำคัญ: Work ไม่ควรถามซ้ำสิ่งที่ Teammate รู้แล้ว — feedback จะผูกกับเวอร์ชันปัจจุบัน</div>
     </div>
