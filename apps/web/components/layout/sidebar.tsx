@@ -103,6 +103,18 @@ export function Sidebar({
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [dbBots, setDbBots] = useState<any[]>([]);
   const [dbComputer, setDbComputer] = useState<any>(null);
+  const [dbJobs, setDbJobs] = useState<any[]>([]);
+
+  const NAV_JOBS = (dbJobs.length ? dbJobs : WORK_JOBS_SIDEBAR).map((j: any) => ({
+    id: j.id,
+    title: j.title,
+    kind: j.workKind || j.kind || "work",
+    status: j.status,
+    cost: j.estimate?.cost ? `$${Number(j.estimate.cost).toFixed(2)}` : j.cost || "—",
+    origin: j.product === "work" ? "Work" : j.origin || "Work",
+    dot: j.status === "completed" ? "#34d399" : j.status === "failed" ? "#ef4444" : j.status === "reviewing" ? "#3b82f6" : "#f59e0b",
+    isLocal: j.executionMode === "local",
+  }));
 
   const NAV_BOTS = dbBots.length
     ? dbBots.map((b: any) => ({
@@ -133,6 +145,13 @@ export function Sidebar({
     fetch("/api/computer")
       .then((r) => r.json())
       .then((res) => setDbComputer(res?.computer || null))
+      .catch(() => {});
+    fetch("/api/tasks")
+      .then((r) => r.json())
+      .then((res) => {
+        const list = res?.data?.tasks || res?.tasks || [];
+        setDbJobs(list.filter((t: any) => t.product === "work").slice(0, 6));
+      })
       .catch(() => {});
   }, []);
 
@@ -190,7 +209,7 @@ export function Sidebar({
       label: `Chat with ${b.name} (${b.role}) — ${b.status}`,
       action: () => router.push(`/teammate?bot=${b.id}`),
     })),
-    ...WORK_JOBS_SIDEBAR.map((j) => ({
+    ...NAV_JOBS.map((j) => ({
       group: "Work Jobs",
       label: `Open Work Job: ${j.title} (${j.status})`,
       action: () => router.push(`/work/${j.id}`),
@@ -492,11 +511,11 @@ export function Sidebar({
                         onClick={() => setMobileOpen(false)}
                         className="text-[11px] text-[var(--wb-accent)] hover:underline"
                       >
-                        All ({WORK_JOBS_SIDEBAR.length})
+                        All ({NAV_JOBS.length})
                       </Link>
                     </div>
                     <div className="space-y-1">
-                      {WORK_JOBS_SIDEBAR.map((job) => {
+                      {NAV_JOBS.map((job) => {
                         const active = pathname === `/work/${job.id}`;
                         return (
                           <Link

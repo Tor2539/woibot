@@ -105,9 +105,10 @@ function WorkStudioInner() {
 
   // New Work Job Builder + Estimate Gate
   const [newGoal, setNewGoal] = useState("");
-  const [newKind, setNewKind] = useState<"coding" | "doc" | "video_gen" | "research">("coding");
+  const [newKind, setNewKind] = useState<"coding" | "doc" | "data" | "research" | "image" | "video_analysis">("coding");
   const [creatingJob, setCreatingJob] = useState(false);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const [runNotice, setRunNotice] = useState<string>("");
 
   // Video Studio state
   const [videoRatio, setVideoRatio] = useState<"16:9" | "9:16" | "1:1">("16:9");
@@ -178,16 +179,14 @@ function WorkStudioInner() {
     router.push(`/work?area=${next}`);
   };
 
+  // Rough client-side preview only — the server quotes the real estimate on create.
   const estimatedCost =
-    newKind === "coding"
-      ? execMode === "local"
-        ? 1.65
-        : 2.4
-      : newKind === "video_gen"
-      ? 3.8
-      : newKind === "doc"
-      ? 1.15
-      : 1.2;
+    newKind === "coding" ? 2.4
+    : newKind === "doc" ? 0.8
+    : newKind === "data" ? 1.5
+    : newKind === "image" ? 0.5
+    : newKind === "video_analysis" ? 3.0
+    : 1.2;
 
   const handleCreateWorkJob = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,7 +205,7 @@ function WorkStudioInner() {
         }),
       });
       const json = await res.json();
-      const created = json?.data?.task || json?.task;
+      const created = json?.data?.id ? json.data : json?.data?.task || json?.task;
       if (created) {
         setTasks((prev) => [created, ...prev]);
         setSelectedTaskId(created.id);
@@ -223,13 +222,14 @@ function WorkStudioInner() {
       await fetch(`/api/tasks/${task.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ approveEstimate: true, status: "in_progress", progress: 70 }),
+        body: JSON.stringify({ approveEstimate: true, status: "queued" }),
       });
-      await fetch("/api/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ taskId: task.id }),
-      });
+      const runRes = await fetch(`/api/tasks/${task.id}/run`, { method: "POST" }).then((r) => r.json());
+      if (!runRes?.ok) {
+        setRunNotice(String(runRes?.error || "รันไม่สำเร็จ"));
+      } else {
+        setRunNotice("เสร็จแล้ว — ดูผลได้ที่แท็บ Verification");
+      }
       loadTasks();
     } finally {
       setVerifyingId(null);
@@ -370,6 +370,17 @@ function WorkStudioInner() {
          ===================================================================== */}
       {area === "code" && (
         <div className="flex-1 p-4 lg:p-5 space-y-4">
+          {runNotice && (
+            <div
+              className="flex items-center justify-between rounded-[8px] px-3 py-2 text-[12px]"
+              style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
+            >
+              <span>{runNotice}</span>
+              <button type="button" onClick={() => setRunNotice("")} className="text-[11px] text-[var(--wb-muted)] hover:text-[var(--wb-fg)]">
+                ปิด
+              </button>
+            </div>
+          )}
           {/* Top Prompt & Cost Estimate Gate Launcher */}
           <form
             onSubmit={handleCreateWorkJob}
@@ -397,10 +408,12 @@ function WorkStudioInner() {
                 onChange={(e) => setNewKind(e.target.value as any)}
                 className="rounded-[8px] px-3 py-2 text-[12.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
               >
-                <option value="coding">Coding (Web/App + Tests + Preview)</option>
-                <option value="doc">Documents (DOCX/PDF/PPTX 10+ Pages)</option>
-                <option value="video_gen">Video Production (30s + Subs)</option>
-                <option value="research">Deep Multi-Source Research</option>
+                <option value="coding">Coding — สร้างเว็บ/แอป + screenshot หลักฐาน</option>
+                <option value="doc">Documents — DOCX + PDF (จัดหน้าให้จริง)</option>
+                <option value="data">Data — Excel (xlsx) / CSV / วิเคราะห์ด้วย pandas</option>
+                <option value="image">Image — อ่านภาพ (OCR + vision) ออกรายงาน</option>
+                <option value="video_analysis">Video — ตรวจ/ตัดไฮไลต์ด้วย ffmpeg</option>
+                <option value="research">Research — ค้นเว็บจริง (Parallel) + อ้างอิงแหล่งข้อมูล</option>
               </select>
               <input
                 type="text"
