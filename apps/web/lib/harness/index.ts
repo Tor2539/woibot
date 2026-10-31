@@ -7,6 +7,7 @@
 
 import { prisma } from "../db";
 import { ensureComputer } from "../computer";
+import { recallContext } from "../memory";
 import { createVerificationReport, type VerificationReport } from "../verification/pipeline";
 
 // Re-export sub-modules
@@ -82,6 +83,20 @@ export function routeIntent(input: string): { product: "teammate" | "work"; work
 }
 
 export async function createTaskFromHandoff(userId: string, packet: HandoffPacket, workKind: WorkKind) {
+  // ML recall injection: context.memory_snippet now comes from hybrid
+  // (recency + BGE-M3 semantic) recall over the user's memories. The field
+  // name stays `memory_snippet` so the UI/agent reads the packet unchanged.
+  let enriched: HandoffPacket = packet;
+  try {
+    const goal = String(packet?.goal || "").trim();
+    if (goal) {
+      const recalled = await recallContext(userId, goal);
+      if (recalled) enriched = { ...packet, context: { ...packet.context, memory_snippet: recalled } };
+    }
+  } catch {
+    // recall is best-effort; never block task creation
+  }
+
   const est = estimateTask(workKind);
   const task = await prisma.task.create({
     data: {
@@ -92,7 +107,7 @@ export async function createTaskFromHandoff(userId: string, packet: HandoffPacke
       workKind,
       status: "queued",
       executionMode: packet.execution_mode,
-      handoffPacket: JSON.stringify(packet),
+      handoffPacket: JSON.stringify(enriched),
       estimate: JSON.stringify({ ...est, approved: false }),
       progress: 0,
     },

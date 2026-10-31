@@ -4,6 +4,7 @@ import { getUserId, errorResponse, successResponse, safeJsonParse } from "@/lib/
 import { routeIntent, createTaskFromHandoff } from "@/lib/harness";
 import { recordUsage } from "@/lib/billing";
 import { callWoibotLLM } from "@/lib/llm";
+import { recallContext, rememberFact, summarizeAndStore, consolidateIfNeeded } from "@/lib/memory";
 
 export async function GET(req: NextRequest) {
   try {
@@ -77,21 +78,18 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const memories = await prisma.memory.findMany({ where: { userId }, take: 8 });
+    // ML-backed hybrid recall (recency + BGE-M3 semantic) replaces the naive take:8 query
+    const memorySnippet = await recallContext(userId, body.message);
+    const memoryCount = memorySnippet ? memorySnippet.split("\n").length : 0;
     const connectedApps = await prisma.connectedApp.findMany({ where: { userId, status: "connected" } }).catch(() => []);
-    const memorySnippet = memories.map((m: any) => `${m.key}: ${m.value}`).join("\n");
 
-    // Auto-save explicit memory instructions
+    // Auto-save explicit memory instructions (deduped via rememberFact)
     if (/จำไว้ว่า|บันทึกความจำ|remember that|ตั้งกฎว่า/i.test(body.message)) {
-      await prisma.memory.create({
-        data: {
-          userId,
-          key: `rule_${Date.now().toString(36).slice(-4)}`,
-          value: body.message.replace(/จำไว้ว่า|บันทึกความจำ|remember that|ตั้งกฎว่า/gi, "").trim(),
-          scope: "personal",
-          source: "explicit",
-          canDelete: true,
-        },
+      await rememberFact(userId, {
+        key: `rule_${Date.now().toString(36).slice(-4)}`,
+        value: body.message.replace(/จำไว้ว่า|บันทึกความจำ|remember that|ตั้งกฎว่า/gi, "").trim(),
+        scope: "personal",
+        source: "explicit",
       });
     }
 
@@ -125,7 +123,7 @@ export async function POST(req: NextRequest) {
         workedFor: "4s",
         steps: [
           { tool: "intent.classify", detail: `Classified as Work (${workKind}) — confidence ${(routed.confidence * 100).toFixed(0)}%` },
-          { tool: "memory.attach", detail: `Attached ${memories.length} memory rules into HandoffPacket` },
+          { tool: "memory.attach", detail: `Attached ${memoryCount} memory rules into HandoffPacket` },
           { tool: "billing.estimate", detail: `Estimated $${estimate.cost} (${estimate.minutes}m) on isolated Work ledger` },
         ],
         taskId: task.id,
@@ -151,6 +149,10 @@ export async function POST(req: NextRequest) {
         tokens: Math.ceil(body.message.length / 3),
         cost: 0.0,
       }).catch(() => {});
+
+      // Fire-and-forget memory writeback — must never block the handoff response
+      summarizeAndStore(userId, `${userMsg.content}\n---\n${assistantMsg.content}`, "chat").catch(() => {});
+      consolidateIfNeeded(userId).catch(() => {});
 
       return successResponse({
         message: userMsg,
@@ -187,7 +189,7 @@ Rules:
       provider: llmRes.provider,
       model: llmRes.model,
       steps: [
-        { tool: "memory.recall", detail: `โหลด ${memories.length} ความจำ (ส่วนตัว + ทีม)` },
+        { tool: "memory.recall", detail: `โหลด ${memoryCount} ความจำ (ส่วนตัว + ทีม)` },
         ...((body.images || []).length
           ? [{ tool: "vision.read", detail: `อ่านภาพที่แนบ ${(body.images || []).length} ภาพด้วย ${llmRes.model}` }]
           : []),
@@ -243,6 +245,10 @@ Rules:
       tokens: Math.ceil((body.message.length + llmRes.text.length) / 3),
       cost: 0.0,
     }).catch(() => {});
+
+    // Fire-and-forget memory writeback — must never block the chat response
+    summarizeAndStore(userId, `${userMsg.content}\n---\n${assistantMsg.content}`, "chat").catch(() => {});
+    consolidateIfNeeded(userId).catch(() => {});
 
     return successResponse({
       message: userMsg,

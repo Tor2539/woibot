@@ -3,6 +3,7 @@ import { getUserId } from "@/lib/auth";
 import { execInComputer } from "@/lib/computer";
 import { audit } from "@/lib/pg";
 import { prisma } from "@/lib/db";
+import { rememberFact } from "@/lib/memory";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -29,6 +30,8 @@ type Plan = {
   intent: "screenshot" | "note" | "run" | "open_app" | "list_files";
   cmd: string;
   label: string;
+  /** note intent only: the raw dictated note content, also persisted into Memory */
+  content?: string;
 };
 
 /* -- shell helpers ------------------------------------------------------- */
@@ -166,7 +169,7 @@ function planFor(text: string): Plan | null {
         'echo "saved: $f"',
         'tail -n 1 "$f"',
       ].join("; ");
-      return { intent: "note", cmd, label: `จดบันทึก: ${content.slice(0, 60)}` };
+      return { intent: "note", cmd, label: `จดบันทึก: ${content.slice(0, 60)}`, content };
     }
   }
 
@@ -312,6 +315,12 @@ export async function POST(req: NextRequest) {
     target: plan.intent,
     meta: { text: text.slice(0, 200), cmd: plan.cmd.slice(0, 300), code: exec.code },
   });
+
+  // note / จำไว้ intent: in addition to the workspace file write, persist the
+  // note content into long-term Memory (best-effort — response shape unchanged)
+  if (plan.intent === "note" && plan.content) {
+    rememberFact(userId, { key: "voice_note", value: plan.content, source: "voice", scope: "personal" }).catch(() => {});
+  }
 
   const stdout = (exec.ok ? exec.stdout : exec.stderr || exec.stdout).trim();
 
