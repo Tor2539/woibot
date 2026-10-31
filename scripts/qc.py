@@ -85,6 +85,20 @@ def main():
     comp = (comp or {}).get("computer", {})
     rec("computer.running", comp.get("status") == "running", comp.get("name"))
 
+    if not only or "computer" in only:
+        st, g, _ = c.call("/api/computer?action=geom", timeout=60)
+        rec("computer.geom", st == 200 and bool((g or {}).get("ok")),
+            f"{(g or {}).get('width')}x{(g or {}).get('height')}")
+        st, i, _ = c.call("/api/computer", {"action": "input", "kind": "click", "x": 960, "y": 540}, timeout=60)
+        rec("computer.input.click", st == 200 and bool((i or {}).get("ok")), json.dumps(i)[:140])
+        st, u, _ = c.call("/api/computer",
+                          {"action": "use", "goal": "คลิกที่จุดกลางจอหนึ่งครั้ง แล้วรายงานว่าเสร็จ (done)",
+                           "maxSteps": 3}, timeout=240)
+        steps = (u or {}).get("steps") or []
+        acted = any(s.get("action") == "click" for s in steps)
+        rec("computer.use.agent", st == 200 and bool((u or {}).get("ok")) and acted,
+            f"steps={len(steps)} summary={str((u or {}).get('summary'))[:80]}")
+
     kinds = []
     if not only or "doc" in only: kinds.append(("doc", "QC — รายงานผู้บริหาร", "เขียนรายงานผู้บริหารฉบับเต็มสำหรับผู้บริหารระดับสูง มีตาราง KPI และแผนก้าวต่อไปที่ชัดเจน"))
     if not only or "xlsx" in only: kinds.append(("data", "QC — ตาราง Excel ยอดขาย", "สร้างไฟล์ Excel (xlsx) สรุปยอดขายพร้อมสูตรและกราฟ"))
@@ -179,8 +193,23 @@ def main():
         rec("chat.vision", st == 200, json.dumps(res)[:160])
 
     if not only or "voice" in only:
-        st, res, _ = c.call("/api/voice/command", {"text": "ถ่ายภาพหน้าจอ"})
+        st, res, _ = c.call("/api/voice/command", {"text": "ลิสต์ไฟล์ใน workspace"})
         rec("voice.command", st == 200, json.dumps(res)[:200])
+        rec("voice.persisted", st == 200 and bool((res or {}).get("persisted")), json.dumps(res)[:140])
+        st, ch, _ = c.call("/api/chat?teammateId=tm_main", timeout=60)
+        msgs = ((ch or {}).get("data") or {}).get("messages") or []
+        voice_rows = [m for m in msgs if (m.get("meta") or {}).get("source") == "voice"]
+        rec("voice.chat_history", len(voice_rows) >= 2, f"{len(voice_rows)} persisted voice rows")
+
+    if not only or "memory" in only:
+        tok = "QC-MEMORY-" + str(int(time.time()))
+        st, res, _ = c.call("/api/chat", {"teammateId": "tm_main", "message": "จำไว้ว่า " + tok}, timeout=120)
+        rec("memory.write", st == 200, tok)
+        st, s, _ = c.call("/api/memories/search?q=" + urllib.parse.quote(tok), timeout=60)
+        hits = ((s or {}).get("results") or [])
+        rec("memory.recall", st == 200 and len(hits) > 0, f"{len(hits)} hits")
+        st, s2, _ = c.call("/api/memories/search?q=" + urllib.parse.quote("รายงานผู้บริหาร"), timeout=60)
+        rec("memory.semantic", st == 200 and isinstance((s2 or {}).get("results"), list), f"{len((s2 or {}).get('results') or [])} results")
 
     if not only or "team" in only:
         st, mates, _ = c.call("/api/teammate")
