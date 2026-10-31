@@ -222,6 +222,34 @@ def main():
         else:
             rec("team.group", False, "fewer than 2 teammates")
 
+    if not only or "router" in only:
+        # THE gap that once made the product look broken: work requests typed in
+        # chat must actually create Work tasks. Natural Thai phrasings, not API calls.
+        router_cases = [
+            ("สร้างเอกสารรายงานแผนการตลาดไตรมาส 4 ให้หน่อย", "doc"),
+            ("สร้างไฟล์ excel สรุปยอดขายรายเดือนให้ผม", "data"),
+            ("วิจัยและเปรียบเทียบคู่แข่งในตลาด AI ให้ผม", "research"),
+        ]
+        st0, t0, _ = c.call("/api/tasks", timeout=60)
+        before = {t.get("id") for t in (((t0 or {}).get("data") or {}).get("tasks") or [])}
+        for phrase, kind in router_cases:
+            st, res, _ = c.call("/api/chat", {"teammateId": "tm_main", "message": phrase}, timeout=180)
+            routed = ((res or {}).get("data") or {}).get("routed") or {}
+            rec(f"router.classify.{kind}", st == 200 and routed.get("product") == "work" and routed.get("workKind") == kind,
+                f"routed={routed.get('product')}/{routed.get('workKind')}")
+        # wait briefly for the auto-run to register the tasks, then confirm existence
+        deadline = time.time() + 45
+        created: dict = {}
+        while time.time() < deadline and len(created) < 3:
+            st, t1, _ = c.call("/api/tasks", timeout=60)
+            for t in (((t1 or {}).get("data") or {}).get("tasks") or []):
+                if t.get("id") not in before and t.get("createdAt", "") >= "2026-10-31":
+                    for phrase, kind in router_cases:
+                        if phrase[:24] in str(t.get("goal") or ""):
+                            created[kind] = t.get("status")
+            time.sleep(4)
+        rec("router.tasks.created", len(created) == 3, json.dumps(created))
+
     ok = sum(1 for _, o, _ in results if o)
     total = len(results)
     print(f"\n{'='*60}\nQC RESULT: {ok}/{total} checks passed")

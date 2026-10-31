@@ -70,16 +70,49 @@ export async function canAffordWork(userId: string, estimatedCost: number) {
 // Intent router per PRD 7.1
 export function routeIntent(input: string): { product: "teammate" | "work"; workKind?: WorkKind; confidence: number; reason: string } {
   const s = input.toLowerCase();
-  // work triggers — Thai + English
-  if (/(สร้างเว็บ|สร้างแอป|สร้างระบบ|build|create.*app|ทำคลิป|วิดีโอ|video|generate|รายงาน.*หน้า|presentation|วิเคราะห์.*ข้อมูล|research|เอกสาร.*หน้า|ทำสไลด์|ทำกราฟ|dashboard|compare|สัญญา|contract)/.test(s)) {
-    let kind: WorkKind = "coding";
-    if (/วิดีโอ|video|คลิป|tiktok|reel|shorts/.test(s)) kind = s.includes("วิเคราะห์") || s.includes("ตัด") || s.includes("analysis") || s.includes("edit") ? "video_analysis" : "video_gen";
-    else if (/เอกสาร|รายงาน|presentation|proposal|pdf|docx|pptx|สไลด์|คู่มือ/.test(s)) kind = "doc";
-    else if (/วิจัย|research|วิเคราะห์.*ตลาด|competitor|compare|ตลาด/.test(s)) kind = "research";
-    else if (/ยอดขาย|ข้อมูล|excel|csv|dashboard|kpi|forecast|กราฟ/.test(s)) kind = "data";
-    return { product: "work", workKind: kind, confidence: 0.92, reason: "ตรวจพบคำสั่งสร้างผลงาน (deliverable) ต้องใช้ Work" };
+
+  /* Deliverable routing: a real creation request = creation verb + work noun.
+     This matches how people actually type ("สร้างเอกสารรายงาน...", "ทำไฟล์ word",
+     "เขียนรายงานสรุปยอดขายเป็นเอกสาร PDF") — the old regex only knew a few
+     fixed phrases and sent everything else to chat, which made the product
+     look broken even though the harness was fine. */
+  const CREATE_VERB = /(สร้าง|จัดทำ|ร่าง|ออกแบบ|สั่งทำ|สรุปเป็น|แปลงเป็น|ทำเป็น|ทำไฟล์|(?<!ทำไม)ทำ|(?<!ช่วยไม)เขียน|convert|create|make|generate|build|write|draft|produce|prepare)/;
+  const QUESTION_ONLY = /(คืออะไร|ดียังไง|มีกี่|อธิบาย|แนะนำ|หน่อยว่า|ใช่ไหม|ยังไง|\?|？)/;
+  const DOC_NOUN = /(เอกสาร|ไฟล์|document|file|docx|\.doc\b|word|pdf|excel|xlsx|csv|สไลด์|slide|pptx|แฟ้ม|รายงาน|report|ข้อเสนอ|proposal|สัญญา|contract|จดหมาย|หนังสือ|คู่มือ|แบบฟอร์ม|ใบเสนอราคา|ใบเสร็จ|presentation|บทความ|แผนการ|แผนงาน|memo|ใบปะหน้า)/;
+  const DATA_NOUN = /(excel|xlsx|csv|ตารางข้อมูล|กราฟ|kpi|dashboard|forecast|พยากรณ์|ยอดขาย|สถิติ|ชุดข้อมูล|spreadsheet)/;
+  const VIDEO_NOUN = /(วิดีโอ|คลิป|video|tiktok|reel|shorts|ตัดต่อ|vdo)/;
+  const IMAGE_NOUN = /(โปสเตอร์|โลโก้|logo|banner|โพสต์|ภาพประกอบ|illustration|poster|อินโฟกราฟิก|infographic)/;
+  const RESEARCH_NOUN = /(วิจัย|research|ตลาด|competitor|คู่แข่ง|compare|เปรียบเทียบ|เทรนด์|trend)/;
+  const CODE_NOUN = /(เว็บ|แอป|app|website|เว็บไซต์|ระบบ|โปรแกรม|โค้ด|code|script|เกม|game|หน้าเว็บ|landing|dashboard|cms|api)/;
+
+  const wantsWork = CREATE_VERB.test(s) && !QUESTION_ONLY.test(s);
+  if (!wantsWork) {
+    return { product: "teammate", confidence: 0.88, reason: "งานประจำวัน/ถามตอบ — Teammate ทำได้โดยตรง" };
   }
-  return { product: "teammate", confidence: 0.88, reason: "งานประจำวัน/ถามตอบ — Teammate ทำได้โดยตรง" };
+
+  let kind: WorkKind = "coding";
+  let reason = "ตรวจพบคำสั่งสร้างผลงาน (deliverable) ต้องใช้ Work";
+  if (VIDEO_NOUN.test(s)) {
+    kind = /(วิเคราะห์|ตัด|analysis|edit|สรุปคลิป|ไฮไลต์)/.test(s) ? "video_analysis" : "video_gen";
+    reason = "ตรวจพบงานวิดีโอ — ใช้ Work video pipeline";
+  } else if (/(เอกสาร|docx|\.doc\b|word|pdf|รายงาน|ข้อเสนอ|proposal|สัญญา|จดหมาย|คู่มือ|แบบฟอร์ม|ใบเสนอราคา|ใบเสร็จ|สไลด์|slide|pptx|presentation|บทความ)/.test(s)) {
+    kind = "doc";
+    reason = "ตรวจพบคำขอเอกสาร/รายงาน — ใช้ Work document pipeline";
+  } else if (DATA_NOUN.test(s)) {
+    kind = "data";
+    reason = "ตรวจพบงานข้อมูล/ตาราง — ใช้ Work data pipeline";
+  } else if (RESEARCH_NOUN.test(s)) {
+    kind = "research";
+    reason = "ตรวจพบงานวิจัย/วิเคราะห์ — ใช้ Work research pipeline";
+  } else if (IMAGE_NOUN.test(s)) {
+    kind = "image";
+    reason = "ตรวจพบงานภาพ/โปสเตอร์ — ใช้ Work image pipeline";
+  } else if (CODE_NOUN.test(s)) {
+    kind = "coding";
+    reason = "ตรวจพบงานสร้างแอป/เว็บ — ใช้ Woibot Coder";
+  }
+
+  return { product: "work", workKind: kind, confidence: 0.92, reason };
 }
 
 export async function createTaskFromHandoff(userId: string, packet: HandoffPacket, workKind: WorkKind) {

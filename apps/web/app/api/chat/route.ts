@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserId, errorResponse, successResponse, safeJsonParse } from "@/lib/auth";
-import { routeIntent, createTaskFromHandoff } from "@/lib/harness";
+import { routeIntent, createTaskFromHandoff, executeTask } from "@/lib/harness";
 import { recordUsage } from "@/lib/billing";
 import { callWoibotLLM } from "@/lib/llm";
 import { recallContext, rememberFact, summarizeAndStore, consolidateIfNeeded } from "@/lib/memory";
@@ -117,6 +117,11 @@ export async function POST(req: NextRequest) {
 
       const { task, estimate } = await createTaskFromHandoff(userId, packet as never, workKind);
 
+      // Auto-run: the user asked for this deliverable in chat, so start it
+      // immediately (per-task cost cap still applies in billing). The Work
+      // tab shows live progress; nothing waits for a second approval click.
+      void executeTask(task.id).catch(() => {});
+
       const handoffMeta = {
         handoff: true,
         cardType: "handoff-card",
@@ -125,6 +130,7 @@ export async function POST(req: NextRequest) {
           { tool: "intent.classify", detail: `Classified as Work (${workKind}) — confidence ${(routed.confidence * 100).toFixed(0)}%` },
           { tool: "memory.attach", detail: `Attached ${memoryCount} memory rules into HandoffPacket` },
           { tool: "billing.estimate", detail: `Estimated $${estimate.cost} (${estimate.minutes}m) on isolated Work ledger` },
+          { tool: "work.autorun", detail: `Started execution immediately — no extra approval needed` },
         ],
         taskId: task.id,
         trace_id,
@@ -138,7 +144,7 @@ export async function POST(req: NextRequest) {
           teammateId: teammate.id,
           userId,
           role: "assistant",
-          content: `งานนี้เป็นงานสร้างผลงานระดับมืออาชีพ ผมบรรจุบริบททั้งหมดลงใน **Handoff Packet (${trace_id})** และส่งต่อให้ **woibot Work (${workKind.toUpperCase()})** เรียบร้อยครับ\n\nคุณสามารถกด **Approve & Run** ในการ์ดด้านล่าง หรือสลับไปแท็บ **Work** เพื่อดูขั้นตอนสดได้ทันทีโดยไม่ต้องพิมพ์บริบทซ้ำ`,
+          content: `รับทราบครับ — เริ่มทำงานให้ทันทีแล้ว (Work/${workKind}) โดยไม่ต้องกดอนุมัติซ้ำ\n\n• ประมาณการ: $${estimate.cost} · ~${estimate.minutes} นาที\n• ทุกไฟล์ที่ได้จะผ่านการตรวจสอบจริง (verification) ก่อนส่งมอบ\n• ติดตามความคืบหน้าแบบสดที่การ์ดด้านล่าง หรือแท็บ **Work**`,
           meta: JSON.stringify(handoffMeta),
         },
       });
