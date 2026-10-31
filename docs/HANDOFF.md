@@ -84,11 +84,21 @@ ensureComputer(userId)  ← ถ้า container ไม่รัน = งาน f
 
 ## 6. งานที่ยังค้าง (ต้องทำต่อ)
 
-1. ~~noVNC ควบคุมเมาส์/คีย์บอร์ด~~ **ทำแล้วแบบต่างกัน**: ควบคุมจริงด้วย xdotool ผ่าน `/api/computer` (`action=input`) + แผง "AI คุมคอมให้" (computer-use loop, DeepSeek vision มองภาพ → สั่ง → xdotool ขยับจริง) + CursorFX จุดฟ้าเห็นบนจอ (หลักฐาน pixel probe). noVNC iframe ยังเปิดได้พร้อมข้อความ fallback อย่างตรงไปตรงมา
-2. ~~ไมโครโฟนจริง + persist voice turns~~ **persist แล้ว**: ทุก turn เสียง "action" ถูกบันทึกเป็น ChatMessage 2 แถว (meta.source=voice) — ทดสอบไมค์จริงใน Chrome ยังต้องมีคนพูดต่อ (QC ตรวจ server-side แล้ว)
-3. **Managed cert บน Load Balancer**: `FAILED_NOT_VISIBLE` — TLS ปัจจุบัน terminate ที่ Caddy บน VM (VM เป็น SPOF ของหน้าเว็บ); LB + NEG สร้างไว้แล้ว สลับได้เมื่อ cert ACTIVE
-4. **Billing/ตัดบัตร**: ยังไม่ต่อ payment gateway (ผู้ใช้สั่งเลื่อน) — แต่ quota/cap ทำงานแล้ว
-5. **Benchmark teammate ≥ 9/10**: สคริปต์พร้อม `python scripts/benchmark_teammate.py` — ยิงกับ prod หลัง deploy แล้วเก็บรายงาน
+### ผลสนามจริง 5 เอเจนต์ (2026-10-31 รอบที่ 2) — ทุกอย่างแก้แล้ว deploy 00040 + image v10
+- **Security ที่เคยรั่ว (แก้แล้ว)**: artifacts PATCH/DELETE ไม่มี auth (ใครก็ลบของใครก็ได้) → ownership checks; chat teammateId ข้ามบัญชี (cross-tenant) → scope ด้วย userId; cron fail-open → fail-closed; billing quota guard ถูก bypass (pg.ts กลืน {increment} เป็น jsonb) → SQL arithmetic จริง + NaN-safe; secrets ไม่เคยออก plaintext
+- **Honesty ที่เคยรั่ว (แก้แล้ว)**: Video Studio/CRM demo ปลอมทั้งชุด, ledger $5.75 ปลอม, ปุ่ม Save หลอก, sidebar badge ปลอม, deliverable ปลอมบน files page — ลบ/ต่อ API จริงหมด
+- **Stability (แก้แล้ว)**: LibreOffice race (2 งานขนานแย่ง profile ตายเงียบ) → unique profile ต่อ call + verify output + retry; ชื่อไฟล์ชนกัน (`4.docx`) → readable slug + task hash; spreadsheet JSON โดนตัด (budget) → 3 attempts + compact fallback; verification boot-race → exec retry; screen/stats/voice-path fixes; computer-use prompt (append-vs-replace, Return-after-type)
+- **Context bug รากฐาน (แก้แล้ว)**: แชทเคยส่งแค่ข้อความปัจจุบันให้โมเดล (stateless ข้ามเทิร์น) → ใส่ประวัติ 10 เทิร์น + กฎสรรพนาม/state-latest-wins — **context_test 5/5** (recall สรรพนาม, inference วันที่, state update, negation)
+- **Router (แก้แล้ว)**: จับ "คำกริยาสร้าง + นามผลงาน" ตามที่คนพิมพ์จริง (สร้างเอกสาร/ไฟล์ word/pdf/excel/วิจัย...) + question guard + **แชทสั่ง = รันทันที** — QC router 6/6
+- **Computer image v10**: xterm + l3afpad + pcmanfm (คำสั่งเสียง "เปิด terminal/editor/file manager" ใช้ได้จริง)
+
+### ค้างจริง ๆ
+1. ทดสอบไมค์จริงใน Chrome (ต้องมีคนพูด — server-side ยืนยันแล้ว)
+2. Managed cert บน LB เมื่อ GCP แจ้ง ACTIVE (VM ยังเป็น SPOF ของ TLS)
+3. Billing/payment gateway (ผู้ใช้สั่งเลื่อน)
+4. Manager exec latency spikes (15-17s บางครั้ง) — ต้องไล่ฝั่ง manager บน VM
+5. vncPath ส่ง MANAGER_TOKEN กลับให้ผู้ใช้ (จำเป็นต่อ noVNC แต่ token เดียวใช้ร่วมทุก container — ควรทำ per-user token ฝั่ง manager ในอนาคต)
+6. ผล benchmark 9.21/10 ควรรันซ้ำหลัง deploy รอบสนามนี้ (คำตอบแชทฉลาดขึ้นจาก history fix)
 
 ### ของใหม่ที่เพิ่มเข้ามา (rev.2)
 - **Woibot Coder**: งาน coding ใช้ agent-loop รันใน container ของผู้ใช้ (opencode CLI white-label, โมเดล GLM ผ่าน Together) — รับงานยาว 12 นาที, ผลงาน `coder/<slug>/` + REPORT.md + preview.png, fallback staged generator เมื่อ CLI ไม่มี
