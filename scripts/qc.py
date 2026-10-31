@@ -6,7 +6,7 @@ Run:  python scripts/qc.py [--base https://woibot.com]
 Exit code 0 only when every check passes. Each check prints PASS/FAIL with the
 evidence it actually received (no optimistic defaults).
 """
-import argparse, base64, json, os, sys, time, urllib.request, urllib.error, urllib.parse, http.cookiejar
+import argparse, base64, html, io, json, os, re, sys, time, urllib.request, urllib.error, urllib.parse, http.cookiejar, zipfile
 
 EMAIL = os.environ.get("QC_EMAIL", "takin@woibot.com")
 PASSWORD = os.environ.get("QC_PASSWORD", "Woibot-Strong-Pass-2026")
@@ -16,6 +16,33 @@ results = []
 def rec(name, ok, detail=""):
     results.append((name, ok, detail))
     print(("PASS " if ok else "FAIL ") + name + ("  — " + str(detail)[:180] if detail else ""))
+
+
+def pdf_pages(blob):
+    """Page count of a PDF: /Type/Page objects, falling back to the page-tree
+    /Count when page objects are hidden inside compressed object streams."""
+    if not blob:
+        return 0
+    n = len(re.findall(rb"/Type\s*/Page(?![sS])", blob))
+    if n == 0:
+        counts = [int(x) for x in re.findall(rb"/Count\s+(\d+)", blob)]
+        n = max(counts) if counts else 0
+    return n
+
+
+def visible_text(markup):
+    """Strip script/style blocks and tags, unescape entities -> visible text."""
+    t = re.sub(r"(?is)<(script|style)\b[^>]*>.*?</\1>", " ", markup)
+    t = re.sub(r"(?s)<[^>]+>", " ", t)
+    return html.unescape(t)
+
+
+def count_words(text):
+    """Latin words are whitespace tokens; Thai written text carries no spaces,
+    so Thai characters are estimated at ~5 characters per word."""
+    latin = len(re.findall(r"[A-Za-z0-9]+", text))
+    thai = len(re.findall(r"[\u0e01-\u0e4f]", text))
+    return latin + thai // 5
 
 class Client:
     def __init__(self, base):
@@ -59,7 +86,7 @@ def main():
     rec("computer.running", comp.get("status") == "running", comp.get("name"))
 
     kinds = []
-    if not only or "doc" in only: kinds.append(("doc", "QC — รายงานผู้บริหาร", "เขียนรายงานผู้บริหาร 3 หัวข้อ มีตาราง KPI"))
+    if not only or "doc" in only: kinds.append(("doc", "QC — รายงานผู้บริหาร", "เขียนรายงานผู้บริหารฉบับเต็มสำหรับผู้บริหารระดับสูง มีตาราง KPI และแผนก้าวต่อไปที่ชัดเจน"))
     if not only or "xlsx" in only: kinds.append(("data", "QC — ตาราง Excel ยอดขาย", "สร้างไฟล์ Excel (xlsx) สรุปยอดขายพร้อมสูตรและกราฟ"))
     if not only or "csv" in only: kinds.append(("data", "QC — ไฟล์ CSV ลูกค้า", "สร้างไฟล์ csv รายชื่อลูกค้าพร้อมคอลัมน์พื้นฐาน"))
     if not only or "research" in only: kinds.append(("research", "QC — วิเคราะห์ตลาด AI teammate", "เปรียบเทียบผู้เล่นหลักและอ้างอิงแหล่งข้อมูล"))
@@ -77,7 +104,9 @@ def main():
         task_ids[kind] = tid
         rec(f"task.create.{kind}", True, tid)
 
-        st, run, _ = c.call(f"/api/tasks/{tid}/run", {}, timeout=300)
+        # the doc pipeline runs 10+ sequential LLM calls, give it room
+        run_timeout = 900 if kind == "doc" else 300
+        st, run, _ = c.call(f"/api/tasks/{tid}/run", {}, timeout=run_timeout)
         st2, fresh, _ = c.call(f"/api/tasks/{tid}")
         task = (fresh or {}).get("data") or (fresh or {}).get("task") or (run or {}).get("task") or {}
         ver = (run or {}).get("verification") or {}
@@ -89,6 +118,33 @@ def main():
         if files:
             st, blob, headers = c.call(f"/api/tasks/{tid}/deliverable?path={urllib.parse.quote(files[0])}", raw=True)
             rec(f"task.download.{kind}", st == 200 and len(blob) > 80, f"{len(blob)} bytes {headers.get('Content-Type')}")
+
+        # document quality gate: the doc pipeline must produce a LONG report
+        # (cover + TOC + 8-14 page-broken sections >= 7 pages; 8-14 sections
+        # x 180-350 words >= 1200 words, Thai estimated at ~5 chars/word)
+        if kind == "doc" and files:
+            blobs = {}
+            for fname in files:
+                stf, blobf, _hdr = c.call(f"/api/tasks/{tid}/deliverable?path={urllib.parse.quote(fname)}", raw=True)
+                if stf == 200 and blobf:
+                    blobs[fname] = blobf
+            pdf_blob = next((b for f, b in blobs.items() if f.lower().endswith(".pdf")), b"")
+            pages = pdf_pages(pdf_blob)
+            rec("task.doc.pages>=7", pages >= 7, f"{pages} pages from PDF ({len(pdf_blob)} bytes)")
+            html_blob = next((b for f, b in blobs.items() if f.lower().endswith(".html")), b"")
+            words, src = 0, "none"
+            if html_blob:
+                words, src = count_words(visible_text(html_blob.decode("utf-8", "ignore"))), "html"
+            else:
+                docx_blob = next((b for f, b in blobs.items() if f.lower().endswith(".docx")), b"")
+                if docx_blob:
+                    try:
+                        with zipfile.ZipFile(io.BytesIO(docx_blob)) as z:
+                            words = count_words(visible_text(z.read("word/document.xml").decode("utf-8", "ignore")))
+                            src = "docx"
+                    except Exception as e:
+                        src = f"docx-error:{e}"
+            rec("task.doc.words>=1200", words >= 1200, f"~{words} words from {src}")
 
     if not only or "chat" in only:
         st, res, _ = c.call("/api/chat", {"teammateId": "tm_main", "message": "ตอบสั้นๆ: วันนี้ฉันควรโฟกัสอะไร"})

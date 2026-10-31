@@ -7,10 +7,12 @@
  * is treated as a failure, not a success.
  *
  * Tooling assumed present in the container image (Debian 12):
- *   python3 (stdlib zipfile -> DOCX), openpyxl (XLSX), LibreOffice (PDF only).
- * LibreOffice is used for PDF export only: the image has no HTML->DOCX export
- * filter, so DOCX is written directly as OOXML. soffice also needs its own
- * HOME and profile dir or it refuses to start as a headless service user.
+ *   python3 (stdlib html.parser + zipfile -> DOCX; openpyxl -> XLSX),
+ *   LibreOffice (HTML->DOCX and DOCX->PDF).
+ * soffice needs its own HOME and profile dir or it refuses to start as a
+ * headless service user. The image was reported to lack the HTML->DOCX export
+ * filter at some point, so the document producer falls back to a python3
+ * stdlib OOXML builder whenever the LibreOffice conversion produces nothing.
  */
 import type { AgentContext, AgentResult } from "../agent";
 import { execInContainer, runScript, writeWorkspaceFile, WORK_DIR } from "../container";
@@ -68,41 +70,42 @@ function unfence(text: string) {
 /* --------------------------------------------------------------- documents */
 
 /**
- * One JSON spec is the single source of truth for both outputs:
- *   spec.json -> _mkdocx.py (python3 stdlib, real WordprocessingML) -> .docx
- *   spec.json -> HTML -> soffice --convert-to pdf -> .pdf
+ * Structure-first document pipeline (report -> DOCX + PDF + HTML):
  *
- * LibreOffice's HTML->DOCX export filter is NOT used: the writer_web_docx
- * filter is missing from the container image ("no export filter found"), so
- * DOCX is built directly from OOXML parts with zipfile.
+ *   (a) OUTLINE  one LLM call returns a JSON skeleton
+ *                {title, subtitle, language, audience, sections:[{heading, points[3-6], has_table}]}
+ *                with 8-14 sections; one retry when the JSON is unparseable,
+ *                one repair call when the outline comes back too thin.
+ *   (b) BODY     one LLM call PER SECTION expanding the outline point list
+ *                into semantic HTML (h2 + rich paragraphs + ul/ol + optional
+ *                table built from the points + key-takeaway blockquote,
+ *                180-350 words per section, maxTokens 3200, retried once with
+ *                a higher budget when the reply is empty).
+ *   (c) ASSEMBLE premium print HTML: A4 print CSS (22mm/18mm margins, footer
+ *                page numbers via @page @bottom-center), Noto Sans Thai
+ *                typography with serif fallback, cover page with the Woibot
+ *                Document wordmark (no upstream tool names), auto table of
+ *                contents (static list, sections numbered 1., 2., ...),
+ *                numbered h2 sections with clean page breaks, styled tables,
+ *                callout blockquotes and the closing "สรุปและก้าวต่อไป"
+ *                section. The HTML itself is a deliverable.
+ *   (d) CONVERT  HTML -> DOCX with LibreOffice (HOME=/tmp soffice, the same
+ *                pattern as the historical produceDocument), then DOCX -> PDF;
+ *                every step is verified on disk and errors out loudly. If the
+ *                container image lacks the HTML->DOCX export filter, a
+ *                python3 stdlib builder creates the same DOCX from the same
+ *                HTML, and page numbers are injected into the footer.
+ *
+ * Prompts forbid invented statistics: unknown numbers must stay in
+ * [brackets] as placeholders. Thai/English follows the language of the brief.
  */
-
-type DocTable = { headers?: (string | number)[]; rows?: (string | number | null)[][] };
-type DocSection = { heading?: string; paragraphs?: string[]; bullets?: string[]; table?: DocTable };
-type DocSpec = { title?: string; subtitle?: string; sections?: DocSection[] };
-
-const DOC_SYSTEM =
-  "You are a senior business writer producing a complete, print-ready document. " +
-  "Answer with ONE JSON object only: no prose, no markdown fences, no comments. Schema:\n" +
-  '{"title":string,"subtitle":string,' +
-  '"sections":[{"heading":string,"paragraphs":[string,...],"bullets":[string,...],' +
-  '"table":{"headers":[string,...],"rows":[[string|number,...],...]}}]}\n' +
-  "Rules:\n" +
-  "- 4 to 6 sections. Each heading is short and concrete.\n" +
-  "- Every section has 1-3 paragraphs; each paragraph is 2-4 full sentences of real substance (no filler, no restating the brief).\n" +
-  "- Add 3-6 bullets only where a list is genuinely clearer; otherwise omit the key.\n" +
-  "- Include a table in at most two sections (3-5 headers, 3-8 rows). Omit the key entirely when no table is warranted.\n" +
-  "- Write in the language of the brief.\n" +
-  "- Never invent statistics, names, dates, or citations. If a figure is needed but unknown, write it as [placeholder] instead of guessing.\n" +
-  "- The last section must be 'Next steps' with concrete owners and actions.\n" +
-  "- Return at least 3 sections, each with 2-4 paragraphs of 80+ words. A thin outline is not acceptable.";
 
 /** Pull the first JSON object out of an LLM reply and repair common damage. */
 function extractJson<T>(text: string): T | null {
   const raw = unfence(String(text || ""));
   const start = raw.indexOf("{");
   if (start < 0) return null;
-  let body = raw.slice(start);
+  const body = raw.slice(start);
   const attempts: string[] = [];
   const lastBrace = body.lastIndexOf("}");
   if (lastBrace > 0) attempts.push(body.slice(0, lastBrace + 1));
@@ -125,158 +128,483 @@ function extractJson<T>(text: string): T | null {
   return null;
 }
 
-async function fetchDocSpec(ctx: AgentContext): Promise<DocSpec> {
-  const base = `Brief: ${ctx.goal}\nDocument title: ${ctx.title}`;
-  const strict = `${base}\n\nReply with one JSON object only. It must start with { and end with }. No prose, no markdown fences.`;
+type OutlineSection = { heading: string; points: string[]; has_table: boolean };
+type DocOutline = {
+  title: string;
+  subtitle: string;
+  language: "th" | "en";
+  audience: string;
+  sections: OutlineSection[];
+};
 
-  // Attempt 1: plain completion asked for JSON (most reliable on DeepSeek V4.1 Flash)
-  let spec = extractJson<DocSpec>(
-    (await callWoibotLLM({ system: DOC_SYSTEM, user: strict, maxTokens: 6000, temperature: 0.3 })).text,
+const OUTLINE_SYSTEM =
+  "You are a senior document architect designing a premium, print-ready business report. " +
+  "Answer with ONE JSON object only: no prose, no markdown fences, no comments. Schema:\n" +
+  '{"title":string,"subtitle":string,"language":"th"|"en","audience":string,' +
+  '"sections":[{"heading":string,"points":[string,...],"has_table":boolean}]}\n' +
+  "Rules:\n" +
+  "- 10 to 12 sections, never fewer than 8.\n" +
+  "- The FIRST section is an executive summary (บทสรุปผู้บริหาร / Executive Summary).\n" +
+  "- The LAST section must be exactly 'สรุปและก้าวต่อไป' for a Thai brief or 'Summary and Next Steps' for an English brief.\n" +
+  "- Order the rest like a real report: context and background, current state, analysis, options, plan, resources, risks, KPIs.\n" +
+  "- Every section carries 3-6 short, concrete 'points' that a writer will expand into prose later. Points are directions, not finished sentences.\n" +
+  "- has_table:true for at most 3 sections where a table is genuinely the clearest format, otherwise false.\n" +
+  "- 'language' mirrors the language of the brief ('th' or 'en'); every heading and point is written in that same language.\n" +
+  "- 'audience' names who the document is written for, in one short phrase.\n" +
+  "- Never invent statistics, names, dates or citations.";
+
+const CLOSING_HEADING = { th: "สรุปและก้าวต่อไป", en: "Summary and Next Steps" } as const;
+
+/** Deterministic sections used to top up an outline that came back too thin. */
+const FILLER_SECTIONS: Record<"th" | "en", OutlineSection[]> = {
+  th: [
+    {
+      heading: "ปัจจัยความสำเร็จและตัวชี้วัดงาน",
+      points: [
+        "ปัจจัยที่ทำให้แผนนี้สำเร็จได้จริง",
+        "ตัวชี้วัดที่ใช้ติดตามความคืบหน้า (ระบุค่าเป้าหมายเป็น [placeholder] หากไม่ทราบ)",
+        "วิธีวัดผลและรอบการทบทวนตัวชี้วัด",
+      ],
+      has_table: true,
+    },
+    {
+      heading: "ความเสี่ยงและข้อจำกัดที่ต้องจับตา",
+      points: [
+        "ความเสี่ยงหลักที่อาจทำให้แผนเหลื่อมล้ม",
+        "ข้อจำกัดด้านข้อมูล ทรัพยากร และเวลา",
+        "แนวทางลดความเสี่ยงที่เริ่มได้ทันที",
+      ],
+      has_table: false,
+    },
+    {
+      heading: "แผนการดำเนินงานและไทม์ไลน์โดยประมาณ",
+      points: [
+        "ขั้นตอนการดำเนินงานจากต้นจนจบ",
+        "งานที่ทำขนานกันได้และงานที่ต้องรอผลก่อน",
+        "จุดตรวจสอบความคืบหน้าในแต่ละงวด",
+      ],
+      has_table: false,
+    },
+  ],
+  en: [
+    {
+      heading: "Success Factors and KPIs",
+      points: [
+        "Factors that make this plan realistically succeed",
+        "Metrics used to track progress (target values as [placeholder] when unknown)",
+        "How each metric is measured and reviewed",
+      ],
+      has_table: true,
+    },
+    {
+      heading: "Risks and Limitations to Watch",
+      points: [
+        "Primary risks that could derail the plan",
+        "Data, resource and time constraints",
+        "Risk mitigations that can start immediately",
+      ],
+      has_table: false,
+    },
+    {
+      heading: "Execution Plan and Indicative Timeline",
+      points: [
+        "End-to-end execution steps",
+        "Work that can run in parallel versus work that must wait",
+        "Progress checkpoints per period",
+      ],
+      has_table: false,
+    },
+  ],
+};
+
+function detectDocLang(ctx: AgentContext): "th" | "en" {
+  return /[\u0e00-\u0e7f]/.test(`${ctx.title} ${ctx.goal}`) ? "th" : "en";
+}
+
+function isParsableOutline(p: unknown): p is Partial<DocOutline> & { sections: unknown[] } {
+  if (!p || typeof p !== "object") return false;
+  const o = p as Partial<DocOutline>;
+  if (!Array.isArray(o.sections)) return false;
+  const good = o.sections.filter(
+    (s) =>
+      s &&
+      typeof s === "object" &&
+      typeof (s as OutlineSection).heading === "string" &&
+      !!(s as OutlineSection).heading.trim(),
   );
+  return good.length >= 6;
+}
 
-  // Attempt 2: JSON response format
-  if (!spec) {
-    spec = extractJson<DocSpec>(
-      (await callWoibotLLM({ system: DOC_SYSTEM, user: strict, maxTokens: 6000, temperature: 0.2 })).text,
-    );
-  }
-
-  // Attempt 3: ask for a compact skeleton, then expand later
-  if (!spec) {
-    spec = extractJson<DocSpec>(
-      (await callWoibotLLM({
-        system: "Return a compact JSON document spec: {\"title\":string,\"subtitle\":string,\"sections\":[{\"heading\":string,\"paragraphs\":[string],\"bullets\":[string]}]}",
-        user: strict,
-        maxTokens: 5000,
-        temperature: 0.1,
-      })).text,
-    );
-  }
-
-  if (!spec) {
-    throw new Error("AI ไม่ได้ตอบกลับเป็นโครงเอกสาร (JSON) — สร้างเอกสารไม่ได้");
-  }
-
-  let sections = (Array.isArray(spec.sections) ? spec.sections : [])
-    .filter((s): s is DocSection => !!s && typeof s === "object")
-    .map((s) => ({
-      heading: String(s.heading || "").slice(0, 140),
-      paragraphs: (Array.isArray(s.paragraphs) ? s.paragraphs : []).map((p) => String(p)).filter((p) => p.trim()).slice(0, 4),
-      bullets: (Array.isArray(s.bullets) ? s.bullets : []).map((b) => String(b)).filter((b) => b.trim()).slice(0, 8),
-      table:
-        s.table && typeof s.table === "object" && Array.isArray((s.table as DocTable).headers)
-          ? {
-              headers: ((s.table as DocTable).headers || []).map((h) => String(h)).slice(0, 8),
-              rows: (((s.table as DocTable).rows || []) as (string | number | null)[][])
-                .filter((r) => Array.isArray(r))
-                .slice(0, 30),
-            }
-          : undefined,
-    }))
-    .filter((s) => s.heading || (s.paragraphs && s.paragraphs.length));
-
-  let chars = sections.reduce((n, s) => n + (s.paragraphs || []).join(" ").length, 0);
-
-  // A thin reply is a model hiccup, not a user error: ask once to expand it.
-  if (sections.length < 3 || chars < 900) {
-    const expanded = extractJson<DocSpec>(
-      (await callWoibotLLM({
-        system:
-          DOC_SYSTEM +
-          "\n\nExpand the document: every section needs 2-4 full paragraphs of at least 80 words each. " +
-          "Keep the same JSON shape. Return JSON only.",
-        user: `Brief: ${ctx.goal}\nTitle: ${ctx.title}\n\nCurrent draft (too thin):\n${JSON.stringify(spec).slice(0, 2500)}`,
-        maxTokens: 6000,
-        temperature: 0.5,
-      })).text,
-    );
-    if (expanded?.sections?.length) {
-      const retrySections = (expanded.sections as DocSection[])
-        .filter((x) => x && (x.heading || x.paragraphs?.length))
-        .map((x) => ({
-          heading: String(x.heading || "").slice(0, 140),
-          paragraphs: (x.paragraphs || []).map(String).filter((x2) => x2.trim()).slice(0, 6),
-          bullets: (x.bullets || []).map(String).filter((x2) => x2.trim()).slice(0, 8),
-          table: x.table,
-        }));
-      const retryChars = retrySections.reduce((n, x) => n + (x.paragraphs || []).join(" ").length, 0);
-      if (retrySections.length >= sections.length && retryChars > chars) {
-        sections = retrySections as any;
-        chars = retryChars;
-        if (expanded.title) spec.title = expanded.title;
-      }
-    }
-  }
-
-  if (sections.length < 2 || chars < 400) {
-    throw new Error(
-      `AI ให้เนื้อหาน้อยเกินไป (${sections.length} หัวข้อ, ${chars} ตัวอักษร) แม้ลองขยายแล้ว — ลองรันอีกครั้ง`,
-    );
-  }
-
+function normalizeOutline(p: Partial<DocOutline>, ctx: AgentContext): DocOutline {
+  const lang: "th" | "en" = p.language === "en" ? "en" : p.language === "th" ? "th" : detectDocLang(ctx);
+  const sections = (Array.isArray(p.sections) ? p.sections : [])
+    .map((raw): OutlineSection | null => {
+      const s = raw as Partial<OutlineSection>;
+      const heading = String(s.heading || "").trim().slice(0, 140);
+      if (!heading) return null;
+      const points = (Array.isArray(s.points) ? s.points : [])
+        .map((x) => String(x).trim())
+        .filter(Boolean)
+        .slice(0, 6);
+      return { heading, points: points.length ? points : [heading], has_table: s.has_table === true };
+    })
+    .filter((s): s is OutlineSection => !!s)
+    .slice(0, 14);
   return {
-    title: String(spec.title || ctx.title).slice(0, 160),
-    subtitle: String(spec.subtitle || "").slice(0, 240),
+    title: String(p.title || "").trim().slice(0, 160) || ctx.title.slice(0, 160),
+    subtitle: String(p.subtitle || "").trim().slice(0, 240),
+    language: lang,
+    audience: String(p.audience || "").trim().slice(0, 120),
     sections,
   };
 }
 
-/** Same spec -> print-ready HTML, the input for the PDF conversion. */
-function docSpecToHtml(spec: DocSpec, lang: string): string {
-  const esc = (s: string) =>
-    String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+/** Guarantee: at least 8 sections and the closing summary always last. */
+function finalizeOutline(outline: DocOutline): DocOutline {
+  const th = outline.language === "th";
+  const isClosing = (s: OutlineSection) => /สรุปและก้าวต่อไป|summary\s*(and|&)\s*next/i.test(s.heading);
+  const closing: OutlineSection = th
+    ? {
+        heading: CLOSING_HEADING.th,
+        points: [
+          "สรุปประเด็นสำคัญของเอกสารทั้งฉบับให้กระชับที่สุด",
+          "ก้าวต่อไปที่ควรลงมือทำทันที ระบุผู้รับผิดชอบเป็น [placeholder] หากไม่ทราบ",
+          "สิ่งที่ต้องติดตามและทบทวนในรอบถัดไป",
+        ],
+        has_table: false,
+      }
+    : {
+        heading: CLOSING_HEADING.en,
+        points: [
+          "Condense the key takeaways of the whole document",
+          "Immediate next actions, with owners as [placeholder] when unknown",
+          "What to track and review in the next cycle",
+        ],
+        has_table: false,
+      };
 
-  const body: string[] = [];
-  body.push(`<h1>${esc(spec.title || "Document")}</h1>`);
-  if (spec.subtitle) body.push(`<p class="sub">${esc(spec.subtitle)}</p>`);
-  body.push(`<hr/>`);
+  const sections = [...outline.sections];
+  const last = sections[sections.length - 1];
+  if (!last || !isClosing(last)) sections.push(closing);
 
-  for (const s of spec.sections || []) {
-    if (s.heading) body.push(`<h2>${esc(s.heading)}</h2>`);
-    for (const p of s.paragraphs || []) body.push(`<p>${esc(p)}</p>`);
-    if (s.bullets && s.bullets.length) {
-      body.push(`<ul>${s.bullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>`);
-    }
-    if (s.table && s.table.headers && s.table.headers.length) {
-      const heads = s.table.headers.map((h) => `<th>${esc(String(h))}</th>`).join("");
-      const rows = (s.table.rows || [])
-        .map((r) => `<tr>${s.table!.headers!.map((_, i) => `<td>${esc(String(r[i] ?? ""))}</td>`).join("")}</tr>`)
-        .join("");
-      body.push(`<table><thead><tr>${heads}</tr></thead><tbody>${rows}</tbody></table>`);
-    }
+  const fillers = FILLER_SECTIONS[th ? "th" : "en"];
+  let fi = 0;
+  while (sections.length < 8 && fi < fillers.length) {
+    sections.splice(Math.max(0, sections.length - 1), 0, fillers[fi]);
+    fi += 1;
   }
 
-  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8">
-<title>${esc(spec.title || "Document")}</title>
-<style>
-  @page { size: A4; margin: 20mm 17mm 22mm 17mm; }
-  body { font-family: "Noto Sans Thai", "Noto Sans", "DejaVu Sans", sans-serif; font-size: 11pt; line-height: 1.6; color: #16181d; }
-  h1 { font-size: 21pt; line-height: 1.25; margin: 0 0 6pt; color: #0b1220; }
-  p.sub { font-size: 11pt; color: #5b6472; margin: 0 0 10pt; }
-  hr { border: 0; border-top: 1px solid #c3c8d2; margin: 0 0 14pt; }
-  h2 { font-size: 13.5pt; margin: 16pt 0 5pt; padding-bottom: 2pt; border-bottom: 1px solid #d8dbe2; color: #0b1220; page-break-after: avoid; }
-  p { margin: 0 0 8pt; }
-  table { border-collapse: collapse; width: 100%; margin: 9pt 0 13pt; font-size: 10pt; }
-  th, td { border: 1px solid #c3c8d2; padding: 4.5pt 6pt; vertical-align: top; }
-  th { background: #eef1f6; text-align: left; font-weight: 600; }
-  ul { margin: 0 0 10pt 18pt; padding: 0; }
-  li { margin: 0 0 3pt; }
-</style></head><body>
-${body.join("\n")}
-</body></html>`;
+  if (sections.length > 14) {
+    const tail = isClosing(sections[sections.length - 1]) ? [sections[sections.length - 1]] : [closing];
+    return { ...outline, sections: sections.slice(0, 13).concat(tail) };
+  }
+  return { ...outline, sections };
 }
 
-/** python3 stdlib only: builds a genuine .docx (OOXML parts in a zip). */
-const DOCX_BUILD = String.raw`
+/* (a) outline -------------------------------------------------------------- */
+
+async function fetchOutline(ctx: AgentContext): Promise<DocOutline> {
+  const brief = `Brief: ${ctx.goal}\nDocument title: ${ctx.title}`;
+  const ask = (note: string) =>
+    callWoibotLLM({
+      system: OUTLINE_SYSTEM + note,
+      user: `${brief}\n\nReturn ONLY the JSON object — it must start with { and end with }.`,
+      maxTokens: 3000,
+      temperature: 0.3,
+    });
+
+  // Attempt 1: plain completion asked for JSON in the prompt (most reliable on
+  // DeepSeek V4.1 Flash — never response_format json_object, it returns empty).
+  let parsed = extractJson<Partial<DocOutline>>((await ask("")).text);
+
+  // Attempt 2: one retry with a stricter instruction.
+  if (!isParsableOutline(parsed)) {
+    parsed = extractJson<Partial<DocOutline>>(
+      (
+        await ask(
+          "\n\nRETRY: the previous reply was not usable. Return exactly one valid JSON object in the schema above and nothing else.",
+        )
+      ).text,
+    );
+  }
+  if (!isParsableOutline(parsed)) {
+    throw new Error("AI ไม่ได้ตอบกลับเป็นโครงเอกสาร (JSON) — สร้างเอกสารไม่ได้");
+  }
+
+  let outline = normalizeOutline(parsed, ctx);
+
+  // A thin outline is a model hiccup, not a user error: one repair call, keep the better draft.
+  if (outline.sections.length < 8) {
+    const repair = extractJson<Partial<DocOutline>>(
+      (
+        await callWoibotLLM({
+          system:
+            OUTLINE_SYSTEM +
+            "\n\nThe draft outline below is too short. Expand it to 10-12 sections: keep the existing headings, " +
+            "add the missing parts of a full report (background, current state, analysis, options, plan, resources, risks, KPIs). " +
+            "Return the FULL JSON object only.",
+          user:
+            `${brief}\n\nDraft outline (too short):\n` +
+            `${JSON.stringify({ title: outline.title, language: outline.language, sections: outline.sections }).slice(0, 3000)}\n\n` +
+            "Return ONLY the full JSON object.",
+          maxTokens: 3000,
+          temperature: 0.4,
+        })
+      ).text,
+    );
+    const expanded = isParsableOutline(repair) ? normalizeOutline(repair, ctx) : null;
+    if (expanded && expanded.sections.length > outline.sections.length) outline = expanded;
+  }
+
+  return finalizeOutline(outline);
+}
+
+/* (b) per-section bodies --------------------------------------------------- */
+
+function bodySystem(th: boolean): string {
+  return (
+    "You are a senior business writer expanding ONE section of a premium, print-ready business document. " +
+    "Reply with ONE semantic HTML fragment only: no markdown fences, no commentary, no <!doctype>, no <html>/<body>.\n" +
+    "Required structure, in this order:\n" +
+    "1. <h2> containing the exact section heading text given below and nothing else.\n" +
+    "2. 2-4 rich <p> paragraphs of real substance (2-5 full sentences each; the whole section is 180-350 words).\n" +
+    "3. Optionally one <ul> or <ol> with 3-6 concise <li> items, only when a list is genuinely clearer than prose.\n" +
+    "4. Exactly one <table> with <thead> and <tbody> IF AND ONLY IF told that this section has a table " +
+    "(3-5 columns, 3-8 rows of real, internally consistent content; unknown numbers become [placeholder]).\n" +
+    "5. End with exactly one <blockquote> holding a single-sentence key takeaway of the section.\n" +
+    "Rules:\n" +
+    `- Write ALL content in ${th ? "Thai" : "English"}, the language of the brief.\n` +
+    "- Cover every point given; add depth, implications, trade-offs and concrete guidance. Never pad with filler.\n" +
+    "- NEVER invent statistics, citations, names or dates. Unknown numbers stay as [placeholder] or are described qualitatively.\n" +
+    "- No inline styles, no class attributes, no headings other than the single <h2> (at most one <h3> for a sub-point)."
+  );
+}
+
+function stripTags(s: string): string {
+  return s.replace(/<[^>]+>/g, "");
+}
+
+function escHtml(s: string): string {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Strip fences, scripts, event handlers and page scaffolding from a model fragment. */
+function sanitizeFragment(raw: string): string {
+  return unfence(raw)
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<!doctype[^>]*>/gi, "")
+    .replace(/<\/?(html|head|body)[^>]*>/gi, "")
+    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*')/gi, "")
+    .trim();
+}
+
+function looksLikeSection(frag: string): boolean {
+  return frag.trim().length >= 350 && /<p[\s>]|<li|<table/i.test(frag);
+}
+
+/** Deterministic floor when both LLM attempts come back empty: real outline points only. */
+function fallbackFragment(section: OutlineSection, lang: "th" | "en"): string {
+  const th = lang === "th";
+  const points = section.points.length ? section.points : [section.heading];
+  const intro = th
+    ? "หัวข้อนี้ครอบคลุมประเด็นหลักดังต่อไปนี้ ซึ่งเชื่อมโยงโดยตรงกับเป้าหมายของเอกสาร"
+    : "This section covers the following key points, tied directly to the goal of the document.";
+  return (
+    `<h2>${escHtml(section.heading)}</h2>\n` +
+    `<p>${escHtml(intro)}</p>\n` +
+    `<ul>\n${points.map((p) => `<li>${escHtml(p)}</li>`).join("\n")}\n</ul>\n` +
+    `<blockquote>${escHtml(
+      th
+        ? "ประเด็นสำคัญ: ดำเนินการตามรายการข้างต้นให้ครบก่อนขยายผลไปยังหัวข้อถัดไป"
+        : "Key point: complete the items above before extending work to the next section.",
+    )}</blockquote>`
+  );
+}
+
+async function fetchSectionHtml(ctx: AgentContext, outline: DocOutline, idx: number): Promise<string> {
+  const section = outline.sections[idx];
+  const th = outline.language === "th";
+  const system = bodySystem(th);
+  const user =
+    `Document title: ${outline.title}\n` +
+    `Brief: ${ctx.goal}\n` +
+    (outline.audience ? `Audience: ${outline.audience}\n` : "") +
+    `Language: ${th ? "Thai" : "English"}\n` +
+    `Section ${idx + 1} of ${outline.sections.length}\n` +
+    `Section heading: ${section.heading}\n` +
+    `Points to cover (expand all of them with substance):\n${section.points.map((p) => `- ${p}`).join("\n")}\n` +
+    (section.has_table
+      ? "This section MUST include exactly one <table> (use [placeholder] for unknown numbers).\n"
+      : "This section must NOT include a <table>.\n") +
+    "Return the HTML fragment only.";
+
+  let frag = sanitizeFragment((await callWoibotLLM({ system, user, maxTokens: 3200, temperature: 0.55 })).text);
+
+  // Empty or skeletal reply: retry once with a higher token budget.
+  if (!looksLikeSection(frag)) {
+    frag = sanitizeFragment(
+      (
+        await callWoibotLLM({
+          system,
+          user:
+            user +
+            "\n\nNOTE: the previous reply was empty or far too short. Write the FULL section now (aim for 250-350 words) and return the HTML fragment only.",
+          maxTokens: 4400,
+          temperature: 0.6,
+        })
+      ).text,
+    );
+  }
+
+  if (!looksLikeSection(frag)) return fallbackFragment(section, outline.language);
+
+  // Guarantee exactly one leading h2 carrying the section heading.
+  if (!/<h2[\s>]/i.test(frag)) {
+    if (/<h1[^>]*>[\s\S]*?<\/h1>/i.test(frag)) {
+      frag = frag.replace(/<h1[^>]*>([\s\S]*?)<\/h1>/i, (_m, inner: string) => `<h2>${stripTags(inner).trim()}</h2>`);
+    } else {
+      frag = `<h2>${escHtml(section.heading)}</h2>\n${frag}`;
+    }
+  }
+  frag = frag.replace(/<h1[^>]*>[\s\S]*?<\/h1>/gi, "").trim();
+  return frag;
+}
+
+/* (c) premium HTML assembly ------------------------------------------------ */
+
+/** Whitespace tokens for Latin text; Thai has no spaces, so ~5 characters per word. */
+function countDocWords(htmlText: string): number {
+  const t = htmlText.replace(/<[^>]+>/g, " ");
+  const latin = (t.match(/[A-Za-z0-9]+/g) || []).length;
+  const thai = (t.match(/[\u0e01-\u0e4f]/g) || []).length;
+  return latin + Math.round(thai / 5);
+}
+
+function formatDocDate(lang: "th" | "en"): string {
+  try {
+    return new Intl.DateTimeFormat(lang === "th" ? "th-TH-u-ca-buddhist" : "en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(new Date());
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
+/** Renumber the leading h2 of a section fragment ("1.", "2.", ...). */
+function numberFragment(frag: string, no: number, fallbackHeading: string): string {
+  const m = frag.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i);
+  if (m) {
+    const heading =
+      stripTags(m[1])
+        .replace(/^\s*\d+(\.\d+)*[.)]?\s*/, "")
+        .trim() || fallbackHeading;
+    // function replacer: a "$" inside the heading must never act as a pattern
+    return frag.replace(m[0], () => `<h2>${no}. ${escHtml(heading)}</h2>`);
+  }
+  return `<h2>${no}. ${escHtml(fallbackHeading)}</h2>\n${frag}`;
+}
+
+function assembleDocumentHtml(outline: DocOutline, frags: string[]): string {
+  const th = outline.language === "th";
+  const title = escHtml(outline.title);
+  const dateStr = escHtml(formatDocDate(outline.language));
+  const audience = escHtml(outline.audience || "");
+  const numbered = outline.sections.map((s, i) => ({ ...s, no: i + 1 }));
+
+  const cover = [
+    '<div class="cover">',
+    '<p class="cover-brand">Woibot Document</p>',
+    `<h1 class="cover-title">${title}</h1>`,
+    outline.subtitle ? `<p class="cover-sub">${escHtml(outline.subtitle)}</p>` : "",
+    '<hr class="cover-rule"/>',
+    `<p class="cover-meta">${dateStr}${audience ? ` · ${th ? "จัดทำเพื่อ" : "Prepared for"}: ${audience}` : ""}</p>`,
+    "</div>",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const tocLines = numbered.map((s) => `<p class="toc-line">${s.no}.&nbsp;&nbsp;${escHtml(s.heading)}</p>`).join("\n");
+  const sectionsHtml = numbered.map((s, i) => numberFragment(frags[i] || "", s.no, s.heading)).join("\n");
+
+  return `<!doctype html>
+<html lang="${outline.language}">
+<head>
+<meta charset="utf-8">
+<title>${title}</title>
+<style>
+  @page { size: A4; margin: 22mm 18mm 20mm 18mm;
+    @bottom-center { content: counter(page); font-size: 9pt; color: #6b7280; } }
+  body { font-family: "Noto Sans Thai", "Noto Serif", "DejaVu Serif", Georgia, "Times New Roman", serif;
+    font-size: 11pt; line-height: 1.7; color: #1a1d24; }
+  h1, h2, h3 { color: #0b1220; }
+  .cover { margin: 36pt 0 0; }
+  .cover-brand { font-size: 10pt; font-weight: 600; letter-spacing: 3pt; text-transform: uppercase;
+    color: #6b7280; margin: 0 0 30pt; }
+  .cover-title { font-size: 26pt; line-height: 1.3; margin: 0 0 12pt; }
+  .cover-sub { font-size: 13pt; color: #4b5563; line-height: 1.5; margin: 0 0 8pt; }
+  .cover-rule { border: 0; border-top: 2pt solid #2563eb; width: 40pt; margin: 18pt 0; }
+  .cover-meta { font-size: 10.5pt; color: #6b7280; margin: 0 0 6pt; }
+  h2.toc-title { font-size: 15pt; margin: 0 0 16pt; padding-bottom: 4pt;
+    border-bottom: 1pt solid #d8dbe2; page-break-before: always; page-break-after: avoid; }
+  .toc-line { font-size: 11pt; margin: 0 0 7pt; }
+  h2 { font-size: 14pt; line-height: 1.4; margin: 0 0 10pt; padding-bottom: 3pt;
+    border-bottom: 1pt solid #d8dbe2; page-break-before: always; page-break-after: avoid; }
+  h3 { font-size: 12pt; margin: 12pt 0 5pt; page-break-after: avoid; }
+  p { margin: 0 0 7.5pt; }
+  ul, ol { margin: 2pt 0 9pt 20pt; padding: 0; }
+  li { margin: 0 0 3.5pt; }
+  table { border-collapse: collapse; width: 100%; margin: 9pt 0 12pt; font-size: 9.5pt; }
+  th, td { border: 0.75pt solid #c3c8d2; padding: 5pt 7pt; text-align: left; vertical-align: top; }
+  th { background-color: #eef1f6; font-weight: 600; }
+  tbody tr:nth-child(even) td { background-color: #f7f9fc; }
+  blockquote { margin: 10pt 0 6pt; padding: 8pt 12pt; border-left: 3pt solid #2563eb;
+    background-color: #f5f7fb; color: #1f2937; font-size: 10.5pt; }
+  strong { color: #0b1220; }
+</style>
+</head>
+<body>
+${cover}
+<div class="toc">
+<h2 class="toc-title">${escHtml(th ? "สารบัญ" : "Contents")}</h2>
+${tocLines}
+</div>
+${sectionsHtml}
+</body>
+</html>`;
+}
+
+/* (d) python3 stdlib fallbacks ---------------------------------------------- */
+
+/**
+ * Fallback DOCX builder used when LibreOffice's HTML->DOCX export filter is
+ * missing from the container image ("no export filter found"). python3 stdlib
+ * only: parses the SAME premium HTML with html.parser and writes genuine
+ * WordprocessingML (real styles, numbered sections, page breaks per section,
+ * bordered/shaded tables, callouts, footer PAGE field) via zipfile.
+ */
+const DOCX_FROM_HTML = String.raw`
 import json, re, sys, zipfile
-import xml.etree.ElementTree as ET
+from html.parser import HTMLParser
+from xml.etree import ElementTree as ET
 from xml.sax.saxutils import escape
 
-spec_path, out_path = sys.argv[1], sys.argv[2]
-spec = json.load(open(spec_path, encoding="utf-8"))
+html_path, out_path = sys.argv[1], sys.argv[2]
+meta = {}
+if len(sys.argv) > 3:
+    try:
+        meta = json.loads(sys.argv[3])
+    except Exception:
+        meta = {}
 
 BAD_CHARS = re.compile("[\x00-\x08\x0b\x0c\x0e-\x1f]")
-CONTENT_WIDTH = 9638  # A4 minus 1134 twip margins, in twips
+CONTENT_WIDTH = 9864  # A4 width minus 18 mm side margins, in twips
 
 
 def txt(value):
@@ -284,23 +612,13 @@ def txt(value):
     return escape(s, {'"': "&quot;"})
 
 
-def runs(text):
+def runs(text, bold=False, italic=False, size=None, color=None):
     chunks = str("" if text is None else text).split("\n")
     out = []
     for i, chunk in enumerate(chunks):
         if i:
             out.append("<w:br/>")
         out.append('<w:t xml:space="preserve">%s</w:t>' % txt(chunk))
-    return "".join(out)
-
-
-def para(text, style=None, bold=False, italic=False, size=None, after=None):
-    ppr = []
-    if style:
-        ppr.append('<w:pStyle w:val="%s"/>' % style)
-    if after is not None:
-        ppr.append('<w:spacing w:after="%d"/>' % after)
-    ppr_xml = "<w:pPr>%s</w:pPr>" % "".join(ppr) if ppr else ""
     rpr = []
     if bold:
         rpr.append("<w:b/>")
@@ -308,8 +626,20 @@ def para(text, style=None, bold=False, italic=False, size=None, after=None):
         rpr.append("<w:i/>")
     if size:
         rpr.append('<w:sz w:val="%d"/><w:szCs w:val="%d"/>' % (size, size))
+    if color:
+        rpr.append('<w:color w:val="%s"/>' % color)
     rpr_xml = "<w:rPr>%s</w:rPr>" % "".join(rpr) if rpr else ""
-    return "<w:p>%s<w:r>%s%s</w:r></w:p>" % (ppr_xml, rpr_xml, runs(text))
+    return "<w:r>%s%s</w:r>" % (rpr_xml, "".join(out))
+
+
+def para(text, style=None, page_break=False, bold=False, italic=False, size=None, color=None):
+    ppr = []
+    if page_break:
+        ppr.append("<w:pageBreakBefore/>")
+    if style:
+        ppr.append('<w:pStyle w:val="%s"/>' % style)
+    ppr_xml = "<w:pPr>%s</w:pPr>" % "".join(ppr) if ppr else ""
+    return "<w:p>%s%s</w:p>" % (ppr_xml, runs(text, bold=bold, italic=italic, size=size, color=color))
 
 
 def bullet(text):
@@ -365,43 +695,204 @@ def table(tbl):
     return "".join(out)
 
 
-counts = {"sections": 0, "paragraphs": 0, "bullets": 0, "tables": 0}
-body = []
-body.append(para(str(spec.get("title") or "Document"), style="Title"))
-subtitle = str(spec.get("subtitle") or "").strip()
-if subtitle:
-    body.append(para(subtitle, style="Subtitle"))
-body.append(rule())
+class DocHTMLParser(HTMLParser):
+    """Forgiving parser: block-level content collected in document order."""
 
-for sec in spec.get("sections") or []:
-    if not isinstance(sec, dict):
-        continue
-    heading = str(sec.get("heading") or "").strip()
-    if heading:
-        body.append(para(heading, style="Heading1"))
+    BLOCKS = ("h1", "h2", "h3", "p", "li", "blockquote")
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.blocks = []
+        self._skip = 0
+        self._cur = None
+        self._tbl = None
+        self._row = None
+        self._row_th = False
+        self._cell = None
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ("script", "style"):
+            self._skip += 1
+            return
+        if self._skip:
+            return
+        cls = ""
+        for k, v in attrs:
+            if k == "class":
+                cls = v or ""
+        if tag == "table":
+            self._flush()
+            self._tbl = {"thead": False, "headers": [], "rows": []}
+        elif tag == "thead" and self._tbl is not None:
+            self._tbl["thead"] = True
+        elif tag == "tbody" and self._tbl is not None:
+            self._tbl["thead"] = False
+        elif tag == "hr":
+            self._flush()
+            self.blocks.append({"kind": "rule"})
+        elif tag == "tr" and self._tbl is not None:
+            self._flush()
+            self._row = []
+            self._row_th = False
+        elif tag in ("td", "th") and self._row is not None:
+            self._flush()
+            self._cell = []
+            if tag == "th":
+                self._row_th = True
+        elif tag in self.BLOCKS:
+            self._flush()
+            self._cur = {"kind": tag, "cls": cls, "text": []}
+
+    def handle_endtag(self, tag):
+        if tag in ("script", "style"):
+            self._skip = max(0, self._skip - 1)
+            return
+        if self._skip:
+            return
+        if tag in ("td", "th") and self._cell is not None:
+            self._row.append(" ".join("".join(self._cell).split()))
+            self._cell = None
+        elif tag == "tr" and self._row is not None:
+            if self._tbl["thead"] or self._row_th:
+                self._tbl["headers"].append(self._row)
+            else:
+                self._tbl["rows"].append(self._row)
+            self._row = None
+        elif tag == "table" and self._tbl is not None:
+            self._flush()
+            if self._tbl["headers"] or self._tbl["rows"]:
+                self.blocks.append({"kind": "table", "headers": self._tbl["headers"], "rows": self._tbl["rows"]})
+            self._tbl = None
+        elif tag in self.BLOCKS:
+            self._flush()
+
+    def handle_data(self, data):
+        if self._skip:
+            return
+        if self._cell is not None:
+            self._cell.append(data)
+        elif self._cur is not None:
+            self._cur["text"].append(data)
+
+    def close(self):
+        super().close()
+        self._flush()
+
+    def _flush(self):
+        cur = self._cur
+        self._cur = None
+        if not cur:
+            return
+        text = " ".join("".join(cur["text"]).split())
+        if not text:
+            return
+        kind = cur["kind"]
+        cls = cur["cls"] or ""
+        if kind == "h1":
+            self.blocks.append({"kind": "title", "text": text})
+        elif kind == "h2" and "toc-title" in cls:
+            self.blocks.append({"kind": "toc-title", "text": text})
+        elif kind == "h2":
+            self.blocks.append({"kind": "h2", "text": text})
+        elif kind == "h3":
+            self.blocks.append({"kind": "h3", "text": text})
+        elif kind == "p":
+            if "cover-brand" in cls:
+                self.blocks.append({"kind": "brand", "text": text})
+            elif "cover-sub" in cls:
+                self.blocks.append({"kind": "subtitle", "text": text})
+            elif "cover-meta" in cls:
+                self.blocks.append({"kind": "meta", "text": text})
+            elif "toc-line" in cls:
+                self.blocks.append({"kind": "toc", "text": text})
+            else:
+                self.blocks.append({"kind": "p", "text": text})
+        elif kind == "li":
+            self.blocks.append({"kind": "li", "text": text})
+        elif kind == "blockquote":
+            self.blocks.append({"kind": "quote", "text": text})
+
+
+raw = open(html_path, encoding="utf-8").read()
+parser = DocHTMLParser()
+parser.feed(raw)
+parser.close()
+blocks = parser.blocks
+
+if not any(b["kind"] in ("h2", "h3", "p", "li", "table", "quote") for b in blocks):
+    raise SystemExit("html produced no content blocks")
+
+title = str(meta.get("title") or next((b["text"] for b in blocks if b["kind"] == "title"), "") or "Document")
+parsed_subtitle = next((b["text"] for b in blocks if b["kind"] == "subtitle"), "")
+
+counts = {"sections": 0, "paragraphs": 0, "bullets": 0, "tables": 0, "quotes": 0}
+body = []
+saw_title = False
+
+
+def emit_title(text):
+    global saw_title
+    if not saw_title:
+        body.append(para(text, style="Title"))
+        saw_title = True
+    else:
+        body.append(para(text, style="Heading1", page_break=True))
         counts["sections"] += 1
-    for p in sec.get("paragraphs") or []:
-        if str(p).strip():
-            body.append(para(str(p).strip()))
-            counts["paragraphs"] += 1
-    for b in sec.get("bullets") or []:
-        if str(b).strip():
-            body.append(bullet(str(b).strip()))
-            counts["bullets"] += 1
-    tbl = sec.get("table")
-    if isinstance(tbl, dict):
-        xml = table(tbl)
+
+
+for b in blocks:
+    kind = b["kind"]
+    if kind == "brand":
+        body.append(para(b["text"], style="Brand"))
+    elif kind == "rule":
+        body.append(rule())
+    elif kind == "title":
+        emit_title(b["text"])
+    elif kind == "subtitle":
+        body.append(para(b["text"], style="Subtitle"))
+    elif kind == "meta":
+        body.append(para(b["text"], style="Meta"))
+    elif kind == "toc-title":
+        body.append(para(b["text"], style="TocTitle", page_break=True))
+    elif kind == "toc":
+        body.append(para(b["text"], style="TocLine"))
+    elif kind == "h2":
+        body.append(para(b["text"], style="Heading1", page_break=True))
+        counts["sections"] += 1
+    elif kind == "h3":
+        body.append(para(b["text"], style="Heading2"))
+    elif kind == "p":
+        body.append(para(b["text"]))
+        counts["paragraphs"] += 1
+    elif kind == "li":
+        body.append(bullet(b["text"]))
+        counts["bullets"] += 1
+    elif kind == "quote":
+        body.append(para(b["text"], style="Quote"))
+        counts["quotes"] += 1
+    elif kind == "table":
+        hrows = b["headers"] or []
+        rows = list(b["rows"] or [])
+        flat = hrows[0] if hrows else []
+        if len(hrows) > 1:
+            rows = hrows[1:] + rows
+        xml = table({"headers": flat, "rows": rows})
         if xml:
             body.append(xml)
             counts["tables"] += 1
 
-if counts["sections"] == 0 and counts["paragraphs"] == 0:
-    raise SystemExit("spec produced an empty document")
+if not saw_title:
+    body.insert(0, para(title, style="Title"))
+if parsed_subtitle:
+    body.insert(1, para(parsed_subtitle, style="Subtitle"))
+
+if counts["sections"] == 0 and counts["paragraphs"] == 0 and counts["bullets"] == 0:
+    raise SystemExit("html produced an empty document")
 
 SECT = (
     '<w:sectPr><w:footerReference w:type="default" r:id="rId2"/>'
     '<w:pgSz w:w="11906" w:h="16838"/>'
-    '<w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" '
+    '<w:pgMar w:top="1247" w:right="1021" w:bottom="1134" w:left="1021" '
     'w:header="709" w:footer="709" w:gutter="0"/></w:sectPr>'
 )
 
@@ -422,6 +913,11 @@ STYLES = (
     '<w:spacing w:after="160" w:line="276" w:lineRule="auto"/>'
     "</w:pPr></w:pPrDefault></w:docDefaults>"
     '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>'
+    '<w:style w:type="paragraph" w:styleId="Brand"><w:name w:val="Cover Brand"/>'
+    '<w:basedOn w:val="Normal"/><w:qFormat/>'
+    '<w:pPr><w:spacing w:before="2400" w:after="480"/></w:pPr>'
+    '<w:rPr><w:caps/><w:spacing w:val="60"/><w:b/><w:color w:val="6B7280"/>'
+    '<w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr></w:style>'
     '<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/>'
     '<w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/>'
     '<w:pPr><w:spacing w:before="0" w:after="120"/></w:pPr>'
@@ -429,7 +925,20 @@ STYLES = (
     '<w:style w:type="paragraph" w:styleId="Subtitle"><w:name w:val="Subtitle"/>'
     '<w:basedOn w:val="Normal"/><w:qFormat/>'
     '<w:pPr><w:spacing w:before="0" w:after="120"/></w:pPr>'
-    '<w:rPr><w:color w:val="5B6472"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:style>'
+    '<w:rPr><w:color w:val="5B6472"/><w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr></w:style>'
+    '<w:style w:type="paragraph" w:styleId="Meta"><w:name w:val="Cover Meta"/>'
+    '<w:basedOn w:val="Normal"/><w:qFormat/>'
+    '<w:pPr><w:spacing w:before="360" w:after="0"/></w:pPr>'
+    '<w:rPr><w:color w:val="6B7280"/><w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr></w:style>'
+    '<w:style w:type="paragraph" w:styleId="TocTitle"><w:name w:val="TOC Title"/>'
+    '<w:basedOn w:val="Normal"/><w:next w:val="TocLine"/><w:qFormat/>'
+    '<w:pPr><w:keepNext/><w:spacing w:before="240" w:after="240"/>'
+    '<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="2" w:color="D8DBE2"/></w:pBdr></w:pPr>'
+    '<w:rPr><w:b/><w:color w:val="0B1220"/><w:sz w:val="30"/><w:szCs w:val="30"/></w:rPr></w:style>'
+    '<w:style w:type="paragraph" w:styleId="TocLine"><w:name w:val="TOC Line"/>'
+    '<w:basedOn w:val="Normal"/><w:qFormat/>'
+    '<w:pPr><w:spacing w:after="100"/></w:pPr>'
+    '<w:rPr><w:color w:val="1A1D24"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:style>'
     '<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/>'
     '<w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/>'
     '<w:pPr><w:keepNext/><w:spacing w:before="360" w:after="120"/>'
@@ -441,12 +950,18 @@ STYLES = (
     '<w:rPr><w:b/><w:color w:val="16181D"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:style>'
     '<w:style w:type="paragraph" w:styleId="ListParagraph"><w:name w:val="List Paragraph"/>'
     '<w:basedOn w:val="Normal"/><w:pPr><w:ind w:left="425"/><w:spacing w:after="60"/></w:pPr></w:style>'
+    '<w:style w:type="paragraph" w:styleId="Quote"><w:name w:val="Key Takeaway"/>'
+    '<w:basedOn w:val="Normal"/><w:qFormat/>'
+    '<w:pPr><w:pBdr><w:left w:val="single" w:sz="18" w:space="8" w:color="2563EB"/></w:pBdr>'
+    '<w:shd w:val="clear" w:color="auto" w:fill="F5F7FB"/>'
+    '<w:ind w:left="240"/><w:spacing w:before="160" w:after="200"/></w:pPr>'
+    '<w:rPr><w:color w:val="1F2937"/><w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr></w:style>'
     '<w:style w:type="paragraph" w:styleId="TableText"><w:name w:val="Table Text"/>'
     '<w:basedOn w:val="Normal"/><w:pPr><w:spacing w:before="20" w:after="20" w:line="240" w:lineRule="auto"/></w:pPr>'
     '<w:rPr><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr></w:style>'
     '<w:style w:type="paragraph" w:styleId="Footer"><w:name w:val="footer"/>'
-    '<w:basedOn w:val="Normal"/><w:pPr><w:spacing w:before="0" w:after="0"/><w:jc w:val="right"/></w:pPr>'
-    '<w:rPr><w:color w:val="7A8291"/><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:style>'
+    '<w:basedOn w:val="Normal"/><w:pPr><w:spacing w:before="0" w:after="0"/><w:jc w:val="center"/></w:pPr>'
+    '<w:rPr><w:color w:val="6B7280"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr></w:style>'
     "</w:styles>"
 )
 
@@ -508,7 +1023,7 @@ CORE = (
     'xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" '
     'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
     "<dc:title>%s</dc:title><dc:creator>woibot Work</dc:creator>"
-    '<cp:lastModifiedBy>woibot Work</cp:lastModifiedBy></cp:coreProperties>' % txt(spec.get("title") or "Document")
+    '<cp:lastModifiedBy>woibot Work</cp:lastModifiedBy></cp:coreProperties>' % txt(title)
 )
 
 APP = (
@@ -547,30 +1062,170 @@ with zipfile.ZipFile(out_path) as zf:
 print(json.dumps(dict(counts, parts=len(parts))))
 `;
 
+/**
+ * Inject a centered footer PAGE field into a DOCX produced by LibreOffice
+ * (whose HTML import does not carry @page @bottom-center margin boxes over).
+ * No-op when a footer already exists; validates every XML part before
+ * replacing the original file, so a failure can never corrupt the document.
+ */
+const DOCX_FOOTER = String.raw`
+import os, re, sys, zipfile
+from xml.etree import ElementTree as ET
+
+path = sys.argv[1]
+
+with zipfile.ZipFile(path) as zf:
+    names = zf.namelist()
+    doc = zf.read("word/document.xml").decode("utf-8")
+    rels = zf.read("word/_rels/document.xml.rels").decode("utf-8")
+    ct = zf.read("[Content_Types].xml").decode("utf-8")
+
+if "footerReference" in doc:
+    print("footer-already-present")
+    sys.exit(0)
+
+existing = [n for n in names if re.match(r"word/footer\d+\.xml$", n)]
+next_no = 1 + max([int(re.search(r"footer(\d+)\.xml$", n).group(1)) for n in existing] or [0])
+foot_name = "footer%d.xml" % next_no
+
+nums = [int(m) for m in re.findall(r'Id="rId(\d+)"', rels)]
+new_id = "rId%d" % ((max(nums) + 1) if nums else 1)
+
+RPR = '<w:rPr><w:color w:val="6B7280"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr>'
+FOOTER_XML = (
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    '<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+    '<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0"/></w:pPr>'
+    "<w:r>%s<w:fldChar w:fldCharType=\"begin\"/></w:r>" % RPR
+    + "<w:r>%s<w:instrText xml:space=\"preserve\"> PAGE </w:instrText></w:r>" % RPR
+    + "<w:r>%s<w:fldChar w:fldCharType=\"separate\"/></w:r>" % RPR
+    + "<w:r>%s<w:t>1</w:t></w:r>" % RPR
+    + "<w:r>%s<w:fldChar w:fldCharType=\"end\"/></w:r>" % RPR
+    + "</w:p></w:ftr>"
+)
+
+doc2 = re.sub(r"(<w:sectPr[^>]*>)", r'\1<w:footerReference w:type="default" r:id="%s"/>' % new_id, doc, count=1)
+if doc2 == doc:
+    print("sectPr-not-found")
+    sys.exit(4)
+
+rels2 = rels.replace(
+    "</Relationships>",
+    '<Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" '
+    'Target="%s"/></Relationships>' % (new_id, foot_name),
+)
+ct2 = ct.replace(
+    "</Types>",
+    '<Override PartName="/word/%s" '
+    'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>' % foot_name,
+)
+
+tmp = path + ".tmp"
+with zipfile.ZipFile(path) as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
+    for item in zin.infolist():
+        data = zin.read(item.filename)
+        if item.filename == "word/document.xml":
+            data = doc2.encode("utf-8")
+        elif item.filename == "word/_rels/document.xml.rels":
+            data = rels2.encode("utf-8")
+        elif item.filename == "[Content_Types].xml":
+            data = ct2.encode("utf-8")
+        zout.writestr(item, data)
+    zout.writestr("word/" + foot_name, FOOTER_XML)
+
+# validate every XML part before replacing the original
+with zipfile.ZipFile(tmp) as zf:
+    for n in zf.namelist():
+        if n.endswith(".xml") or n.endswith(".rels"):
+            ET.fromstring(zf.read(n))
+
+os.replace(tmp, path)
+print("footer-added:%s" % new_id)
+`;
+
+/* (e) orchestration --------------------------------------------------------- */
+
+async function hasWordDocumentXml(userId: string, slug: string): Promise<boolean> {
+  const r = await execInContainer(
+    userId,
+    `cd ${WORK_DIR} && unzip -l ${shellQuote(`${slug}.docx`)} 2>&1 | grep -c 'word/document.xml'`,
+  );
+  return r.exitCode === 0 && Number(r.stdout.trim()) >= 1;
+}
+
 export async function produceDocxAndPdf(ctx: AgentContext, slug: string): Promise<ProducerResult> {
   const notes: string[] = [];
 
-  await ctx.onProgress?.(12, "drafting", "ให้ AI ร่างโครงเอกสาร (JSON)");
-  const spec = await fetchDocSpec(ctx);
-  const sections = spec.sections || [];
-  const words = sections.reduce(
-    (n, s) => n + (s.paragraphs || []).join(" ").split(/\s+/).filter(Boolean).length,
-    0,
+  /* (a) outline */
+  await ctx.onProgress?.(8, "outline", "ให้ AI ออกแบบโครงเอกสาร (8-14 หัวข้อ)");
+  const outline = await fetchOutline(ctx);
+  must(
+    await writeWorkspaceFile(ctx.userId, `${slug}.outline.json`, JSON.stringify(outline, null, 2)),
+    "เขียนไฟล์โครงเอกสาร",
   );
-  notes.push(`${sections.length} sections, ~${words} words`);
+  notes.push(`outline: ${outline.sections.length} sections, ${outline.language}`);
 
-  await ctx.onProgress?.(40, "docx", "สร้าง .docx จาก OOXML ด้วย python3 stdlib");
-  must(await writeWorkspaceFile(ctx.userId, `${slug}.spec.json`, JSON.stringify(spec, null, 2)), "เขียน spec เอกสาร");
-  must(await writeWorkspaceFile(ctx.userId, "_mkdocx.py", DOCX_BUILD), "เขียนสคริปต์ docx");
-
-  const build = await runScript(
-    ctx.userId,
-    `cd ${WORK_DIR} && python3 _mkdocx.py ${shellQuote(`${slug}.spec.json`)} ${shellQuote(`${slug}.docx`)} 2>&1`,
-  );
-  if (build.exitCode !== 0) {
-    throw new Error(`สร้าง .docx ไม่สำเร็จ: ${(build.stderr || build.stdout).slice(0, 400)}`);
+  /* (b) per-section bodies, sequentially */
+  const frags: string[] = [];
+  for (let i = 0; i < outline.sections.length; i++) {
+    await ctx.onProgress?.(
+      14 + Math.round(((i + 1) / outline.sections.length) * 40),
+      "sections",
+      `เขียนเนื้อหาหัวข้อ ${i + 1}/${outline.sections.length}: ${outline.sections[i].heading.slice(0, 40)}`,
+    );
+    frags.push(await fetchSectionHtml(ctx, outline, i));
   }
-  notes.push(build.stdout.trim().split("\n").pop() || "");
+  const words = countDocWords(frags.join("\n"));
+  notes.push(`${outline.sections.length} sections, ~${words} words`);
+
+  // remove any stale artefacts from an earlier run with the same slug, so a
+  // failed conversion can never be masked by an old file
+  await execInContainer(
+    ctx.userId,
+    `rm -f ${shellQuote(`${WORK_DIR}/${slug}.docx`)} ${shellQuote(`${WORK_DIR}/${slug}.pdf`)}`,
+  );
+
+  /* (c) premium HTML (also a deliverable) */
+  await ctx.onProgress?.(58, "layout", "ประกอบเอกสารสำหรับสิ่งพิมพ์ (ปก + สารบัญ + เนื้อหา)");
+  const html = assembleDocumentHtml(outline, frags);
+  must(await writeWorkspaceFile(ctx.userId, `${slug}.html`, html), "เขียนไฟล์ HTML");
+  notes.push(`${slug}.html ${html.length} chars`);
+
+  /* (d) HTML -> DOCX with LibreOffice, python3 fallback when the filter is missing */
+  await ctx.onProgress?.(64, "docx", "แปลง HTML → DOCX ด้วย LibreOffice");
+  let docxVia = "LibreOffice HTML→DOCX";
+  const convDocx = await execInContainer(
+    ctx.userId,
+    `cd ${WORK_DIR} && ${LO} --convert-to docx --outdir . ${shellQuote(`${slug}.html`)} 2>&1 | tail -3`,
+  );
+  const docxSize = await statSize(ctx.userId, `${slug}.docx`);
+  if (docxSize < 2000 || !(await hasWordDocumentXml(ctx.userId, slug))) {
+    docxVia = "python3 OOXML (LibreOffice HTML→DOCX filter unavailable)";
+    must(await writeWorkspaceFile(ctx.userId, "_mkdocx.py", DOCX_FROM_HTML), "เขียนสคริปต์ docx (ตัวสำรอง)");
+    const build = await runScript(
+      ctx.userId,
+      `cd ${WORK_DIR} && python3 _mkdocx.py ${shellQuote(`${slug}.html`)} ${shellQuote(`${slug}.docx`)} ${shellQuote(
+        JSON.stringify({ title: outline.title, lang: outline.language }),
+      )} 2>&1`,
+    );
+    if (build.exitCode !== 0) {
+      throw new Error(
+        `สร้าง .docx ไม่สำเร็จ (LibreOffice: ${(convDocx.stdout || convDocx.stderr || "-").slice(0, 160)} | ตัวสำรอง: ${(
+          build.stderr || build.stdout
+        ).slice(0, 240)})`,
+      );
+    }
+    notes.push(build.stdout.trim().split("\n").pop() || "");
+  }
+
+  // footer page numbers (no-op when the document already carries a footer)
+  must(await writeWorkspaceFile(ctx.userId, "_docx_footer.py", DOCX_FOOTER), "เขียนสคริปต์เลขหน้า");
+  const foot = await runScript(ctx.userId, `cd ${WORK_DIR} && python3 _docx_footer.py ${shellQuote(`${slug}.docx`)} 2>&1`);
+  if (foot.exitCode === 0) {
+    notes.push(foot.stdout.trim().split("\n").pop() || "");
+  } else {
+    notes.push("ข้ามการใส่เลขหน้าใน footer (ไม่กระทบไฟล์)");
+  }
 
   const listing = await execInContainer(
     ctx.userId,
@@ -580,18 +1235,18 @@ export async function produceDocxAndPdf(ctx: AgentContext, slug: string): Promis
     throw new Error(`ไฟล์ .docx ไม่ใช่แพ็กเกจ OOXML ที่ถูกต้อง (ไม่พบ word/document.xml): ${listing.stdout.slice(0, 200)}`);
   }
   const docxBytes = await requireFile(ctx.userId, `${slug}.docx`, "สร้างเอกสาร DOCX", 2000);
-  notes.push(`${slug}.docx ${docxBytes} bytes, OOXML parts verified`);
+  notes.push(`${slug}.docx ${docxBytes} bytes via ${docxVia}`);
 
-  await ctx.onProgress?.(72, "pdf", "เรนเดอร์สเปกเดียวกันเป็น HTML แล้วแปลงเป็น PDF");
-  const html = docSpecToHtml(spec, /[\u0e00-\u0e7f]/.test(`${ctx.title} ${ctx.goal}`) ? "th" : "en");
-  must(await writeWorkspaceFile(ctx.userId, `${slug}.html`, html), "เขียนไฟล์ HTML");
-
-  const conv = await execInContainer(
+  /* (e) DOCX -> PDF with LibreOffice */
+  await ctx.onProgress?.(80, "pdf", "แปลง DOCX → PDF ด้วย LibreOffice");
+  const convPdf = await execInContainer(
     ctx.userId,
-    `cd ${WORK_DIR} && ${LO} --convert-to pdf --outdir . ${shellQuote(`${slug}.html`)} 2>&1 | tail -3`,
+    `cd ${WORK_DIR} && ${LO} --convert-to pdf --outdir . ${shellQuote(`${slug}.docx`)} 2>&1 | tail -3`,
   );
-  const pdfBytes = await requireFile(ctx.userId, `${slug}.pdf`, "แปลง HTML → PDF").catch((e) => {
-    throw new Error(`แปลง HTML → PDF ไม่ได้: ${(conv.stdout || conv.stderr || (e as Error).message).slice(0, 300)}`);
+  const pdfBytes = await requireFile(ctx.userId, `${slug}.pdf`, "แปลง DOCX → PDF").catch((e) => {
+    throw new Error(
+      `แปลง DOCX → PDF ไม่ได้: ${(convPdf.stdout || convPdf.stderr || (e as Error).message).slice(0, 300)}`,
+    );
   });
   notes.push(`${slug}.pdf ${pdfBytes} bytes`);
 
