@@ -447,9 +447,11 @@ export default function CloudComputerPage() {
                   <Monitor className="h-8 w-8 text-[#3a3f4b]" />
                   <div className="text-[13px] text-[var(--wb-fg)]">ยังไม่มีหน้าจอให้แสดง</div>
                   <div className="max-w-[380px] text-[12px] text-[var(--wb-muted)]">
-                    {status?.configured
-                      ? "คอมพิวเตอร์ไม่ได้ทำงานอยู่ — กด “เปิดคอมพิวเตอร์” เพื่อสร้าง/เริ่ม container ของคุณก่อน"
-                      : "ระบบยังไม่เชื่อมต่อ Computer Manager (ต้องตั้งค่า MANAGER_URL) — หน้านี้จะแสดงข้อมูลจริงเท่านั้น"}
+                    {!status
+                      ? "กำลังตรวจสถานะคอมพิวเตอร์… (โหลดจาก API จริง)"
+                      : status.configured
+                        ? "คอมพิวเตอร์ไม่ได้ทำงานอยู่ — กด “เปิดคอมพิวเตอร์” เพื่อสร้าง/เริ่ม container ของคุณก่อน"
+                        : "ระบบยังไม่เชื่อมต่อ Computer Manager (ต้องตั้งค่า MANAGER_URL) — หน้านี้จะแสดงข้อมูลจริงเท่านั้น"}
                   </div>
                 </div>
               )}
