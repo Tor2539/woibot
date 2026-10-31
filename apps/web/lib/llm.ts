@@ -56,7 +56,15 @@ export async function callWoibotLLM(call: LLMCall): Promise<LLMResult> {
     max_tokens: call.maxTokens ?? 1600,
     temperature: call.temperature ?? 0.4,
   };
-  if (call.json) body.response_format = { type: "json_object" };
+  // NOTE: DeepSeek V4.1 Flash on Together returns an EMPTY content field when
+  // response_format=json_object is used (the JSON ends up in reasoning_content).
+  // So we never send response_format; we ask for JSON in the prompt instead.
+  if (call.json) {
+    body.messages = [
+      ...(call.system ? [{ role: "system", content: `${call.system}\nReturn only a JSON object.` }] : []),
+      { role: "user", content: call.images?.length ? content : call.user },
+    ];
+  }
 
   const res = await fetch(TOGETHER_URL, {
     method: "POST",

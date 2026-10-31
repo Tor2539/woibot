@@ -251,7 +251,7 @@ export default function LandingPage() {
                     <span className="font-mono tabular-nums">Est. $2.40 · ~18m</span>
                   </div>
                   <div className="text-[11.5px] text-[var(--wb-muted)]">
-                    Enterprise Sales CRM + Playwright E2E Verification · Isolated Work Ledger
+                    สร้างแอปจริง + Screenshot หลักฐานจาก Chromium · Isolated Work Ledger
                   </div>
                   <div className="flex justify-end gap-2">
                     <Link
@@ -280,7 +280,7 @@ export default function LandingPage() {
                   >
                     <div className="font-semibold text-[#7cb0ff]">1. Code</div>
                     <div className="mt-0.5 text-[11px] text-[var(--wb-muted)]">
-                      tsc + vitest + Playwright + Git Diff
+                      GLM-5.3-Flash เขียนโค้ด · ตรวจ HTML/เรนเดอร์จริง
                     </div>
                   </Link>
                   <Link
@@ -366,11 +366,11 @@ export default function LandingPage() {
             <ul className="space-y-2 text-[13px] text-[var(--wb-fg-soft)]">
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-[#3b82f6] shrink-0" />
-                <span>Coding Verification: tsc + vitest + Playwright smoke + Unified Git Diff</span>
+                <span>Coding Verification: ไฟล์มีจริง + เรนเดอร์ใน Chromium สำเร็จ (screenshot เป็นหลักฐาน)</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-[#3b82f6] shrink-0" />
-                <span>Video Studio: Storyboard + FFmpeg + Whisper TH/EN Subtitles + Remotion Bundle</span>
+                <span>Video Studio: FFmpeg ตรวจ/ตัดไฮไลต์จริง + ffprobe ยืนยันสเปกไฟล์</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-[#3b82f6] shrink-0" />

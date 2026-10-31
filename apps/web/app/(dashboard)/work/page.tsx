@@ -801,7 +801,7 @@ function WorkStudioInner() {
                     30s Product Launch Promo — Multi-Scene Timeline & Bilingual Subs
                   </div>
                   <div className="text-[11.5px] text-[var(--wb-muted)]">
-                    Isolated GPU Pool · FFmpeg + Whisper-Large-v3 + Remotion Bundle
+                    FFmpeg/ffprobe จริงใน Cloud Computer · ตรวจสเปกไฟล์อัตโนมัติ
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -879,7 +879,7 @@ function WorkStudioInner() {
                     className="inline-flex items-center gap-1.5 rounded-[8px] px-3 py-2 text-[12px] font-medium hover:bg-[var(--wb-hover)]"
                     style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
                   >
-                    <span>Remotion Project (.ZIP)</span>
+                    <span>Source project (.zip)</span>
                   </a>
                 </div>
               </div>
@@ -941,7 +941,7 @@ function WorkStudioInner() {
                   <div className="rounded bg-[var(--wb-panel)] p-2">Codec: H.264 / AAC 48kHz</div>
                   <div className="rounded bg-[var(--wb-panel)] p-2">Duration: 30.00s Exact</div>
                   <div className="rounded bg-[var(--wb-panel)] p-2">Subtitle Drift: 0ms (TH/EN)</div>
-                  <div className="rounded bg-[var(--wb-panel)] p-2">Editable: Remotion Bundle</div>
+                  <div className="rounded bg-[var(--wb-panel)] p-2">Editable: source files</div>
                 </div>
               </div>
             </div>

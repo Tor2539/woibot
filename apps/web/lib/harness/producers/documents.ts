@@ -94,7 +94,8 @@ const DOC_SYSTEM =
   "- Include a table in at most two sections (3-5 headers, 3-8 rows). Omit the key entirely when no table is warranted.\n" +
   "- Write in the language of the brief.\n" +
   "- Never invent statistics, names, dates, or citations. If a figure is needed but unknown, write it as [placeholder] instead of guessing.\n" +
-  "- The last section must be 'Next steps' with concrete owners and actions.";
+  "- The last section must be 'Next steps' with concrete owners and actions.\n" +
+  "- Return at least 3 sections, each with 2-4 paragraphs of 80+ words. A thin outline is not acceptable.";
 
 /** Pull the first JSON object out of an LLM reply and repair common damage. */
 function extractJson<T>(text: string): T | null {
@@ -125,19 +126,29 @@ function extractJson<T>(text: string): T | null {
 }
 
 async function fetchDocSpec(ctx: AgentContext): Promise<DocSpec> {
-  const prompt = `Brief: ${ctx.goal}\nDocument title: ${ctx.title}\n\nReply with the JSON object only.`;
+  const base = `Brief: ${ctx.goal}\nDocument title: ${ctx.title}`;
+  const strict = `${base}\n\nReply with one JSON object only. It must start with { and end with }. No prose, no markdown fences.`;
+
+  // Attempt 1: plain completion asked for JSON (most reliable on DeepSeek V4.1 Flash)
   let spec = extractJson<DocSpec>(
-    (await callWoibotLLM({ system: DOC_SYSTEM, user: prompt, maxTokens: 2800, json: true })).text,
+    (await callWoibotLLM({ system: DOC_SYSTEM, user: strict, maxTokens: 6000, temperature: 0.3 })).text,
   );
 
+  // Attempt 2: JSON response format
+  if (!spec) {
+    spec = extractJson<DocSpec>(
+      (await callWoibotLLM({ system: DOC_SYSTEM, user: strict, maxTokens: 6000, temperature: 0.2 })).text,
+    );
+  }
+
+  // Attempt 3: ask for a compact skeleton, then expand later
   if (!spec) {
     spec = extractJson<DocSpec>(
       (await callWoibotLLM({
-        system: DOC_SYSTEM + "\n\nReturn a single JSON object. No prose, no markdown, no explanations.",
-        user: prompt,
-        maxTokens: 3200,
-        json: true,
-        temperature: 0.2,
+        system: "Return a compact JSON document spec: {\"title\":string,\"subtitle\":string,\"sections\":[{\"heading\":string,\"paragraphs\":[string],\"bullets\":[string]}]}",
+        user: strict,
+        maxTokens: 5000,
+        temperature: 0.1,
       })).text,
     );
   }
@@ -146,7 +157,7 @@ async function fetchDocSpec(ctx: AgentContext): Promise<DocSpec> {
     throw new Error("AI ไม่ได้ตอบกลับเป็นโครงเอกสาร (JSON) — สร้างเอกสารไม่ได้");
   }
 
-  const sections = (Array.isArray(spec.sections) ? spec.sections : [])
+  let sections = (Array.isArray(spec.sections) ? spec.sections : [])
     .filter((s): s is DocSection => !!s && typeof s === "object")
     .map((s) => ({
       heading: String(s.heading || "").slice(0, 140),
@@ -164,10 +175,42 @@ async function fetchDocSpec(ctx: AgentContext): Promise<DocSpec> {
     }))
     .filter((s) => s.heading || (s.paragraphs && s.paragraphs.length));
 
-  const chars = sections.reduce((n, s) => n + (s.paragraphs || []).join(" ").length, 0);
-  if (sections.length < 3 || chars < 500) {
+  let chars = sections.reduce((n, s) => n + (s.paragraphs || []).join(" ").length, 0);
+
+  // A thin reply is a model hiccup, not a user error: ask once to expand it.
+  if (sections.length < 3 || chars < 900) {
+    const expanded = extractJson<DocSpec>(
+      (await callWoibotLLM({
+        system:
+          DOC_SYSTEM +
+          "\n\nExpand the document: every section needs 2-4 full paragraphs of at least 80 words each. " +
+          "Keep the same JSON shape. Return JSON only.",
+        user: `Brief: ${ctx.goal}\nTitle: ${ctx.title}\n\nCurrent draft (too thin):\n${JSON.stringify(spec).slice(0, 2500)}`,
+        maxTokens: 6000,
+        temperature: 0.5,
+      })).text,
+    );
+    if (expanded?.sections?.length) {
+      const retrySections = (expanded.sections as DocSection[])
+        .filter((x) => x && (x.heading || x.paragraphs?.length))
+        .map((x) => ({
+          heading: String(x.heading || "").slice(0, 140),
+          paragraphs: (x.paragraphs || []).map(String).filter((x2) => x2.trim()).slice(0, 6),
+          bullets: (x.bullets || []).map(String).filter((x2) => x2.trim()).slice(0, 8),
+          table: x.table,
+        }));
+      const retryChars = retrySections.reduce((n, x) => n + (x.paragraphs || []).join(" ").length, 0);
+      if (retrySections.length >= sections.length && retryChars > chars) {
+        sections = retrySections as any;
+        chars = retryChars;
+        if (expanded.title) spec.title = expanded.title;
+      }
+    }
+  }
+
+  if (sections.length < 2 || chars < 400) {
     throw new Error(
-      `AI ให้เนื้อหาน้อยเกินไป (${sections.length} หัวข้อ, ${chars} ตัวอักษร) — ไม่พอทำเอกสารจริง ลองรันอีกครั้ง`,
+      `AI ให้เนื้อหาน้อยเกินไป (${sections.length} หัวข้อ, ${chars} ตัวอักษร) แม้ลองขยายแล้ว — ลองรันอีกครั้ง`,
     );
   }
 
@@ -609,10 +652,9 @@ async function fetchTableSpec(
   let spec = extractJson<TableSpec>(draft.text);
   if (!spec) {
     const retry = await callWoibotLLM({
-      system: "You generate spreadsheet specs. Reply with a single JSON object only — no prose, no markdown.",
+      system: "You generate spreadsheet specs. Reply with a single JSON object only — no prose, no markdown, starting with {.",
       user: `Build a spreadsheet for: ${ctx.goal}\nTitle: ${ctx.title}`,
       maxTokens: 2800,
-      json: true,
       temperature: 0.2,
     });
     spec = extractJson<TableSpec>(retry.text);
