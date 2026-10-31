@@ -12,12 +12,12 @@ Secrets are provided as environment variables (TOGETHER_API_KEY, PARALLEL_API_KE
 4. Before claiming done: `cd apps/web && npm run build` (0 type errors) and `python scripts/qc.py --only <area>` must pass.
 5. Deploy only with the commands in `docs/HANDOFF.md` §7. After any computer-image change, reset the VM.
 
-## Current state (verified 2026-10-31)
-QC 39/39 across: documents (docx+pdf), xlsx, csv, image-read, image-create, video-compose, video-analyze, research, coding, chat, vision, voice command, team groups + cross-bot delegation, BGE-M3 memory search.
+## Current state (verified 2026-10-31, rev.2)
+QC gates live: documents (docx+pdf, >=7 pages), xlsx, csv, image-read, image-create, video-compose, video-analyze, research, coding (Woibot Coder agent loop), chat, vision, voice command (+ persistence into ChatMessage), team groups + cross-bot delegation, BGE-M3 memory recall, computer geometry/input/computer-use agent.
 
 ## Backlog (priority order)
-1. noVNC interactive control (mouse/keyboard) — today only a live screenshot is shown.
-2. Voice: real microphone test in Chrome; persist voice action turns as ChatMessage.
+1. Run `python scripts/benchmark_teammate.py` against prod; iterate until >= 9/10.
+2. Real-microphone spoken test in Chrome (server side already verified).
 3. Move TLS to the GCP managed certificate on the load balancer when it becomes ACTIVE.
 4. Billing/payments (deferred by the owner).
 

@@ -1,8 +1,8 @@
 # woibot — HANDOFF (for OpenCode)
 
-**วันที่:** 2026-10-31 · **สถานะ:** production live, QC ผ่านทุกหมวด
+**วันที่:** 2026-10-31 (rev.2) · **สถานะ:** production live, QC ผ่านทุกหมวด + computer-use stack ใหม่
 **Repo:** `C:/Users/WINDOWS/AppData/Local/hermes/profiles/woibot-com/workspace/woibot`
-**GitHub:** https://github.com/Tor2539/woibot (public, branch `main`, HEAD `826eff1`)
+**GitHub:** https://github.com/Tor2539/woibot (public, branch `main`)
 **Prod:** https://woibot.com · API https://woibot-578962358378.asia-southeast1.run.app · Computer https://computer.woibot.com
 
 ---
@@ -10,8 +10,8 @@
 ## 1. อ่านก่อนเริ่ม (สำคัญ)
 
 - **ห้ามใช้โมเดลของ OpenAI หรือ Anthropic เด็ดขาด** — ระบบใช้ Together AI เท่านั้น
-  - งานทั่วไป/แชท/เอกสาร/รีเสิร์ช/ภาพ: `deepseek-ai/DeepSeek-V4.1-Flash-1017`
-  - งานโค้ด: `zai-org/GLM-5.3-Flash`
+  - งานทั่วไป/แชท/เอกสาร/รีเสิร์ช/ภาพ/**คุมคอมพิวเตอร์**: `deepseek-ai/DeepSeek-V4.1-Flash-1017` (vision แนบภาพได้)
+  - งานโค้ด: `zai-org/GLM-5.3-Flash` + เอนจิน agent-loop ใน container (white-label: "Woibot Coder")
   - Embeddings: BGE-M3 (service ของเราเองบน Cloud Run)
   - ค้นเว็บ: Parallel API (`/v1beta/search`)
 - **ห้ามใส่ข้อมูลปลอมใน UI** — ทุกแผงต้องมาจาก API จริง ถ้าไม่มีข้อมูลให้แสดง empty state
@@ -84,11 +84,19 @@ ensureComputer(userId)  ← ถ้า container ไม่รัน = งาน f
 
 ## 6. งานที่ยังค้าง (ต้องทำต่อ)
 
-1. **noVNC ควบคุมเมาส์/คีย์บอร์ด**: WS handshake 101 ผ่าน, RFB banner มาถึง แต่ client โชว์ error — ตอนนี้ใช้ภาพหน้าจอสด (`/api/computer?action=screen&raw=1`, JPEG 640px รีเฟรช 8 วิ) แทน. จุดที่ควรไล่: path ของ websockify ผ่าน manager proxy, HTTP/1.1 vs h2, `-noxdamage` ของ x11vnc
-2. **ไมโครโฟนจริง**: hook + API พร้อม แต่ยังไม่มีใครทดสอบด้วยเสียงจริงในเบราว์เซอร์ (ต้อง HTTPS + user gesture)
+1. ~~noVNC ควบคุมเมาส์/คีย์บอร์ด~~ **ทำแล้วแบบต่างกัน**: ควบคุมจริงด้วย xdotool ผ่าน `/api/computer` (`action=input`) + แผง "AI คุมคอมให้" (computer-use loop, DeepSeek vision มองภาพ → สั่ง → xdotool ขยับจริง) + CursorFX จุดฟ้าเห็นบนจอ (หลักฐาน pixel probe). noVNC iframe ยังเปิดได้พร้อมข้อความ fallback อย่างตรงไปตรงมา
+2. ~~ไมโครโฟนจริง + persist voice turns~~ **persist แล้ว**: ทุก turn เสียง "action" ถูกบันทึกเป็น ChatMessage 2 แถว (meta.source=voice) — ทดสอบไมค์จริงใน Chrome ยังต้องมีคนพูดต่อ (QC ตรวจ server-side แล้ว)
 3. **Managed cert บน Load Balancer**: `FAILED_NOT_VISIBLE` — TLS ปัจจุบัน terminate ที่ Caddy บน VM (VM เป็น SPOF ของหน้าเว็บ); LB + NEG สร้างไว้แล้ว สลับได้เมื่อ cert ACTIVE
 4. **Billing/ตัดบัตร**: ยังไม่ต่อ payment gateway (ผู้ใช้สั่งเลื่อน) — แต่ quota/cap ทำงานแล้ว
-5. **Voice action turns** ไม่ถูกบันทึกเป็น ChatMessage (หายเมื่อ reload) — route `/api/voice/command` ต้องเพิ่ม persistence ถ้าต้องการ history
+5. **Benchmark teammate ≥ 9/10**: สคริปต์พร้อม `python scripts/benchmark_teammate.py` — ยิงกับ prod หลัง deploy แล้วเก็บรายงาน
+
+### ของใหม่ที่เพิ่มเข้ามา (rev.2)
+- **Woibot Coder**: งาน coding ใช้ agent-loop รันใน container ของผู้ใช้ (opencode CLI white-label, โมเดล GLM ผ่าน Together) — รับงานยาว 12 นาที, ผลงาน `coder/<slug>/` + REPORT.md + preview.png, fallback staged generator เมื่อ CLI ไม่มี
+- **CursorFX** (`harness/docker/cursorfx.py`): จุดฟ้า+rim ขาวกะพริบทุกครั้งที่คลิก/เลื่อน (mapped window — การวาดลง root window ใช้ไม่ได้ใน Xvfb+fluxbox นี้, พิสูจน์แล้ว)
+- **Skills base**: 256 skills ใน `apps/web/data/skills/` (MIT-verified + ชิ้นที่แต่งเอง), auto-select ด้วย BGE-M3+keyword ใน `lib/skills/select.ts`, ฉีดเข้า brief ของงาน doc/coding อัตโนมัติ, sync ต่อได้ด้วย `node scripts/sync-skills.mjs`
+- **Memory ML** (`lib/memory.ts`): hybrid recall (recency + BGE-M3 semantic), dedupe cosine ≥0.94, auto-summary ทุกแชท, consolidation >60 rows, งานใหม่ดึงบริบทงานเก่าอัตโนมัติ
+- **เอกสาร**: outline → ขยายทีละ section → HTML สวย (ปก/TOC/เลขหน้า/ตาราง) → DOCX+PDF; QC กำหนด ≥7 หน้า ≥1200 คำ
+- **Responsive**: dashboard ทุกหน้าใช้ได้จริงตั้งแต่ 360px
 
 ## 7. คำสั่ง deploy
 
@@ -125,6 +133,11 @@ cd C:/Users/WINDOWS/AppData/Local/hermes/profiles/woibot-com/workspace/woibot
 - **Caddy ส่ง Host ผิด** → Cloud Run ตอบ 404; ต้อง `header_up Host <run.app>`
 - **Container ใหม่ต้องลบ `SingletonLock` ของ Chromium** ไม่งั้น browser ไม่ start (อยู่ใน entrypoint แล้ว)
 - **x11vnc ต้องมี `-noxdamage`** ไม่งั้นจอดำ
+- **manager exec ตัด stdout ~20k chars (พิสูจน์แล้ว: ภาพ 640px = 12.5KB base64)** → ไฟล์/ภาพใหญ่ให้เขียนลง workspace แล้วดึงผ่าน `/users/:id/file` (ดู `lib/computerUse.ts` grabScreen)
+- **วาดลง root window ไม่มีผลใน Xvfb+fluxbox** (fill_rectangle/poly_fill_arc ไม่ raise แต่ไม่ทาสี) → overlay ต้องเป็น mapped override-redirect window (ดู cursorfx.py)
+- **เปลี่ยน image tag แล้ว container เก่ายังรันต่อ** → ต้อง `POST /api/computer {"action":"destroy"}` แล้ว `?action=ensure` ใหม่ ไม่งั้น ensure จะ reuse ของเดิม (VM reset อย่างเดียวไม่พอ)
+- **GLM-4.5V / Qwen3-VL-235B บน Together ต้อง dedicated endpoint** (serverless ไม่มี) → computer-use ใช้ DeepSeek V4.1 Flash (มี vision, serverless) แทน
+- **computer image tag ปัจจุบัน: v9** (xdotool + opencode CLI + python3-xlib + cursorfx) — startup-script บน VM ต้องชี้ tag ตรงกัน (แก้ metadata แล้ว reset)
 
 ## 9. ไฟล์สำคัญ
 
