@@ -1165,15 +1165,21 @@ export async function produceDocxAndPdf(ctx: AgentContext, slug: string): Promis
   );
   notes.push(`outline: ${outline.sections.length} sections, ${outline.language}`);
 
-  /* (b) per-section bodies, sequentially */
-  const frags: string[] = [];
-  for (let i = 0; i < outline.sections.length; i++) {
+  /* (b) per-section bodies, batched-parallel (4 at a time) so a 12-section
+       document finishes in ~3-4 minutes instead of 8-10+ sequential minutes */
+  const frags: string[] = new Array(outline.sections.length);
+  const BATCH = 4;
+  for (let start = 0; start < outline.sections.length; start += BATCH) {
+    const idxs: number[] = [];
+    for (let i = start; i < Math.min(start + BATCH, outline.sections.length); i++) idxs.push(i);
     await ctx.onProgress?.(
-      14 + Math.round(((i + 1) / outline.sections.length) * 40),
+      14 + Math.round(((start + idxs.length) / outline.sections.length) * 40),
       "sections",
-      `เขียนเนื้อหาหัวข้อ ${i + 1}/${outline.sections.length}: ${outline.sections[i].heading.slice(0, 40)}`,
+      `เขียนเนื้อหาหัวข้อ ${start + 1}-${start + idxs.length}/${outline.sections.length} (ขนาน ${BATCH} ตัว)`,
     );
-    frags.push(await fetchSectionHtml(ctx, outline, i));
+    await Promise.all(idxs.map(async (i) => {
+      frags[i] = await fetchSectionHtml(ctx, outline, i);
+    }));
   }
   const words = countDocWords(frags.join("\n"));
   notes.push(`${outline.sections.length} sections, ~${words} words`);
