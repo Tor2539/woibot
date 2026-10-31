@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { prisma, ensureSchema } from "@/lib/db";
+import { prisma, ensureSchema, pgEnabled } from "@/lib/db";
 import { setSessionCookie } from "@/lib/session";
 import { ensureStarterWorkspace } from "@/lib/starter";
 import { audit } from "@/lib/pg";
@@ -18,7 +18,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร" }, { status: 400 });
   }
 
-  await ensureSchema();
+  if (pgEnabled()) {
+    await ensureSchema();
+  }
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     return NextResponse.json({ ok: false, error: "อีเมลนี้มีบัญชีอยู่แล้ว" }, { status: 409 });
