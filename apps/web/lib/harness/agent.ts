@@ -9,6 +9,8 @@
 import { runScript, writeWorkspaceFile, execInContainer, WORK_DIR } from "./container";
 import { callWoibotLLM } from "../llm";
 import { produceDocxAndPdf, produceSpreadsheet, produceCsv } from "./producers/documents";
+import { produceImageBrief, produceVideoClip } from "./producers/media";
+import { describeImage } from "./producers/vision";
 
 export type AgentContext = {
   taskId: string;
@@ -438,14 +440,14 @@ export async function runAgentTask(ctx: AgentContext): Promise<AgentResult> {
   const slug = slugFor(ctx.title);
   const kind = ctx.workKind;
 
-  if (kind === "video_gen" || kind === "media_heavy") {
+  if (kind === "media_heavy") {
     return {
       ok: false,
       files: [],
       notes: [],
       skipped: "unsupported",
       error:
-        "งานประเภทนี้ยังไม่เปิดใช้งาน: ยังไม่มีโมเดลสร้างวิดีโอ/ประมวลผลหนักที่ติดตั้งจริง ระบบจึงไม่รันเพื่อไม่ให้ได้ผลงานปลอม",
+        "งานประมวลผลหนักประเภทนี้ยังไม่เปิดใช้งาน — ระบบไม่รันเพื่อไม่ให้ได้ผลงานปลอม",
     };
   }
 
@@ -459,8 +461,26 @@ export async function runAgentTask(ctx: AgentContext): Promise<AgentResult> {
     }
     if (kind === "research") return await produceResearch(ctx, slug);
     if (kind === "video_analysis") return await produceVideoAnalysis(ctx, slug);
+    if (kind === "video_gen") {
+      // Composes a real MP4 from generated title cards + audio bed (not a generative model).
+      const out = await produceVideoClip(ctx, slug);
+      if (out?.ok) out.notes = [...(out.notes || []), "ประกอบจาก title cards + แทร็กเสียงที่สร้างขึ้น (ไม่ใช่ footage จากโมเดลสร้างวิดีโอ)"];
+      return out;
+    }
     if (kind === "coding") return await produceCoding(ctx, slug);
-    if (kind === "image") return await produceImageReport(ctx, slug);
+    if (kind === "image") {
+      const g = (ctx.goal + " " + ctx.title).toLowerCase();
+      if (/สร้างภาพ|โปสเตอร์|poster|banner|โฆษณา|design|ออกแบบ|creative/.test(g)) {
+        return await produceImageBrief(ctx, slug);
+      }
+      const newest = await sh(ctx.userId, `cd ${WORK_DIR} && ls -t *.png *.jpg *.jpeg *.webp uploads/* 2>/dev/null | head -1`);
+      const rel = newest.stdout.trim().split("\n")[0];
+      if (rel) {
+        const described = await describeImage(ctx, rel);
+        if (described?.ok && described.files?.length) return described;
+      }
+      return await produceImageReport(ctx, slug);
+    }
     return { ok: false, files: [], notes: [], error: `ไม่รู้จักประเภทงาน: ${kind}` };
   } catch (e) {
     return { ok: false, files: [], notes: [], error: e instanceof Error ? e.message : String(e) };

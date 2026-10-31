@@ -1,7 +1,7 @@
 import { prisma } from "../db";
 
 export type Product = "teammate" | "work";
-export type WorkKind = "coding" | "research" | "doc" | "video_analysis" | "video_gen" | "media_heavy" | "data";
+export type WorkKind = "coding" | "research" | "doc" | "video_analysis" | "video_gen" | "media_heavy" | "data" | "image";
 
 // Subscription plans (Teammate) — monthly recurring
 export const PLANS = {
@@ -22,6 +22,7 @@ export const WORK_RATES: Record<WorkKind, { unit: string; rate: number; label: s
   video_gen:      { unit: "sec",       rate: 0.30,  label: "Video Gen",      labelTh: "สร้างวิดีโอ" },
   media_heavy:    { unit: "vCPU-h",    rate: 0.05,  label: "Cloud Exec",     labelTh: "ประมวลผลบนคลาวด์" },
   data:           { unit: "analysis",  rate: 0.10,  label: "Data/BI",        labelTh: "วิเคราะห์ข้อมูล" },
+  image: { unit: "task", rate: 0.5, label: "Image understanding", labelTh: "อ่านภาพ" },
 };
 
 export function calculateWorkCost(kind: WorkKind, quantity: number): number {
@@ -36,9 +37,10 @@ export const WORK_ESTIMATES: Record<WorkKind, { cost: number; minutes: number; l
   research:       { cost: 1.20, minutes: 12, label: "Deep Research — multi-source + report", tools: ["Web Search", "pgvector", "Report Builder"] },
   doc:            { cost: 0.80, minutes: 10, label: "Document — 12 pages + charts", tools: ["python-docx", "Puppeteer", "Charts"] },
   video_analysis: { cost: 3.00, minutes: 15, label: "Video Analysis — 60min → 5 clips", tools: ["FFmpeg", "Whisper", "Scene Detect"] },
-  video_gen:      { cost: 8.50, minutes: 25, label: "Video Generation — 30s × 3 (GPU)", tools: ["ComfyUI", "FFmpeg", "Remotion"] },
+  video_gen:      { cost: 1.20, minutes: 8,  label: "Video Compose — title cards + audio → MP4 (ffmpeg)", tools: ["ImageMagick", "FFmpeg", "ffprobe"] },
   media_heavy:    { cost: 5.00, minutes: 20, label: "Media Processing — heavy", tools: ["FFmpeg", "ImageMagick"] },
   data:           { cost: 1.50, minutes: 14, label: "Data Analysis — Excel/CSV → dashboard", tools: ["Pandas", "Charts", "Excel"] },
+  image:          { cost: 0.50, minutes: 6,  label: "Image — OCR + vision report / poster", tools: ["Tesseract", "Vision", "ImageMagick"] },
 };
 
 export function estimateTask(kind: WorkKind, opts?: { pages?: number; seconds?: number; minutes?: number }): { kind: WorkKind; cost: number; minutes: number; label: string; tools: string[] } {

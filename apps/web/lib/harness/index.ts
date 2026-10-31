@@ -42,7 +42,7 @@ export const WORK_ESTIMATES: Record<WorkKind, { cost: number; minutes: number; l
   research:       { cost: 1.2, minutes: 12, label: "Deep Research — multi-source + report", tools: ["Web Search", "pgvector"] },
   doc:            { cost: 0.8, minutes: 10, label: "Document — 12 pages + charts", tools: ["python-docx", "Puppeteer"] },
   video_analysis: { cost: 3.0, minutes: 15, label: "Video Analysis — 60min → 5 clips", tools: ["FFmpeg", "Whisper"] },
-  video_gen:      { cost: 8.5, minutes: 25, label: "Video Generation — 30s × 3 (GPU)", tools: ["ComfyUI", "FFmpeg"] },
+  video_gen:      { cost: 1.2, minutes: 8,  label: "Video Compose — title cards + audio → MP4 (ffmpeg)", tools: ["ImageMagick", "FFmpeg"] },
   media_heavy:    { cost: 5.0, minutes: 20, label: "Media Processing — heavy", tools: ["FFmpeg"] },
   data:           { cost: 1.5, minutes: 14, label: "Data Analysis — dashboard", tools: ["Pandas", "Charts"] },
   image:          { cost: 0.5, minutes: 6,  label: "Image Understanding — OCR + vision report", tools: ["Tesseract", "Vision"] },

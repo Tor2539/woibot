@@ -33,9 +33,9 @@ export const WORK_ESTIMATES: Record<WorkKind, { cost: number; minutes: number; l
     breakdown: [{ item: "Transcribe (Whisper)", cost: 1.0 }, { item: "LLM highlight select", cost: 0.8 }, { item: "FFmpeg cut/encode", cost: 1.2 }],
   },
   video_gen: {
-    cost: 8.5, minutes: 25, label: "Video Gen — 30s × 3 (GPU)",
-    tools: ["GPU pool", "ComfyUI / Fal", "Voiceover"],
-    breakdown: [{ item: "GPU (3×30s gen)", cost: 6.0 }, { item: "Voiceover + music", cost: 1.0 }, { item: "Edit + encode", cost: 1.5 }],
+    cost: 1.2, minutes: 8, label: "Video Compose — title cards + audio → MP4 (ffmpeg)",
+    tools: ["ImageMagick", "FFmpeg", "ffprobe"],
+    breakdown: [{ item: "Title cards (ImageMagick)", cost: 0.2 }, { item: "Audio bed + ffmpeg render", cost: 0.6 }, { item: "Verification (ffprobe)", cost: 0.4 }],
   },
   media_heavy: {
     cost: 5.0, minutes: 20, label: "Media Heavy — batch processing",

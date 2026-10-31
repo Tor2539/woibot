@@ -112,13 +112,6 @@ export async function POST(req: NextRequest) {
     // Work product: must estimate + check quota before creation (cost isolation)
     const est = estimateTask(workKind, { pages: body.pages, seconds: body.seconds, minutes: body.minutes });
 
-    // Check video requires explicit confirm
-    if (workKind === "video_gen" && !body.handoffPacket) {
-      // require budget ack for video_gen high cost
-      const check = await canAffordWork(userId, est.cost);
-      if (!check.ok) return errorResponse(check.reason!, 402, { estimate: est, quota: check.quota });
-    }
-
     const quotaCheck = await canAffordWork(userId, est.cost);
     if (!quotaCheck.ok) {
       return NextResponse.json({ ok: false, error: quotaCheck.reason, estimate: est, quota: quotaCheck.quota }, { status: 402 });

@@ -55,7 +55,11 @@ const STAGES: Record<WorkKind, { th: string; en: string; min: number }[]> = {
     { th: "ให้โมเดลอ่านภาพและสรุป", en: "Vision description", min: 2 },
     { th: "สร้างรายงาน PDF และตรวจไฟล์", en: "Report + verify", min: 1 },
   ],
-  video_gen: [{ th: "ยังไม่เปิดใช้งาน (ไม่มีโมเดลสร้างวิดีโอจริง)", en: "Unsupported", min: 0 }],
+  video_gen: [
+    { th: "ร่างสตอรี่และ title cards", en: "Storyboard + cards", min: 2 },
+    { th: "เรนเดอร์วิดีโอด้วย ffmpeg", en: "Render with ffmpeg", min: 3 },
+    { th: "ตรวจไฟล์ (ความยาว/สเปก)", en: "Verify output", min: 1 },
+  ],
   media_heavy: [{ th: "ยังไม่เปิดใช้งาน (ประมวลผลหนัก)", en: "Unsupported", min: 0 }],
 };
 

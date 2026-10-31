@@ -117,7 +117,7 @@ export function Sidebar({
   }));
 
   const NAV_BOTS = dbBots.length
-    ? dbBots.map((b: any) => ({
+    ? dbBots.filter((b: any) => !b.isGroup).map((b: any) => ({
         id: b.id,
         name: b.name,
         role: b.role,
