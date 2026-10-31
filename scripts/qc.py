@@ -71,7 +71,7 @@ class Client:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default=os.environ.get("QC_BASE", "https://woibot.com"))
-    ap.add_argument("--only", default="", help="comma separated subset: doc,xlsx,csv,pdf,image,video,research,coding,chat,voice,team")
+    ap.add_argument("--only", default="", help="comma separated subset: doc,xlsx,csv,pdf,image,video,research,coding,chat,voice,team,computer,memory")
     args = ap.parse_args()
     only = {s.strip() for s in args.only.split(",") if s.strip()}
     c = Client(args.base)
