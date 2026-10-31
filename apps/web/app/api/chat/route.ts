@@ -50,6 +50,8 @@ export async function POST(req: NextRequest) {
       forceWork?: boolean;
       workKind?: "coding" | "research" | "doc" | "video_analysis" | "video_gen" | "media_heavy" | "data";
       attachments?: { fileUrl: string; fileName: string; mimeType: string }[];
+      /** data URLs of attached images — the model reads them directly */
+      images?: string[];
       executionMode?: "cloud" | "local";
     };
 
@@ -76,6 +78,7 @@ export async function POST(req: NextRequest) {
     });
 
     const memories = await prisma.memory.findMany({ where: { userId }, take: 8 });
+    const connectedApps = await prisma.connectedApp.findMany({ where: { userId, status: "connected" } }).catch(() => []);
     const memorySnippet = memories.map((m: any) => `${m.key}: ${m.value}`).join("\n");
 
     // Auto-save explicit memory instructions
@@ -165,7 +168,10 @@ export async function POST(req: NextRequest) {
     const isSecretAsk = /รหัสผ่าน|api key|secret|1password|vault|login/.test(s);
     const isApprovalAsk = /ส่งจริง|โอนเงิน|ลบข้อมูล|deploy.*prod|publish/.test(s);
 
+    const wantsCode = body.forceWork && body.workKind === "coding";
     const llmRes = await callWoibotLLM({
+      role: wantsCode ? "code" : "general",
+      images: (body.images || []).filter((u) => /^data:image\//.test(u)).slice(0, 4).map((u) => ({ dataUrl: u })),
       system: `You are ${teammate.name} (${teammate.role}) inside woibot.com — an AI Personal Teammate running 24/7 on a dedicated Cloud Computer.
 User Memories:
 ${memorySnippet}
@@ -177,12 +183,18 @@ Rules:
     });
 
     const metaObj: Record<string, any> = {
-      workedFor: "6s",
+      workedFor: `${Math.max(1, Math.round(llmRes.ms / 1000))}s`,
       provider: llmRes.provider,
+      model: llmRes.model,
       steps: [
-        { tool: "memory.recall", detail: `Loaded ${memories.length} personal & team memories` },
-        { tool: "apps.context", detail: "Synced Gmail, Google Calendar, Slack & Cloud Computer (:99)" },
-        { tool: "teammate.respond", detail: `Synthesized response via ${llmRes.provider}` },
+        { tool: "memory.recall", detail: `โหลด ${memories.length} ความจำ (ส่วนตัว + ทีม)` },
+        ...((body.images || []).length
+          ? [{ tool: "vision.read", detail: `อ่านภาพที่แนบ ${(body.images || []).length} ภาพด้วย ${llmRes.model}` }]
+          : []),
+        ...(connectedApps?.length
+          ? [{ tool: "apps.context", detail: `เชื่อมต่อแล้ว: ${connectedApps.map((a: any) => a.provider).join(", ")}` }]
+          : []),
+        { tool: "teammate.respond", detail: `ตอบด้วย ${llmRes.model}` },
       ],
     };
 

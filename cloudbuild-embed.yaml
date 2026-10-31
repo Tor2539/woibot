@@ -1,0 +1,19 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - services/embed/Dockerfile
+      - -t
+      - asia-southeast1-docker.pkg.dev/woibot/woibot/embed:v1
+      - -t
+      - asia-southeast1-docker.pkg.dev/woibot/woibot/embed:latest
+      - services/embed
+images:
+  - asia-southeast1-docker.pkg.dev/woibot/woibot/embed:v1
+  - asia-southeast1-docker.pkg.dev/woibot/woibot/embed:latest
+options:
+  machineType: E2_HIGHCPU_8
+  diskSizeGb: 100
+  logging: CLOUD_LOGGING_ONLY
+timeout: 2400s

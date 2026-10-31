@@ -35,6 +35,7 @@ export default function UnifiedTasksPage() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [runMsg, setRunMsg] = useState<string>("");
 
   const loadTasks = () => {
     fetch("/api/tasks")
@@ -67,6 +68,24 @@ export default function UnifiedTasksPage() {
     }
   };
 
+  const handleRun = async (taskId: string) => {
+    setBusyId(taskId);
+    setRunMsg("กำลังรันใน Cloud Computer ของคุณ… (อาจใช้เวลา 30-120 วินาที)");
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/run`, { method: "POST" }).then((r) => r.json());
+      if (res?.ok) {
+        setRunMsg("เสร็จแล้ว — ผลงานผ่านการตรวจสอบและบันทึกไว้ใน Deliverables");
+      } else {
+        setRunMsg(`ยังไม่ผ่าน: ${res?.error || "เปิดงานเพื่อดูรายละเอียด"}`);
+      }
+    } catch {
+      setRunMsg("รันไม่สำเร็จ — ลองใหม่อีกครั้ง");
+    } finally {
+      setBusyId(null);
+      loadTasks();
+    }
+  };
+
   const filtered = tasks.filter((t) => {
     if (filterProduct !== "all" && t.product !== filterProduct) return false;
     if (filterStatus !== "all" && t.status !== filterStatus) return false;
@@ -94,6 +113,18 @@ export default function UnifiedTasksPage() {
           </button>
         </div>
       </div>
+
+      {runMsg && (
+        <div
+          className="flex items-center justify-between rounded-[8px] px-3 py-2 text-[12px]"
+          style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
+        >
+          <span>{runMsg}</span>
+          <button type="button" onClick={() => setRunMsg("")} className="text-[11px] text-[var(--wb-muted)] hover:text-[var(--wb-fg)]">
+            ปิด
+          </button>
+        </div>
+      )}
 
       {/* 10 Statuses Counter Strip */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
@@ -213,10 +244,24 @@ export default function UnifiedTasksPage() {
                         <button
                           type="button"
                           disabled={busyId === t.id}
-                          onClick={() => handleTransition(t.id, "completed", true)}
+                          onClick={async () => {
+                            await handleTransition(t.id, "queued", true);
+                            await handleRun(t.id);
+                          }}
                           className="rounded-[6px] bg-amber-500 hover:bg-amber-400 px-2.5 py-1 text-[11px] font-semibold text-black"
                         >
                           Approve & Run
+                        </button>
+                      )}
+                      {["queued", "failed", "partially_completed", "paused", "waiting_for_user"].includes(t.status) && (
+                        <button
+                          type="button"
+                          disabled={busyId === t.id}
+                          onClick={() => handleRun(t.id)}
+                          className="inline-flex items-center gap-1 rounded-[6px] bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+                        >
+                          <Play className="h-3 w-3" />
+                          {busyId === t.id ? "Running…" : "Run"}
                         </button>
                       )}
                       <button
@@ -263,7 +308,10 @@ export default function UnifiedTasksPage() {
                   {t.status === "waiting_for_user" && (
                     <button
                       type="button"
-                      onClick={() => handleTransition(t.id, "completed", true)}
+                      onClick={async () => {
+                        await handleTransition(t.id, "queued", true);
+                        await handleRun(t.id);
+                      }}
                       className="flex-1 rounded-[6px] bg-amber-500 py-1.5 text-[11.5px] font-semibold text-black"
                     >
                       Approve

@@ -80,11 +80,12 @@ export async function computerAction(userId: string, action: "pause" | "resume" 
   return out ?? { ok: false, error: "manager_not_configured" };
 }
 
-export async function execInComputer(userId: string, cmd: string) {
-  const out = await call(`/users/${encodeURIComponent(userId)}/exec`, {
-    method: "POST",
-    body: JSON.stringify({ cmd }),
-  });
+export async function execInComputer(userId: string, cmd: string, timeoutMs = 20000) {
+  const out = await call(
+    `/users/${encodeURIComponent(userId)}/exec`,
+    { method: "POST", body: JSON.stringify({ cmd }) },
+    timeoutMs,
+  );
   return out ?? { ok: false, error: "manager_not_configured" };
 }
 
@@ -96,4 +97,18 @@ export function computerPublicOrigin() {
 export async function computerLogs(userId: string) {
   const out = await call(`/users/${encodeURIComponent(userId)}/logs`);
   return out ?? { ok: false, error: "manager_not_configured" };
+}
+
+
+/** Stream a file out of the user's workspace (manager reads it from the bind mount). */
+export async function computerFile(userId: string, relPath: string): Promise<Response | null> {
+  if (!MANAGER_URL) return null;
+  try {
+    return await fetch(
+      `${MANAGER_URL}/users/${encodeURIComponent(userId)}/file?path=${encodeURIComponent(relPath)}`,
+      { headers: { "x-woibot-token": MANAGER_TOKEN }, cache: "no-store", signal: AbortSignal.timeout(30000) },
+    );
+  } catch {
+    return null;
+  }
 }

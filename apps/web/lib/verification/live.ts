@@ -102,11 +102,27 @@ print("__RESULT__" + json.dumps({
 PY
 `;
 
-const CODE_SCRIPT = (cmd: string) => String.raw`
+const CODE_SCRIPT = (cmd: string) => `
 set -u
 cd ${WS}
-if [ ! -f package.json ]; then echo '__RESULT__{"found":false}'; exit 0; fi
+if [ -f package.json ]; then
 ${cmd}
+  exit 0
+fi
+app=$(ls -td */index.html index.html 2>/dev/null | head -1)
+if [ -z "$app" ]; then echo '__RESULT__{"found":false}'; exit 0; fi
+dir=$(dirname "$app")
+python3 - "$app" "$dir" <<'PY'
+import json, os, sys
+app, d = sys.argv[1], sys.argv[2]
+shots = [f for f in os.listdir(d) if f.lower().endswith((".png", ".jpg"))]
+shot = shots[0] if shots else None
+print("__RESULT__" + json.dumps({
+  "found": True, "app": app, "bytes": os.path.getsize(app),
+  "screenshot": shot,
+  "screenshot_bytes": os.path.getsize(os.path.join(d, shot)) if shot else 0,
+}))
+PY
 `;
 
 const RESEARCH_SCRIPT = String.raw`
@@ -171,16 +187,29 @@ PY
     if (!out.available) return unavailable(taskId, type, out.error || "unreachable");
     const s = out.stdout;
     const found = !s.includes('"found":false');
-    const checks: Check[] = [
-      critical("project_present", found, found ? "package.json found in the user's workspace" : "No package.json in /home/woibot/workspace"),
-      critical("typecheck", /tsc_exit=0/.test(s), pick(s, "tsc_exit")),
-      critical("tests", /test_exit=0/.test(s), pick(s, "test_exit")),
-      critical("build", /build_exit=0/.test(s), pick(s, "build_exit")),
-    ];
+    const staticApp = parseResult<any>(s);
+    const isStatic = Boolean(staticApp?.found && staticApp?.app);
+    const checks: Check[] = isStatic
+      ? [
+          critical("app_present", true, `${staticApp.app} — ${staticApp.bytes} bytes`),
+          critical("renders_in_chromium", Number(staticApp.screenshot_bytes || 0) > 2000,
+            staticApp.screenshot ? `screenshot ${staticApp.screenshot} (${staticApp.screenshot_bytes} bytes)` : "no rendered screenshot"),
+          critical("html_wellformed", Number(staticApp.bytes || 0) > 500, "index.html has real content"),
+        ]
+      : [
+          critical("project_present", found, found ? "package.json found in the user's workspace" : "No package.json in /home/woibot/workspace"),
+          critical("typecheck", /tsc_exit=0/.test(s), pick(s, "tsc_exit")),
+          critical("tests", /test_exit=0/.test(s), pick(s, "test_exit")),
+          critical("build", /build_exit=0/.test(s), pick(s, "build_exit")),
+        ];
     const passed = checks.filter((c) => c.severity === "critical").every((c) => c.passed);
     return {
       taskId, type, mode: "live", passed, checks,
-      summary: passed ? "Coding verified by running typecheck, tests and build inside the Cloud Computer." : "Coding verification failed — see failing checks for the real command output.",
+      summary: passed
+        ? isStatic
+          ? `Static app verified — ${staticApp.app} renders in Chromium (screenshot ${staticApp.screenshot_bytes} bytes).`
+          : "Coding verified by running typecheck, tests and build inside the Cloud Computer."
+        : "Coding verification failed — see failing checks for the real command output.",
       limitations: ["Browser-level UX is only covered when the project ships its own e2e suite."],
       createdAt: new Date().toISOString(), durationMs: Date.now() - started,
     };

@@ -36,8 +36,15 @@ import {
   Layers,
   Code2,
   Cloud,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { ROSTER_BOTS } from "@/components/layout/sidebar";
+import {
+  useVoiceCommand,
+  VOICE_UNSUPPORTED_MESSAGE,
+  type VoiceLang,
+} from "@/components/voice/useVoiceCommand";
 
 type InspectorTab = "computer" | "memory" | "routines" | "library" | "overview";
 
@@ -114,8 +121,12 @@ function TeammateWorkspaceInner() {
   const [forceWork, setForceWork] = useState(false);
   const [workMode, setWorkMode] = useState<"cloud" | "local">("cloud");
   const [showSkillsMenu, setShowSkillsMenu] = useState(false);
-  const [voiceActive, setVoiceActive] = useState(false);
+  const [voiceLang, setVoiceLang] = useState<VoiceLang>("th-TH");
+  const [voiceNotice, setVoiceNotice] = useState("");
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<{ fileName: string; fileUrl: string; mimeType: string }[]>([]);
+  const [attachedImages, setAttachedImages] = useState<string[]>([]);
   const [expandedTraces, setExpandedTraces] = useState<Record<string, boolean>>({});
   const [briefingOpen, setBriefingOpen] = useState(true);
   const [briefing, setBriefing] = useState<any>(null);
@@ -137,6 +148,13 @@ function TeammateWorkspaceInner() {
   useEffect(() => {
     const id = setInterval(() => setScreenTick((n) => n + 1), 8000);
     return () => clearInterval(id);
+  }, []);
+
+  // Stop any speech synthesis when leaving the page.
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && window.speechSynthesis) window.speechSynthesis.cancel();
+    };
   }, []);
 
 
@@ -253,6 +271,7 @@ function TeammateWorkspaceInner() {
     setMessages((prev) => [...prev, tempUserMsg]);
     if (!overrideText) setInput("");
     setAttachedFiles([]);
+    setAttachedImages([]);
     setSending(true);
 
     try {
@@ -266,6 +285,7 @@ function TeammateWorkspaceInner() {
           forceWork: overrideForceWork ?? forceWork,
           executionMode: workMode,
           attachments: tempUserMsg.meta?.attachments || [],
+          images: attachedImages,
         }),
       });
       const json = await res.json();
@@ -384,16 +404,136 @@ function TeammateWorkspaceInner() {
     );
   };
 
-  const toggleVoiceCommand = () => {
-    if (!voiceActive) {
-      setVoiceActive(true);
-      setTimeout(() => {
-        setInput((prev) => (prev ? `${prev} สรุปอีเมลสำคัญและเตรียมสไลด์ประชุม 10 โมง` : "สรุปอีเมลสำคัญและเตรียมสไลด์ประชุม 10 โมง"));
-        setVoiceActive(false);
-      }, 2200);
-    } else {
-      setVoiceActive(false);
+  // Real browser dictation (Web Speech API). Final transcript is routed through
+  // /api/voice/command: computer actions run inside the user's Cloud Computer,
+  // everything else falls back to the normal chat path.
+  const voice = useVoiceCommand({ lang: voiceLang, onFinal: handleVoiceFinal });
+
+  async function handleVoiceFinal(raw: string) {
+    const spoken = raw.trim();
+    if (!spoken || voiceBusy) return;
+
+    setVoiceBusy(true);
+    setVoiceNotice(`กำลังสั่งงาน: “${spoken}”`);
+
+    try {
+      const res = await fetch("/api/voice/command", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: spoken }),
+      });
+      const json = await res.json().catch(() => ({} as any));
+
+      if (json?.kind === "action") {
+        const result = json.result || {};
+        const cmdOk = Boolean(result.ok) && Number(result.code ?? 0) === 0;
+        const outRaw = String(json.stdout || result.stdout || result.stderr || "").trim();
+        const out = outRaw
+          ? outRaw.length > 400
+            ? `${outRaw.slice(0, 400)}…`
+            : outRaw
+          : cmdOk
+            ? "คำสั่งทำงานเสร็จแล้ว (ไม่มี output)"
+            : String(result.error || "คำสั่งล้มเหลว (ไม่มี output)");
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `voice_u_${Date.now()}`,
+            role: "user" as const,
+            content: spoken,
+            createdAt: new Date().toISOString(),
+          },
+          {
+            id: `voice_a_${Date.now() + 1}`,
+            role: "assistant" as const,
+            content: `${cmdOk ? "ทำบน Cloud Computer แล้ว" : "คำสั่งไม่สำเร็จ"} · ${json.label || json.intent || "action"}\n${out}`,
+            createdAt: new Date().toISOString(),
+            meta: {
+              workedFor: "<1s",
+              steps: [
+                { tool: "voice.command", detail: `“${spoken}” → ${json.intent || "action"}` },
+                { tool: "computer.exec", detail: String(json.cmd || "").slice(0, 160) },
+              ],
+            },
+          },
+        ]);
+
+        setVoiceNotice(cmdOk ? `สั่งงานสำเร็จ · ${json.label || json.intent}` : `คำสั่งคืน exit ${result.code ?? "?"}`);
+        // Pull a fresh frame of the container display after the action ran.
+        setScreenTick((n) => n + 1);
+        setScreenTs(new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }));
+      } else if (json?.kind === "chat") {
+        setVoiceNotice(`ไม่ได้เป็นคำสั่งคอมพิวเตอร์ — ส่งให้ ${currentBot.name} ตอบ`);
+        await handleSend(spoken);
+      } else {
+        setVoiceNotice(json?.error || "สั่งงานด้วยเสียงไม่สำเร็จ");
+      }
+    } catch {
+      setVoiceNotice("เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ — ลองอีกครั้ง");
+    } finally {
+      setVoiceBusy(false);
+      setTimeout(() => feedEndRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
     }
+  }
+
+  const toggleVoiceInput = () => {
+    if (!voice.supported) {
+      setVoiceNotice(VOICE_UNSUPPORTED_MESSAGE);
+      return;
+    }
+    if (voice.listening) {
+      voice.stop();
+      return;
+    }
+    setVoiceNotice("");
+    voice.start();
+  };
+
+  const toggleVoiceLang = () => {
+    const next: VoiceLang = voiceLang === "th-TH" ? "en-US" : "th-TH";
+    setVoiceLang(next);
+    voice.setLang(next);
+    setVoiceNotice(next === "th-TH" ? "เปลี่ยนภาษาพูดเป็นไทย" : "Switched dictation to English");
+  };
+
+  const speakLastAssistant = () => {
+    if (typeof window === "undefined") return;
+    const synth = window.speechSynthesis;
+    if (!synth || typeof window.SpeechSynthesisUtterance === "undefined") {
+      setVoiceNotice("เบราว์เซอร์นี้ไม่รองรับการอ่านออกเสียง");
+      return;
+    }
+    if (speaking) {
+      synth.cancel();
+      setSpeaking(false);
+      return;
+    }
+    const last = [...messages].reverse().find((m) => m.role === "assistant" && m.content?.trim());
+    if (!last) {
+      setVoiceNotice("ยังไม่มีข้อความของผู้ช่วยให้อ่านออกเสียง");
+      return;
+    }
+    const plain = last.content
+      .replace(/```[\s\S]*?```/g, " ")
+      .replace(/[*_`#>|]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 1200);
+    if (!plain) {
+      setVoiceNotice("ไม่มีข้อความที่อ่านออกเสียงได้");
+      return;
+    }
+    synth.cancel();
+    const utterance = new window.SpeechSynthesisUtterance(plain);
+    utterance.lang = voiceLang;
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.onend = () => setSpeaking(false);
+    utterance.onerror = () => setSpeaking(false);
+    setSpeaking(true);
+    setVoiceNotice("");
+    synth.speak(utterance);
   };
 
   return (
@@ -1073,6 +1213,57 @@ function TeammateWorkspaceInner() {
               </div>
             )}
 
+            {/* Voice Command Status / Live Interim Transcript */}
+            {(voice.listening || voice.error || voiceNotice) && (
+              <div
+                className="mb-2 rounded-xl px-3 py-2"
+                style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line-strong)" }}
+              >
+                <div className="flex items-start gap-2 text-[12px] leading-relaxed">
+                  <span
+                    className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                      voice.listening ? "bg-red-500 animate-pulse" : voice.error ? "bg-amber-400" : "bg-[var(--wb-line-strong)]"
+                    }`}
+                  />
+                  <div className="min-w-0 flex-1">
+                    {voice.listening ? (
+                      <>
+                        <div className="text-[var(--wb-fg)]">{voice.transcript || "กำลังฟัง…"}</div>
+                        {voice.interim && <div className="text-[var(--wb-muted)] italic">{voice.interim}</div>}
+                        {!voice.transcript && !voice.interim && (
+                          <div className="text-[var(--wb-muted)]">
+                            พูดได้เลย เช่น “เปิด chrome”, “ถ่ายภาพหน้าจอ”, “จดว่า…” แล้วกดไมค์อีกครั้งเพื่อสั่งงาน
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-[var(--wb-muted)]">{voiceNotice || "พร้อมรับคำสั่งเสียง"}</div>
+                    )}
+                    {voice.error && <div className="mt-1 text-amber-400">{voice.error}</div>}
+                  </div>
+                  {voice.listening && (
+                    <button
+                      type="button"
+                      onClick={voice.stop}
+                      className="shrink-0 rounded-[6px] bg-[#2b66e0] px-2 py-1 text-[11px] font-medium text-white hover:bg-[#2458c6]"
+                    >
+                      สั่งงาน
+                    </button>
+                  )}
+                  {!voice.listening && Boolean(voiceNotice) && (
+                    <button
+                      type="button"
+                      onClick={() => setVoiceNotice("")}
+                      className="shrink-0 text-[var(--wb-muted)] hover:text-[var(--wb-fg)]"
+                      title="ปิดข้อความ"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div
               className="rounded-[20px] p-3 transition-shadow focus-within:ring-1 focus-within:ring-[#3b82f6]"
               style={{
@@ -1126,17 +1317,31 @@ function TeammateWorkspaceInner() {
                     type="file"
                     multiple
                     className="hidden"
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       const files = Array.from(e.target.files || []);
-                      if (files.length) {
-                        setAttachedFiles((prev) => [
-                          ...prev,
-                          ...files.map((f) => ({
-                            fileName: f.name,
-                            fileUrl: `/uploads/${f.name}`,
-                            mimeType: f.type || "application/octet-stream",
-                          })),
-                        ]);
+                      for (const f of files) {
+                        const dataUrl: string = await new Promise((resolve) => {
+                          const r = new FileReader();
+                          r.onload = () => resolve(String(r.result || ""));
+                          r.readAsDataURL(f);
+                        });
+                        if (!dataUrl) continue;
+                        if ((f.type || "").startsWith("image/")) {
+                          setAttachedImages((prev) => [...prev, dataUrl].slice(-4));
+                        }
+                        try {
+                          const up = await fetch("/api/uploads", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ fileName: f.name, dataUrl }),
+                          }).then((r) => r.json());
+                          if (up?.ok) {
+                            setAttachedFiles((prev) => [
+                              ...prev,
+                              { fileName: f.name, fileUrl: up.path, mimeType: f.type || "application/octet-stream" },
+                            ]);
+                          }
+                        } catch {}
                       }
                     }}
                   />
@@ -1200,18 +1405,42 @@ function TeammateWorkspaceInner() {
                     <option value="high">Effort: High</option>
                   </select>
 
-                  {/* Push-to-Talk Voice Command Bar */}
+                  {/* Push-to-Talk Voice Command Bar (real Web Speech dictation) */}
                   <button
                     type="button"
-                    onClick={toggleVoiceCommand}
-                    className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-                      voiceActive
+                    onClick={toggleVoiceLang}
+                    className="flex h-8 items-center justify-center rounded-full bg-[var(--wb-panel)] border border-[var(--wb-line)] px-2 text-[10.5px] font-semibold text-[var(--wb-muted)] hover:text-[var(--wb-fg)]"
+                    title="สลับภาษาที่ใช้พูด (ไทย / อังกฤษ)"
+                  >
+                    {voiceLang === "th-TH" ? "TH" : "EN"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={toggleVoiceInput}
+                    disabled={voiceBusy}
+                    className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
+                      voice.listening
                         ? "bg-red-500 text-white animate-pulse"
                         : "bg-[var(--wb-panel)] border border-[var(--wb-line)] text-[var(--wb-muted)] hover:text-[var(--wb-fg)]"
                     }`}
-                    title="Push-to-Talk Voice Dictation (TH/EN)"
+                    title={voice.listening ? "หยุดฟัง แล้วสั่งงานทันที" : "กดเพื่อพูดสั่งงาน (TH/EN)"}
                   >
-                    {voiceActive ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+                    {voice.listening ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+                  </button>
+
+                  {/* Read the last assistant message aloud (Thai) */}
+                  <button
+                    type="button"
+                    onClick={speakLastAssistant}
+                    className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                      speaking
+                        ? "bg-[#2b66e0] text-white"
+                        : "bg-[var(--wb-panel)] border border-[var(--wb-line)] text-[var(--wb-muted)] hover:text-[var(--wb-fg)]"
+                    }`}
+                    title={speaking ? "หยุดอ่าน" : "อ่านข้อความล่าสุดออกเสียง"}
+                  >
+                    {speaking ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
                   </button>
 
                   {/* Send Button */}

@@ -6,6 +6,7 @@
  */
 
 import { prisma } from "../db";
+import { ensureComputer } from "../computer";
 import { createVerificationReport, type VerificationReport } from "../verification/pipeline";
 
 // Re-export sub-modules
@@ -17,7 +18,7 @@ export * from "./checkpointer";
 
 // Core types (PRD 7.x / 9.x)
 
-export type WorkKind = "coding" | "research" | "doc" | "video_analysis" | "video_gen" | "media_heavy" | "data";
+export type WorkKind = "coding" | "research" | "doc" | "video_analysis" | "video_gen" | "media_heavy" | "data" | "image";
 export type TaskStatus = "queued" | "planning" | "in_progress" | "waiting_for_user" | "paused" | "reviewing" | "completed" | "partially_completed" | "failed" | "cancelled";
 export type ExecutionMode = "cloud" | "local";
 
@@ -44,6 +45,7 @@ export const WORK_ESTIMATES: Record<WorkKind, { cost: number; minutes: number; l
   video_gen:      { cost: 8.5, minutes: 25, label: "Video Generation — 30s × 3 (GPU)", tools: ["ComfyUI", "FFmpeg"] },
   media_heavy:    { cost: 5.0, minutes: 20, label: "Media Processing — heavy", tools: ["FFmpeg"] },
   data:           { cost: 1.5, minutes: 14, label: "Data Analysis — dashboard", tools: ["Pandas", "Charts"] },
+  image:          { cost: 0.5, minutes: 6,  label: "Image Understanding — OCR + vision report", tools: ["Tesseract", "Vision"] },
 };
 
 export function estimateTask(kind: WorkKind, opts?: { pages?: number; seconds?: number; minutes?: number }) {
@@ -115,42 +117,116 @@ export async function getContainerForUser(userId: string) {
   return getOrCreateContainer(userId);
 }
 
-// High-level execute: plan → run → verify
+// High-level execute: ensure computer → run the real agent → verify → deliver
 export async function executeTask(taskId: string) {
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task) throw new Error(`Task not found: ${taskId}`);
+  const userId = (task as any).userId as string;
+  if (!userId) throw new Error("Task has no owner");
 
-  // 1) planning
-  await prisma.task.update({ where: { id: taskId }, data: { status: "planning", progress: 5 } });
-  const { planTask } = await import("./planner");
-  const plan = await planTask(task.goal, (task.workKind as WorkKind) || "coding");
+  const kind = ((task as any).workKind || "research") as WorkKind;
 
-  // 2) in_progress
-  await prisma.task.update({ where: { id: taskId }, data: { status: "in_progress", progress: 15 } });
+  const progress = async (pct: number, step: string, note?: string) => {
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { status: "in_progress", progress: pct, currentStep: note ? `${step}: ${note}` : step },
+    }).catch(() => {});
+  };
 
-  const { runPlan } = await import("./runner");
-  const result = await runPlan(taskId, plan, task.userId);
+  // 1) the task must have a running Cloud Computer, otherwise nothing runs
+  await prisma.task.update({ where: { id: taskId }, data: { status: "planning", progress: 3, startedAt: new Date() } }).catch(() => {});
+  const computer = await ensureComputer(userId);
+  if (computer.status !== "running") {
+    const msg = `Cloud Computer ไม่พร้อม (${computer.status}${computer.detail ? `: ${computer.detail}` : ""})`;
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { status: "failed", progress: 0, error: msg },
+    }).catch(() => {});
+    return { ok: false, error: msg };
+  }
 
-  // 3) reviewing + verification
-  await prisma.task.update({ where: { id: taskId }, data: { status: "reviewing", progress: 85 } });
-  const verification = await createVerificationReport(taskId, mapKindToVerifyType(task.workKind), undefined, { userId: (task as any).userId });
-  await prisma.task.update({
-    where: { id: taskId },
-    data: { verification: JSON.stringify(verification), progress: verification.passed ? 100 : 75 },
+  // 2) run the real agent
+  const { runAgentTask } = await import("./agent");
+  const result = await runAgentTask({
+    taskId,
+    userId,
+    goal: String((task as any).goal || (task as any).title || ""),
+    title: String((task as any).title || "woibot task"),
+    workKind: kind,
+    onProgress: progress,
   });
 
-  // 4) final status
-  const finalStatus: TaskStatus = verification.passed ? "completed" : "partially_completed";
+  if (!result.ok) {
+    await prisma.task.update({
+      where: { id: taskId },
+      data: {
+        status: result.skipped === "unsupported" ? "failed" : "failed",
+        progress: 0,
+        error: result.error || "agent failed",
+        currentStep: null,
+      },
+    }).catch(() => {});
+    return { ok: false, error: result.error, notes: result.notes };
+  }
+
+  // 3) register the files that actually exist
+  for (const f of result.files) {
+    const name = f.split("/").pop() || f;
+    const mime = name.endsWith(".pdf") ? "application/pdf"
+      : name.endsWith(".docx") ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      : name.endsWith(".md") ? "text/markdown"
+      : name.endsWith(".csv") ? "text/csv"
+      : name.endsWith(".json") ? "application/json"
+      : name.endsWith(".mp4") ? "video/mp4"
+      : name.endsWith(".png") ? "image/png"
+      : name.endsWith(".html") ? "text/html"
+      : "application/octet-stream";
+    await prisma.deliverable.create({
+      data: {
+        taskId,
+        kind: kind,
+        fileName: f,
+        fileUrl: `/api/tasks/${taskId}/deliverable?path=${encodeURIComponent(f)}`,
+        mimeType: mime,
+        editable: !name.endsWith(".pdf") && !name.endsWith(".mp4"),
+      },
+    }).catch(() => {});
+  }
+
+  // 4) verification runs against those real files
+  await prisma.task.update({ where: { id: taskId }, data: { status: "reviewing", progress: 88 } }).catch(() => {});
+  const verification = await createVerificationReport(taskId, mapKindToVerifyType(kind), undefined, { userId });
+
+  const passed = verification.passed;
   const updated = await prisma.task.update({
     where: { id: taskId },
     data: {
-      status: finalStatus,
-      progress: verification.passed ? 100 : 75,
-      completedAt: verification.passed ? new Date() : undefined,
+      verification: JSON.stringify(verification),
+      status: passed ? "completed" : "partially_completed",
+      progress: passed ? 100 : 88,
+      completedAt: passed ? new Date() : undefined,
+      currentStep: null,
+      error: passed ? null : `ตรวจไม่ผ่าน: ${verification.checks.filter((c) => !c.passed && c.severity === "critical").map((c) => c.name).join(", ")}`,
     },
   });
 
-  return { plan, result, verification, task: updated };
+  // 5) meter usage only for work that actually produced files
+  try {
+    const estimate = (task as any).estimate;
+    const cost = typeof estimate?.cost === "number" ? estimate.cost : 0;
+    await prisma.usageEvent.create({
+      data: {
+        userId,
+        taskId,
+        kind,
+        cost,
+        minutes: Number(estimate?.minutes || 0),
+        status: passed ? "completed" : "partial",
+      },
+    }).catch(() => {});
+  } catch {}
+
+  return { ok: passed, result, verification, task: updated };
 }
 
 function mapKindToVerifyType(kind?: string | null): VerificationReport["type"] {
@@ -159,5 +235,8 @@ function mapKindToVerifyType(kind?: string | null): VerificationReport["type"] {
   if (kind === "video_gen" || kind === "video_analysis" || kind === "media_heavy") return "video";
   if (kind === "research") return "research";
   if (kind === "data") return "data";
+  if (kind === "image") return "doc";
   return "research";
 }
+
+export { runAgentTask } from "./agent";

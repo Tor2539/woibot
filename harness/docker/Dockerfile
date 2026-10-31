@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl wget git jq unzip procps \
     python3 python3-pip \
     chromium xvfb x11vnc fluxbox novnc websockify supervisor x11-xserver-utils \
-    ffmpeg libreoffice poppler-utils \
+    ffmpeg libreoffice libreoffice-writer libreoffice-calc libreoffice-impress poppler-utils \
     tesseract-ocr tesseract-ocr-tha tesseract-ocr-eng imagemagick \
     python3-openpyxl python3-pandas python3-pip \
     fonts-noto-core fonts-noto-cjk fonts-thai-tlwg \

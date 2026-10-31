@@ -1,83 +1,88 @@
-export interface LLMCallOptions {
+/**
+ * LLM router — Together AI only.
+ *
+ * Policy (set by the product owner):
+ *   - general work  → deepseek-ai/DeepSeek-V4.1-Flash-1017
+ *   - coding work   → zai-org/GLM-5.3-Flash
+ *   - images        → same DeepSeek model, images attached as data URLs
+ * No OpenAI, no Anthropic, no fallback to them.
+ */
+
+const TOGETHER_URL = "https://api.together.xyz/v1/chat/completions";
+const TOGETHER_KEY = process.env.TOGETHER_API_KEY || "";
+
+export const MODELS = {
+  general: process.env.WOIBOT_MODEL_GENERAL || "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+  code: process.env.WOIBOT_MODEL_CODE || "zai-org/GLM-5.3-Flash",
+} as const;
+
+export type ModelRole = keyof typeof MODELS;
+
+export type ImageInput = { dataUrl: string; detail?: "low" | "high" | "auto" };
+
+export type LLMCall = {
   system: string;
   user: string;
   maxTokens?: number;
+  role?: ModelRole;
+  images?: ImageInput[];
+  temperature?: number;
+  json?: boolean;
+};
+
+export type LLMResult = { text: string; provider: "together"; model: string; ms: number };
+
+function keyPresent() {
+  return TOGETHER_KEY.length > 20;
 }
 
-export async function callWoibotLLM({ system, user, maxTokens = 900 }: LLMCallOptions): Promise<{ text: string; provider: string }> {
-  const providers = [
-    {
-      name: "fireworks",
-      key: process.env.FIREWORKS_API_KEY,
-      url: "https://api.fireworks.ai/inference/v1/chat/completions",
-      model: "accounts/fireworks/models/deepseek-v3",
-    },
-    {
-      name: "deepseek",
-      key: process.env.DEEPSEEK_API_KEY,
-      url: "https://api.deepseek.com/v1/chat/completions",
-      model: "deepseek-chat",
-    },
-    {
-      name: "openai",
-      key: process.env.OPENAI_API_KEY,
-      url: "https://api.openai.com/v1/chat/completions",
-      model: "gpt-4o-mini",
-    },
-  ];
+export async function callWoibotLLM(call: LLMCall): Promise<LLMResult> {
+  if (!keyPresent()) throw new Error("TOGETHER_API_KEY is not configured");
 
-  for (const p of providers) {
-    if (!p.key) continue;
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 7500);
-      const res = await fetch(p.url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${p.key}`,
-        },
-        body: JSON.stringify({
-          model: p.model,
-          messages: [
-            { role: "system", content: system },
-            { role: "user", content: user },
-          ],
-          temperature: 0.4,
-          max_tokens: maxTokens,
-        }),
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
-      if (res.ok) {
-        const data = await res.json();
-        const text = data?.choices?.[0]?.message?.content?.trim();
-        if (text) return { text, provider: p.name };
-      }
-    } catch {
-      // try next provider
-    }
+  const model = MODELS[call.role || "general"];
+  const started = Date.now();
+
+  const content: any[] = [{ type: "text", text: call.user }];
+  for (const img of call.images || []) {
+    content.push({ type: "image_url", image_url: { url: img.dataUrl, detail: img.detail || "auto" } });
   }
 
-  return {
-    text: synthesizeFallbackReply(user),
-    provider: "woibot-local-synthesizer",
+  const body: Record<string, unknown> = {
+    model,
+    messages: [
+      ...(call.system ? [{ role: "system", content: call.system }] : []),
+      { role: "user", content: call.images?.length ? content : call.user },
+    ],
+    max_tokens: call.maxTokens ?? 1600,
+    temperature: call.temperature ?? 0.4,
   };
+  if (call.json) body.response_format = { type: "json_object" };
+
+  const res = await fetch(TOGETHER_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${TOGETHER_KEY}`,
+      "Content-Type": "application/json",
+      // Together's edge rejects non-browser user agents with error 1010
+      "User-Agent": "woibot/1.0 (+https://woibot.com)",
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(120000),
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`together_${res.status}: ${detail.slice(0, 300)}`);
+  }
+
+  const data: any = await res.json();
+  const msg = data?.choices?.[0]?.message || {};
+  const text = String(msg.content ?? "").trim() || String(msg.reasoning_content ?? "").trim();
+
+  return { text, provider: "together", model, ms: Date.now() - started };
 }
 
-function synthesizeFallbackReply(input: string): string {
-  const s = input.toLowerCase();
-  if (/อีเมล|เมล|email|inbox|ร่าง/.test(s)) {
-    return "ตรวจสอบ Gmail (takin@woxacorp.com) และคัดกรองข้อความสำคัญให้แล้วครับ:\n\n1. **ACME Corp (คุณสมชาย)** — ขอใบเสนอราคา Enterprise CRM ภายใน 15:00 น. (ร่างคำตอบรอคุณอนุมัติด้านล่าง)\n2. **Cloudflare & AWS Billing** — ใบแจ้งหนี้ประจำเดือน ยอดตรงตาม PO\n\nกด **Approve & Send** ในการ์ดร่างอีเมลด้านล่างเพื่อส่งทันที หรือแก้ไขข้อความในช่องได้เลยครับ";
-  }
-  if (/ประชุม|ตาราง|calendar|นัด|brief/.test(s)) {
-    return "สรุปตารางงานและสิ่งที่เตรียมไว้ให้วันนี้ครับ:\n\n- **10:00 – 11:00** Sprint & Architecture Review (เตรียมสไลด์สรุป KPI ไว้ใน Library แล้ว)\n- **14:00 – 15:00** ACME Corp Partner Sync (ดึงประวัติสัญญาและ SLA จาก Memory ให้แล้ว)\n- **งานค้างที่ติดตามอยู่:** รายงาน Q4 Board Strategy รอคุณกดยืนยันงบ $1.15 ในหน้า Work ครับ";
-  }
-  if (/จำไว้|บันทึก|memory|remember/.test(s)) {
-    return `บันทึกเข้าสู่ Personal Memory ของคุณเรียบร้อยครับ — ครั้งถัดไปที่สั่งงาน Teammate และ Work จะใช้ข้อกำหนดนี้โดยไม่ต้องพิมพ์ซ้ำ (สามารถดูหรือแก้ไขได้ที่แท็บ Memory ทางขวา)`;
-  }
-  if (/routine|ทุกเช้า|ทุกวัน|อัตโนมัติ|cron/.test(s)) {
-    return "ตั้งค่าเป็น **Routine อัตโนมัติ** บน Cloud Computer ให้เรียบร้อยครับ — ระบบจะรันตามเวลาที่กำหนดแม้คุณปิดเครื่อง พร้อมเปิด **Spend Guard** เพื่อหยุดพักอัตโนมัติหากไม่มีการเปิดอ่านผลลัพธ์";
-  }
-  return `ดำเนินการตรวจสอบบริบทจาก Memory และ Connected Apps สำหรับคำสั่ง: "${input.slice(0, 100)}" เรียบร้อยครับ\n\n- **สถานะ Cloud Computer:** Running (:99)\n- **บริบทที่ใช้:** Personal & Team Memory + 8 Connected Apps\n- หากต้องการส่งต่องานนี้ไปรันเป็นโปรเจกต์เต็มรูปแบบ (Code / Video / Artifacts) กดปุ่ม **Send to Work** ด้านล่างข้อความนี้ได้ทันทีครับ`;
+/** Convenience for code generation / refactoring. */
+export function callCodeLLM(call: Omit<LLMCall, "role">) {
+  return callWoibotLLM({ ...call, role: "code" });
 }
