@@ -5,6 +5,7 @@ import { Repeat2, Play, Pause, Plus, ShieldCheck, Clock } from "lucide-react";
 
 export default function RoutinesPage() {
   const [routines, setRoutines] = useState<any[]>([]);
+  const [formOpen, setFormOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [triggerExpr, setTriggerExpr] = useState("0 8 * * 1-5");
   const [triggerType, setTriggerType] = useState("cron");
@@ -35,6 +36,7 @@ export default function RoutinesPage() {
     });
     setTitle("");
     setTemplate("");
+    setFormOpen(false);
     loadRoutines();
   };
 
@@ -59,55 +61,88 @@ export default function RoutinesPage() {
         </div>
       </div>
 
-      {/* Create Routine Form */}
-      <form
-        onSubmit={handleCreate}
-        className="rounded-[12px] p-4 space-y-3"
-        style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line-strong)" }}
-      >
-        <div className="text-[13.5px] font-semibold">+ Create Automated Routine</div>
-        <div className="grid gap-2.5 sm:grid-cols-3">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="ชื่อ Routine (เช่น สรุปยอดขายทุกเช้าวันจันทร์)..."
-            className="min-h-[40px] sm:min-h-0 rounded-[8px] px-3 py-2 text-[12.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
-          />
-          <select
-            value={triggerType}
-            onChange={(e) => setTriggerType(e.target.value)}
-            className="min-h-[40px] sm:min-h-0 rounded-[8px] px-3 py-2 text-[12.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
+      {/* Create Routine — opens in a modal dialog to keep the list above the fold */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setFormOpen(true)}
+          className="min-h-[40px] sm:min-h-0 inline-flex items-center gap-1.5 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] px-3.5 py-2 text-[12.5px] font-semibold text-white"
+        >
+          <Plus className="h-4 w-4" />
+          Create Automated Routine
+        </button>
+      </div>
+
+      {formOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Create Automated Routine"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setFormOpen(false);
+          }}
+        >
+          <form
+            onSubmit={handleCreate}
+            className="w-full max-w-xl rounded-[12px] p-4 space-y-3 shadow-xl"
+            style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line-strong)" }}
           >
-            <option value="cron">Schedule (Cron / Timezone)</option>
-            <option value="email_inbox">When Email Arrives at Bot Inbox</option>
-            <option value="github_event">GitHub PR Opened / CI Failed</option>
-            <option value="slack_mention">Slack @mention or Keyword</option>
-          </select>
-          <input
-            type="text"
-            value={triggerExpr}
-            onChange={(e) => setTriggerExpr(e.target.value)}
-            placeholder="0 8 * * 1-5 หรือ invoices@woibot.com"
-            className="min-h-[40px] sm:min-h-0 rounded-[8px] px-3 py-2 font-mono text-[12px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
-          />
+            <div className="flex items-center justify-between">
+              <div className="text-[13.5px] font-semibold">+ Create Automated Routine</div>
+              <button
+                type="button"
+                onClick={() => setFormOpen(false)}
+                aria-label="ปิด"
+                className="flex h-8 w-8 items-center justify-center rounded-[6px] text-[var(--wb-muted)] hover:bg-[var(--wb-hover)] hover:text-[var(--wb-fg)]"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid gap-2.5 sm:grid-cols-3">
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="ชื่อ Routine (เช่น สรุปยอดขายทุกเช้าวันจันทร์)..."
+                className="min-h-[40px] sm:min-h-0 rounded-[8px] px-3 py-2 text-[12.5px] bg-[var(--wb-raised)] border border-[var(--wb-line)] outline-none focus:border-[#2b66e0]"
+              />
+              <select
+                value={triggerType}
+                onChange={(e) => setTriggerType(e.target.value)}
+                className="min-h-[40px] sm:min-h-0 rounded-[8px] px-3 py-2 text-[12.5px] bg-[var(--wb-raised)] border border-[var(--wb-line)]"
+              >
+                <option value="cron">Schedule (Cron / Timezone)</option>
+                <option value="email_inbox">When Email Arrives at Bot Inbox</option>
+                <option value="github_event">GitHub PR Opened / CI Failed</option>
+                <option value="slack_mention">Slack @mention or Keyword</option>
+              </select>
+              <input
+                type="text"
+                value={triggerExpr}
+                onChange={(e) => setTriggerExpr(e.target.value)}
+                placeholder="0 8 * * 1-5 หรือ invoices@woibot.com"
+                className="min-h-[40px] sm:min-h-0 rounded-[8px] px-3 py-2 font-mono text-[12px] bg-[var(--wb-raised)] border border-[var(--wb-line)] outline-none focus:border-[#2b66e0]"
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                value={template}
+                onChange={(e) => setTemplate(e.target.value)}
+                placeholder="ขั้นตอนที่ให้ Teammate หรือ Work ดำเนินการอัตโนมัติ..."
+                className="min-h-[40px] sm:min-h-0 flex-1 rounded-[8px] px-3 py-2 text-[12.5px] bg-[var(--wb-raised)] border border-[var(--wb-line)] outline-none focus:border-[#2b66e0]"
+              />
+              <button
+                type="submit"
+                className="min-h-[40px] sm:min-h-0 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] px-4 py-2 text-[12.5px] font-semibold text-white shrink-0"
+              >
+                Save Routine
+              </button>
+            </div>
+          </form>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <input
-            type="text"
-            value={template}
-            onChange={(e) => setTemplate(e.target.value)}
-            placeholder="ขั้นตอนที่ให้ Teammate หรือ Work ดำเนินการอัตโนมัติ..."
-            className="min-h-[40px] sm:min-h-0 flex-1 rounded-[8px] px-3 py-2 text-[12.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
-          />
-          <button
-            type="submit"
-            className="min-h-[40px] sm:min-h-0 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] px-4 py-2 text-[12.5px] font-semibold text-white shrink-0"
-          >
-            Save Routine
-          </button>
-        </div>
-      </form>
+      )}
 
       {/* Routines List */}
       {routines.length === 0 ? (

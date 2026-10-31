@@ -482,7 +482,7 @@ export default function CloudComputerPage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6 lg:grid-cols-8">
+              <div className="flex flex-wrap gap-1.5">
                 {KEY_BUTTONS.map((k) => (
                   <button
                     key={k.key}

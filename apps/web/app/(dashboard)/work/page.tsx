@@ -309,30 +309,34 @@ function WorkStudioInner() {
             ))}
           </div>
 
-          {/* Execution Mode Switcher: Cloud vs Local */}
+          {/* Execution Mode Switcher: Cloud vs Local — compact segmented control tucked next to area tabs */}
           <div
-            className="inline-flex items-center gap-1 rounded-[7px] p-0.5 text-[11.5px]"
+            className="inline-flex items-center gap-0.5 rounded-[6px] p-[2px] text-[11px]"
             style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
+            role="radiogroup"
+            aria-label="Execution Mode: Cloud vs Local"
           >
             <button
               type="button"
               onClick={() => setExecMode("cloud")}
-              className={`inline-flex items-center gap-1 rounded-[5px] px-2 py-1 font-medium transition-colors ${
+              aria-pressed={execMode === "cloud"}
+              className={`inline-flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 font-medium transition-colors ${
                 execMode === "cloud" ? "bg-[#2b66e0] text-white" : "text-[var(--wb-muted)] hover:text-[var(--wb-fg)]"
               }`}
             >
-              <Cloud className="h-3 w-3" />
-              <span>Cloud Work</span>
+              <Cloud className="h-2.5 w-2.5" />
+              <span>Cloud</span>
             </button>
             <button
               type="button"
               onClick={() => setExecMode("local")}
-              className={`inline-flex items-center gap-1 rounded-[5px] px-2 py-1 font-medium transition-colors ${
+              aria-pressed={execMode === "local"}
+              className={`inline-flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 font-medium transition-colors ${
                 execMode === "local" ? "bg-amber-500 text-black font-semibold" : "text-[var(--wb-muted)] hover:text-[var(--wb-fg)]"
               }`}
             >
-              <Laptop className="h-3 w-3" />
-              <span>Local Work</span>
+              <Laptop className="h-2.5 w-2.5" />
+              <span>Local</span>
             </button>
           </div>
 
@@ -414,10 +418,16 @@ function WorkStudioInner() {
               <button
                 type="submit"
                 disabled={!newGoal.trim() || creatingJob}
-                className="min-h-[40px] sm:min-h-0 inline-flex items-center justify-center gap-1.5 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] disabled:opacity-40 px-4 py-2 text-[12.5px] font-semibold text-white shrink-0"
+                className="min-h-[40px] sm:min-h-0 inline-flex items-center justify-center gap-1.5 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] disabled:opacity-60 disabled:cursor-not-allowed px-4 py-2 text-[12.5px] font-semibold text-white shrink-0"
               >
                 <Plus className="h-4 w-4" />
-                <span>{creatingJob ? "Creating..." : "Approve & Launch Job"}</span>
+                <span>
+                  {creatingJob
+                    ? "Creating..."
+                    : !newGoal.trim()
+                    ? "กรอกรายละเอียดก่อน"
+                    : "Approve & Launch Job"}
+                </span>
               </button>
             </div>
           </form>
@@ -783,10 +793,16 @@ function WorkStudioInner() {
               <button
                 type="submit"
                 disabled={!videoGoal.trim() || videoBusy}
-                className="min-h-[40px] sm:min-h-0 inline-flex items-center justify-center gap-1.5 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] disabled:opacity-40 px-4 py-2 text-[12.5px] font-semibold text-white shrink-0"
+                className="min-h-[40px] sm:min-h-0 inline-flex items-center justify-center gap-1.5 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] disabled:opacity-60 disabled:cursor-not-allowed px-4 py-2 text-[12.5px] font-semibold text-white shrink-0"
               >
                 <Plus className="h-4 w-4" />
-                <span>{videoBusy ? "Creating..." : "สร้างงานวิดีโอ"}</span>
+                <span>
+                  {videoBusy
+                    ? "Creating..."
+                    : !videoGoal.trim()
+                    ? "กรอกรายละเอียดก่อน"
+                    : "สร้างงานวิดีโอ"}
+                </span>
               </button>
             </div>
 
@@ -1040,9 +1056,13 @@ function WorkStudioInner() {
                 <button
                   type="submit"
                   disabled={!briefPrompt.trim() || generatingArtifact}
-                  className="min-h-[40px] sm:min-h-0 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] disabled:opacity-40 px-4 py-2 text-[12.5px] font-semibold text-white shrink-0"
+                  className="min-h-[40px] sm:min-h-0 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] disabled:opacity-60 disabled:cursor-not-allowed px-4 py-2 text-[12.5px] font-semibold text-white shrink-0"
                 >
-                  {generatingArtifact ? "Generating Artifact..." : "Create Artifact →"}
+                  {generatingArtifact
+                    ? "Generating Artifact..."
+                    : !briefPrompt.trim()
+                    ? "กรอกรายละเอียดก่อน"
+                    : "Create Artifact →"}
                 </button>
               </div>
             </form>

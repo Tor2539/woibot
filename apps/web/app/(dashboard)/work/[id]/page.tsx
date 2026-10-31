@@ -4,7 +4,6 @@ import React, { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  CheckCircle2,
   Clock,
   Cloud,
   Laptop,
@@ -100,6 +99,11 @@ export default function WorkProjectDetailPage({ params }: { params: Promise<{ id
 
   const est = task.estimate || {};
   const ver = task.verification;
+  // The verify pipeline stores the report as a real Deliverable record
+  // (fileName "verification_report.json"); download must use that record id,
+  // otherwise /api/artifacts resolves nothing and 404s.
+  const verificationDeliverableId =
+    (task.deliverables || []).find((d: any) => d.fileName === "verification_report.json")?.id || null;
 
   return (
     <div className="p-4 lg:p-6 space-y-4 max-w-[1280px] mx-auto">
@@ -157,8 +161,8 @@ export default function WorkProjectDetailPage({ params }: { params: Promise<{ id
       <div className="flex items-center gap-1.5 border-b border-[var(--wb-line)] pb-2">
         {[
           { id: "overview" as const, label: "Execution Steps & Cost Gate" },
-          { id: "verify" as const, label: `Verification Report (${ver?.checks?.length || 5} Checks)` },
-          { id: "deliverables" as const, label: `Deliverables (${task.deliverables?.length || 2})` },
+          { id: "verify" as const, label: `Verification Report (${ver?.checks?.length || 0} Checks)` },
+          { id: "deliverables" as const, label: `Deliverables (${task.deliverables?.length || 0})` },
           { id: "packet" as const, label: "Handoff Packet JSON" },
         ].map((t) => (
           <button
@@ -185,10 +189,10 @@ export default function WorkProjectDetailPage({ params }: { params: Promise<{ id
             <div className="text-[13.5px] font-semibold">Autonomous Execution Steps</div>
             <div className="space-y-2">
               {[
-                { step: "1. Parse HandoffPacket & Memory Context", status: "done", time: "1.2s" },
-                { step: "2. Provision Isolated Execution Sandbox", status: "done", time: "2.4s" },
-                { step: "3. Execute Implementation & Build Deliverables", status: "done", time: "11.8s" },
-                { step: "4. Run Per-Type Verification Pipeline (verification_report.json)", status: ver?.passed ? "done" : "pending", time: "3.4s" },
+                { step: "1. Parse HandoffPacket & Memory Context", time: "1.2s" },
+                { step: "2. Provision Isolated Execution Sandbox", time: "2.4s" },
+                { step: "3. Execute Implementation & Build Deliverables", time: "11.8s" },
+                { step: "4. Run Per-Type Verification Pipeline (verification_report.json)", time: "3.4s" },
               ].map((s, idx) => (
                 <div
                   key={idx}
@@ -196,7 +200,7 @@ export default function WorkProjectDetailPage({ params }: { params: Promise<{ id
                   style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
                 >
                   <div className="flex items-center gap-2.5">
-                    <CheckCircle2 className={`h-4 w-4 ${s.status === "done" ? "text-emerald-400" : "text-amber-400"}`} />
+                    <span className="font-mono text-[11px] text-[var(--wb-muted)]">{idx + 1}</span>
                     <span>{s.step}</span>
                   </div>
                   <span className="font-mono text-[11px] text-[var(--wb-muted)]">{s.time}</span>
@@ -238,64 +242,76 @@ export default function WorkProjectDetailPage({ params }: { params: Promise<{ id
           style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
         >
           <div className="flex items-center justify-between">
-            <div className="text-[14px] font-semibold text-emerald-400">
-              {ver?.summary || "All Automated Verification Checks Passed"}
+            <div className="text-[14px] font-semibold text-[var(--wb-fg)]">
+              {ver?.summary || "ยังไม่มีผลการตรวจสอบ — กด Verify เพื่อรันการตรวจจริง"}
             </div>
-            <a
-              href="/api/artifacts?download=del_crm_report"
-              className="rounded-[7px] bg-[#2b66e0] px-3 py-1.5 text-[11.5px] font-medium text-white"
-            >
-              Download verification_report.json
-            </a>
-          </div>
-          <div className="space-y-2">
-            {(ver?.checks || [
-              { name: "typecheck", passed: true, detail: "tsc --noEmit passed (0 errors)" },
-              { name: "tests", passed: true, detail: "vitest 14/14 passed" },
-              { name: "deliverable_openable", passed: true, detail: "Archive verified openable & editable" },
-            ]).map((c: any, i: number) => (
-              <div
-                key={i}
-                className="flex items-center justify-between rounded-[8px] px-3.5 py-2.5 text-[12.5px]"
-                style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
+            {verificationDeliverableId && (
+              <a
+                href={`/api/artifacts?download=${verificationDeliverableId}`}
+                className="rounded-[7px] bg-[#2b66e0] px-3 py-1.5 text-[11.5px] font-medium text-white"
               >
-                <span className="font-mono font-semibold text-emerald-400">✓ {c.name}</span>
-                <span className="text-[var(--wb-muted)]">{c.detail}</span>
-              </div>
-            ))}
+                Download verification_report.json
+              </a>
+            )}
           </div>
+          {ver?.checks && ver.checks.length > 0 ? (
+            <div className="space-y-2">
+              {ver.checks.map((c: any, i: number) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between rounded-[8px] px-3.5 py-2.5 text-[12.5px]"
+                  style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
+                >
+                  <span className={`font-mono font-semibold ${c.passed ? "text-emerald-400" : "text-red-400"}`}>
+                    {c.passed ? "✓" : "✗"} {c.name}
+                  </span>
+                  <span className="text-[var(--wb-muted)]">{c.detail}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div
+              className="rounded-[10px] p-6 text-center text-[12.5px] text-[var(--wb-muted)]"
+              style={{ backgroundColor: "var(--wb-panel)", border: "1px dashed var(--wb-line-strong)" }}
+            >
+              ยังไม่มีผลการตรวจสอบ — กด Verify เพื่อรันการตรวจจริง
+            </div>
+          )}
         </div>
       )}
 
       {activeTab === "deliverables" && (
         <div className="grid gap-3 sm:grid-cols-2">
-          {(task.deliverables && task.deliverables.length > 0
-            ? task.deliverables
-            : [
-                { id: "del_crm_zip", fileName: "crm-enterprise-v1.zip", mimeType: "application/zip", editable: true },
-                { id: "del_crm_report", fileName: "verification_report.json", mimeType: "application/json", editable: false },
-              ]
-          ).map((d: any) => (
-            <div
-              key={d.id}
-              className="flex items-center justify-between rounded-[10px] p-4"
-              style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
-            >
-              <div>
-                <div className="text-[13.5px] font-semibold">{d.fileName}</div>
-                <div className="text-[11px] text-[var(--wb-muted)]">
-                  {d.mimeType} · {d.editable ? "Editable Project File" : "Signed Evidence"}
-                </div>
-              </div>
-              <a
-                href={`/api/artifacts?download=${d.id}`}
-                className="inline-flex items-center gap-1.5 rounded-[7px] bg-[#2b66e0] px-3 py-1.5 text-[12px] font-medium text-white"
+          {task.deliverables && task.deliverables.length > 0 ? (
+            (task.deliverables as any[]).map((d: any) => (
+              <div
+                key={d.id}
+                className="flex items-center justify-between rounded-[10px] p-4"
+                style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
               >
-                <Download className="h-3.5 w-3.5" />
-                <span>Download</span>
-              </a>
+                <div>
+                  <div className="text-[13.5px] font-semibold">{d.fileName}</div>
+                  <div className="text-[11px] text-[var(--wb-muted)]">
+                    {d.mimeType} · {d.editable ? "Editable Project File" : "Signed Evidence"}
+                  </div>
+                </div>
+                <a
+                  href={`/api/artifacts?download=${d.id}`}
+                  className="inline-flex items-center gap-1.5 rounded-[7px] bg-[#2b66e0] px-3 py-1.5 text-[12px] font-medium text-white"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span>Download</span>
+                </a>
+              </div>
+            ))
+          ) : (
+            <div
+              className="rounded-[10px] p-6 text-center text-[12.5px] text-[var(--wb-muted)] sm:col-span-2"
+              style={{ backgroundColor: "var(--wb-panel)", border: "1px dashed var(--wb-line-strong)" }}
+            >
+              ยังไม่มีไฟล์ส่งมอบ — จะแสดงที่นี่เมื่อ Work ส่งมอบไฟล์จริง
             </div>
-          ))}
+          )}
         </div>
       )}
 

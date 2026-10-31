@@ -39,6 +39,7 @@ type Group = {
   name: string;
   role: string;
   avatar: string;
+  createdAt?: string | null;
   members: Bot[];
   memories: SharedMemory[];
 };
@@ -539,7 +540,12 @@ export default function TeamBotsPage() {
                       </div>
                       <div className="min-w-0">
                         <div className="truncate text-[13.5px] font-semibold">{group.name}</div>
-                        <div className="truncate text-[11px] text-[var(--wb-muted)]">{group.role}</div>
+                        <div className="truncate text-[11px] text-[var(--wb-muted)]">
+                          {group.role}
+                          {group.createdAt ? (
+                            <span className="text-[var(--wb-faint)]"> · {new Date(group.createdAt).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                     <button
