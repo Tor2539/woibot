@@ -401,7 +401,7 @@ async function produceCoding(ctx: AgentContext, slug: string): Promise<AgentResu
   if (!apiKey) throw new Error("TOGETHER_API_KEY is not configured");
 
   await ctx.onProgress?.(15, "scaffold", "เตรียมพื้นที่ทำงานให้ทีมโค้ด AI");
-  must(await execInContainer(ctx.userId, `mkdir -p ${shellQuote(dir)} && cd ${shellQuote(dir)} && git init -q 2>/dev/null; true`), "scaffold");
+  must(await execInContainer(ctx.userId, `mkdir -p ${shellQuote(dir)}`), "scaffold");
   must(await writeWorkspaceFile(ctx.userId, `coder/${slug}/AGENT_BRIEF.md`, coderBrief(ctx, slug)), "write brief");
 
   await ctx.onProgress?.(30, "plan", "วางแผนสร้างโปรเจกต์");
@@ -474,7 +474,7 @@ async function produceCoding(ctx: AgentContext, slug: string): Promise<AgentResu
 
   /* -- verification: files exist + real render proof -------------------- */
   await ctx.onProgress?.(75, "verify", "ตรวจผลลัพธ์ด้วยเบราว์เซอร์จริง");
-  const listing = await sh(ctx.userId, `find ${dir} -maxdepth 2 -type f ! -name .agent.log ! -name AGENT_BRIEF.md | sed "s|${dir}/||" | sort`);
+  const listing = await sh(ctx.userId, `find ${dir} -maxdepth 3 -type f ! -path "*/.git/*" ! -name .agent.log ! -name AGENT_BRIEF.md | sed "s|${dir}/||" | sort`);
   const produced = listing.stdout.trim().split("\n").filter(Boolean);
   if (!produced.length) throw new Error("coding agent ไม่ทิ้งไฟล์ไว้เลย — ไม่อนุญาตให้รายงานสำเร็จ");
 
