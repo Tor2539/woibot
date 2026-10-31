@@ -90,7 +90,7 @@ const APP_TABLE: AppEntry[] = [
   {
     keys: ["editor", "text editor", "gedit", "notepad", "แก้ไขข้อความ", "โปรแกรมแก้ไข"],
     label: "Text Editor",
-    bins: ["gedit", "mousepad", "leafpad", "xed"],
+    bins: ["l3afpad", "gedit", "mousepad", "xed"],
   },
   { keys: ["gmail", "อีเมล", "mail"], label: "Gmail", bins: CHROME_BINS, url: "https://mail.google.com" },
   {
