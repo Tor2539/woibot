@@ -283,6 +283,7 @@ function WorkStudioInner() {
   return (
     <div className="flex min-h-[calc(100vh-48px)] lg:min-h-screen flex-col w-full">
       {/* TOP 48px WORK STUDIO HEADER */}
+      <h1 className="sr-only">Work Studio</h1>
       <header
         className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5"
         style={{ borderBottom: "1px solid var(--wb-line)", backgroundColor: "var(--wb-bg)" }}

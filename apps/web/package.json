@@ -5,7 +5,8 @@
     "dev": "next dev",
     "build": "next build",
     "verify": "echo verify ok",
-    "lint": "next lint"
+    "lint": "next lint",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",
@@ -17,21 +18,24 @@
     "@radix-ui/react-slot": "^1.1.1",
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-tooltip": "^1.1.6",
+    "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "geist": "^1.9.0",
+    "jose": "^5.9.6",
     "lucide-react": "^0.468.0",
     "next": "15.5.28",
+    "pg": "^8.13.1",
     "prisma": "5.22.0",
     "react": "18.0.0",
     "react-dom": "18.0.0",
-    "tailwind-merge": "^2.5.4",
-    "pg": "^8.13.1",
-    "jose": "^5.9.6",
-    "bcryptjs": "^2.4.3"
+    "tailwind-merge": "^2.5.4"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.17.10",
+    "@types/pg": "^8.11.10",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "autoprefixer": "^10.4.20",
@@ -40,9 +44,7 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
-    "typescript": "^5.6.3",
-    "@types/pg": "^8.11.10",
-    "@types/bcryptjs": "^2.4.6"
+    "typescript": "^5.6.3"
   },
   "packageManager": "pnpm@9.12.3"
 }

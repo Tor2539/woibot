@@ -54,10 +54,14 @@ export async function POST(req: NextRequest) {
     const limit = sub?.plan === "pro" ? 100 : sub?.plan === "starter" ? 20 : 3;
     if (count >= limit) return errorResponse(`Routine limit reached (${limit}) for plan ${sub?.plan || "free"}`, 403);
 
-    // Compute nextRun from cron (simple: daily 08:00)
+    // Compute nextRun from the 5-field cron expression (same matcher as /api/cron/run)
     let nextRun: Date | null = null;
     if (body.trigger?.type === "cron") {
-      nextRun = computeNextCron(body.trigger.expr);
+      try {
+        nextRun = computeNextCron(body.trigger.expr);
+      } catch (e: unknown) {
+        return errorResponse(e instanceof Error ? e.message : "รูปแบบ cron ไม่ถูกต้อง", 400);
+      }
     } else if (body.trigger?.type === "event") {
       nextRun = null; // event-triggered, no schedule
     }
@@ -86,16 +90,132 @@ export async function POST(req: NextRequest) {
 function safeJson(v: string) { try { return JSON.parse(v); } catch { return v; } }
 
 function computeNextCron(expr: string): Date | null {
-  // minimal cron: "0 8 * * *" -> tomorrow 08:00 if past 08:00 today
-  // for demo, just add 24h
   try {
-    const now = new Date();
-    // naive: next run = tomorrow 08:00 Bangkok (UTC+7)
-    const next = new Date(now);
-    next.setDate(next.getDate() + 1);
-    next.setHours(1, 0, 0, 0); // 01:00 UTC = 08:00 Bangkok
-    return next;
-  } catch {
-    return new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const fields = parseCron(expr);
+    const next = nextCronOccurrence(fields, Date.now());
+    if (next === null) {
+      throw new Error("ไม่พบเวลารันครั้งถัดไปสำหรับตารางเวลานี้ (ตารางเวลาไม่มีวันที่ตรงเงื่อนไข)");
+    }
+    return new Date(next);
+  } catch (e: unknown) {
+    throw new Error(
+      `รูปแบบ cron ไม่ถูกต้อง: ${expr ?? ""} (${e instanceof Error ? e.message : "parse failed"})`
+    );
   }
+}
+
+// ---- 5-field cron: minute hour day-of-month month day-of-week (UTC) ----
+// Supports: * , - / and numeric lists. Day-of-week: 0=Sunday..6=Saturday (7 → 0).
+// Matches the matcher the cron runner uses in app/api/cron/run/route.ts.
+
+type CronField = { values: Set<number>; wildcard: boolean; min: number; max: number };
+
+const CRON_BOUNDS: [number, number][] = [
+  [0, 59], // minute
+  [0, 23], // hour
+  [1, 31], // day-of-month
+  [1, 12], // month
+  [0, 6], // day-of-week (7 is a Sunday alias, normalized after range expansion)
+];
+
+const FIELD_NAMES_TH = ["นาที", "ชั่วโมง", "วันที่ของเดือน", "เดือน", "วันของสัปดาห์"];
+
+function parseCronField(part: string, index: number): CronField {
+  const [min, max] = CRON_BOUNDS[index];
+  const values = new Set<number>();
+  let wildcard = false;
+  for (const piece of part.split(",")) {
+    const stepMatch = piece.match(/^(\*|\d+(?:-\d+)?)(?:\/(\d+))?$/);
+    if (!stepMatch) throw new Error(`${FIELD_NAMES_TH[index]}: รูปแบบไม่ถูกต้อง "${piece}"`);
+    const [, rangeStr, stepStr] = stepMatch;
+    const step = stepStr ? parseInt(stepStr, 10) : 1;
+    if (!Number.isInteger(step) || step < 1) throw new Error(`${FIELD_NAMES_TH[index]}: step ไม่ถูกต้อง "${piece}"`);
+    let start: number;
+    let end: number;
+    if (rangeStr === "*") {
+      if (stepStr === undefined) wildcard = true;
+      start = min;
+      end = max;
+    } else if (rangeStr.includes("-")) {
+      const [a, b] = rangeStr.split("-").map((n) => parseInt(n, 10));
+      start = a;
+      end = b;
+    } else {
+      start = parseInt(rangeStr, 10);
+      end = stepStr !== undefined ? max : start; // "5/15" = start 5, step 15 to max
+    }
+    if (!Number.isInteger(start) || !Number.isInteger(end)) {
+      throw new Error(`${FIELD_NAMES_TH[index]}: ค่าไม่ใช่ตัวเลข "${piece}"`);
+    }
+    // day-of-week: 7 is a Sunday alias. Expand ranges WITH the alias
+    // first, then normalize (7 -> 0): 5-7 = Fri,Sat,Sun; 1-7 = every day.
+    if (index === 4) {
+      if (rangeStr.includes("-")) {
+        if (start === 7) start = 0;
+        if (end === 7) end = 7; // keep 7 during expansion
+      } else if (start === 7) {
+        start = 0;
+        end = 0;
+      }
+    }
+    if (start < min || end > max || start > end) {
+      throw new Error(`${FIELD_NAMES_TH[index]}: ค่านอกช่วง ${min}-${max} "${piece}"`);
+    }
+    for (let v = start; v <= end; v += step) values.add(v);
+    if (index === 4 && values.delete(7)) values.add(0);
+  }
+  if (values.size === 0) throw new Error(`${FIELD_NAMES_TH[index]}: ไม่มีค่าที่ถูกต้อง`);
+  return { values, wildcard, min, max };
+}
+
+function parseCron(expr: string): CronField[] {
+  const parts = (expr ?? "").trim().split(/\s+/);
+  if (parts.length !== 5) {
+    throw new Error(`ต้องเป็น cron 5 ช่อง (นาที ชั่วโมง วันที่ เดือน วันสัปดาห์) แต่ได้ ${parts.length} ช่อง`);
+  }
+  return parts.map((p, i) => parseCronField(p, i));
+}
+
+// Search forward minute-by-minute from `from` for the next matching time (UTC).
+// Bounded search: jumps by day when no hour/minute match remains in the day.
+function nextCronOccurrence(fields: CronField[], from: number): number | null {
+  const [minuteF, hourF, domF, monF, dowF] = fields;
+  const date = new Date(from);
+  date.setUTCSeconds(0, 0);
+  date.setUTCMinutes(date.getUTCMinutes() + 1); // strictly after `from`
+
+  for (let day = 0; day < 5 * 366; day++) {
+    const y = date.getUTCFullYear();
+    const m = date.getUTCMonth() + 1; // 1-12
+    const dom = date.getUTCDate();
+    const dow = date.getUTCDay();
+    const domOk = domF.values.has(dom);
+    const dowOk = dowF.values.has(dow);
+    // Standard cron: if both day fields are restricted, either may match
+    const dayOk =
+      domF.wildcard && dowF.wildcard
+        ? true
+        : domF.wildcard
+          ? dowOk
+          : dowF.wildcard
+            ? domOk
+            : domOk || dowOk;
+    if (monF.values.has(m) && dayOk) {
+      // find next matching hour:minute in this day
+      for (let h = date.getUTCHours(); h <= 23; h++) {
+        if (!hourF.values.has(h)) continue;
+        const startMin = h === date.getUTCHours() ? date.getUTCMinutes() : 0;
+        for (let mi = startMin; mi <= 59; mi++) {
+          if (minuteF.values.has(mi)) {
+            const out = new Date(Date.UTC(y, m - 1, dom, h, mi));
+            if (out.getTime() > from) return out.getTime();
+          }
+        }
+      }
+    }
+    // advance to next day 00:00
+    date.setUTCDate(date.getUTCDate() + 1);
+    date.setUTCHours(0, 0, 0, 0);
+  }
+  return null;
 }

@@ -545,6 +545,7 @@ function TeammateWorkspaceInner() {
 
   return (
     <div className="flex h-[calc(100vh-48px)] lg:h-screen w-full overflow-hidden">
+      <h1 className="sr-only">AI Teammates</h1>
       {/* CENTER MAIN CHAT COLUMN */}
       <div className="flex min-w-0 flex-1 flex-col h-full">
         {/* Top 48px Bar (Grok Bot + Cursor Agents Header) */}
