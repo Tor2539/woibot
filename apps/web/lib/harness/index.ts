@@ -76,17 +76,22 @@ export function routeIntent(input: string): { product: "teammate" | "work"; work
      "เขียนรายงานสรุปยอดขายเป็นเอกสาร PDF") — the old regex only knew a few
      fixed phrases and sent everything else to chat, which made the product
      look broken even though the harness was fine. */
-  const CREATE_VERB = /(สร้าง|จัดทำ|ร่าง|ออกแบบ|สั่งทำ|สรุปเป็น|แปลงเป็น|ทำเป็น|ทำไฟล์|(?<!ทำไม)ทำ|(?<!ช่วยไม)เขียน|convert|create|make|generate|build|write|draft|produce|prepare)/;
-  const QUESTION_ONLY = /(คืออะไร|ดียังไง|มีกี่|อธิบาย|แนะนำ|หน่อยว่า|ใช่ไหม|ยังไง|\?|？)/;
+  const CREATE_VERB = /(สร้าง|จัดทำ|ร่าง|ออกแบบ|สั่งทำ|สรุปเป็น|แปลงเป็น|ทำเป็น|ทำไฟล์|ทำ(?!ไม|ได้|งาน|เลย|อยู่)|เขียน|วิจัย|วิเคราะห์|เปรียบเทียบ|ค้นคว้า|สำรวจ|convert|create|make|generate|build|write|draft|produce|prepare|research|analyze)/;
+  const QUESTION_ONLY = /(คืออะไร|ดียังไง|มีกี่|อธิบาย|แนะนำ|หน่อยว่า|ใช่ไหม|ยังไง|ไหม|\?|？)/;
+  const VIDEO_NOUN = /(วิดีโอ|คลิป|video|tiktok|reel|shorts|ตัดต่อ|vdo)/;
   const DOC_NOUN = /(เอกสาร|ไฟล์|document|file|docx|\.doc\b|word|pdf|excel|xlsx|csv|สไลด์|slide|pptx|แฟ้ม|รายงาน|report|ข้อเสนอ|proposal|สัญญา|contract|จดหมาย|หนังสือ|คู่มือ|แบบฟอร์ม|ใบเสนอราคา|ใบเสร็จ|presentation|บทความ|แผนการ|แผนงาน|memo|ใบปะหน้า)/;
   const DATA_NOUN = /(excel|xlsx|csv|ตารางข้อมูล|กราฟ|kpi|dashboard|forecast|พยากรณ์|ยอดขาย|สถิติ|ชุดข้อมูล|spreadsheet)/;
-  const VIDEO_NOUN = /(วิดีโอ|คลิป|video|tiktok|reel|shorts|ตัดต่อ|vdo)/;
+  const RESEARCH_NOUN = /(วิจัย|research|ตลาด|competitor|คู่แข่ง|compare|เปรียบเทียบ|เทรนด์|trend|ข้อมูลอุตสาหกรรม)/;
   const IMAGE_NOUN = /(โปสเตอร์|โลโก้|logo|banner|โพสต์|ภาพประกอบ|illustration|poster|อินโฟกราฟิก|infographic)/;
-  const RESEARCH_NOUN = /(วิจัย|research|ตลาด|competitor|คู่แข่ง|compare|เปรียบเทียบ|เทรนด์|trend)/;
   const CODE_NOUN = /(เว็บ|แอป|app|website|เว็บไซต์|ระบบ|โปรแกรม|โค้ด|code|script|เกม|game|หน้าเว็บ|landing|dashboard|cms|api)/;
 
-  const wantsWork = CREATE_VERB.test(s) && !QUESTION_ONLY.test(s);
-  if (!wantsWork) {
+  const isQuestion = QUESTION_ONLY.test(s) && !/(ทำ|สร้าง|เขียน|จัดทำ|แปลงเป็น|สรุปเป็น)/.test(s.replace(QUESTION_ONLY, ""));
+  const hasVerb = CREATE_VERB.test(s);
+  const hasNoun = VIDEO_NOUN.test(s) || DOC_NOUN.test(s) || DATA_NOUN.test(s) || RESEARCH_NOUN.test(s) || IMAGE_NOUN.test(s) || CODE_NOUN.test(s);
+
+  // Legacy strong triggers kept for well-known compound phrases.
+  const STRONG = /(สร้างเว็บ|สร้างแอป|สร้างระบบ|ทำคลิป|ทำสไลด์|ทำกราฟ|ทำเอกสาร|สร้างเอกสาร|ทำไฟล์|สร้างไฟล์|แอดมิน|ออกแบบเว็บ)/;
+  if ((!hasVerb || isQuestion || !hasNoun) && !STRONG.test(s)) {
     return { product: "teammate", confidence: 0.88, reason: "งานประจำวัน/ถามตอบ — Teammate ทำได้โดยตรง" };
   }
 
@@ -95,7 +100,7 @@ export function routeIntent(input: string): { product: "teammate" | "work"; work
   if (VIDEO_NOUN.test(s)) {
     kind = /(วิเคราะห์|ตัด|analysis|edit|สรุปคลิป|ไฮไลต์)/.test(s) ? "video_analysis" : "video_gen";
     reason = "ตรวจพบงานวิดีโอ — ใช้ Work video pipeline";
-  } else if (/(เอกสาร|docx|\.doc\b|word|pdf|รายงาน|ข้อเสนอ|proposal|สัญญา|จดหมาย|คู่มือ|แบบฟอร์ม|ใบเสนอราคา|ใบเสร็จ|สไลด์|slide|pptx|presentation|บทความ)/.test(s)) {
+  } else if (/(เอกสาร|docx|\.doc\b|word|pdf|รายงาน|ข้อเสนอ|proposal|สัญญา|จดหมาย|คู่มือ|แบบฟอร์ม|ใบเสนอราคา|ใบเสร็จ|สไลด์|slide|pptx|presentation|บทความ|แผนการ)/.test(s)) {
     kind = "doc";
     reason = "ตรวจพบคำขอเอกสาร/รายงาน — ใช้ Work document pipeline";
   } else if (DATA_NOUN.test(s)) {

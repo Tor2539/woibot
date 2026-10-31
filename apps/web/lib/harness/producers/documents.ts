@@ -1289,7 +1289,7 @@ async function fetchTableSpec(
   const draft = await callWoibotLLM({
     system:
       "You design business spreadsheets that a finance analyst would actually use. " +
-      "Answer with ONE JSON object only: no prose, no markdown fences. Schema:\n" +
+      "Answer with ONE JSON object only: no prose, no markdown fences, no comments. Schema:\n" +
       '{"title":string,"sheet":string,' +
       '"columns":[{"name":string,"kind":"' + oracles + '"}],' +
       '"rows":[[value,...],...],' +
@@ -1307,18 +1307,29 @@ async function fetchTableSpec(
       (opts.minCols ? `\n- Use at least ${opts.minCols} base columns.` : "") +
       (opts.minFormula ? `\n- Include at least ${opts.minFormula} formula_columns.` : ""),
     user: `Build a spreadsheet for: ${ctx.goal}\nTitle: ${ctx.title}`,
-    maxTokens: 2600,
+    maxTokens: 5000,
   });
 
   let spec = extractJson<TableSpec>(draft.text);
   if (!spec) {
     const retry = await callWoibotLLM({
       system: "You generate spreadsheet specs. Reply with a single JSON object only — no prose, no markdown, starting with {.",
-      user: `Build a spreadsheet for: ${ctx.goal}\nTitle: ${ctx.title}`,
-      maxTokens: 2800,
+      user: `Build a spreadsheet for: ${ctx.goal}\nTitle: ${ctx.title}\nKeep it compact: at most ${Math.min(minRows, 15)} data rows.`,
+      maxTokens: 5000,
       temperature: 0.2,
     });
     spec = extractJson<TableSpec>(retry.text);
+  }
+  if (!spec) {
+    // Last resort: ask for a small table — short replies never hit the output
+    // budget, so this succeeds even when bigger attempts were truncated.
+    const small = await callWoibotLLM({
+      system: "You generate spreadsheet specs. Reply with a single JSON object only — no prose, no markdown, starting with {.",
+      user: `Build a SMALL spreadsheet for: ${ctx.goal}\nTitle: ${ctx.title}\nExactly ${Math.min(minRows, 10)} data rows, 5-8 columns, 0-2 formula_columns.`,
+      maxTokens: 3000,
+      temperature: 0.2,
+    });
+    spec = extractJson<TableSpec>(small.text);
   }
   if (!spec) {
     throw new Error("AI ไม่ได้ตอบกลับเป็นข้อมูลตาราง (JSON) — สร้างสเปรดชีตไม่ได้");

@@ -164,6 +164,15 @@ export default function CloudComputerPage() {
     }
   }, [running]);
 
+  // A container that was just started needs a few seconds before Xvfb answers;
+  // retry once so the first boot doesn't litter the console with 502s.
+  useEffect(() => {
+    if (!running) return;
+    const t1 = setTimeout(() => { loadStats(); }, 5000);
+    const t2 = setTimeout(() => { loadGeom(); }, 5000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [running, loadStats, loadGeom]);
+
   useEffect(() => {
     loadStatus();
   }, [loadStatus]);

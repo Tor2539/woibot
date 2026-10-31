@@ -20,7 +20,16 @@ export async function runScript(userId: string, script: string): Promise<ExecOut
     return { available: false, code: -1, stdout: "", stderr: "", durationMs: 0, error: "no_user" };
   }
   const b64 = Buffer.from(script, "utf8").toString("base64");
-  const res: any = await execInComputer(userId, `echo ${b64} | base64 -d | bash`);
+  const attempt = async () =>
+    execInComputer(userId, `echo ${b64} | base64 -d | bash`) as Promise<any>;
+  let res: any = await attempt();
+  // A container that was just created/booted can refuse the first exec for a
+  // few seconds — retry once after a short wait instead of failing the whole
+  // verification with computer_available.
+  if (!res || res.ok === false || res.error) {
+    await new Promise((r) => setTimeout(r, 6000));
+    res = await attempt();
+  }
   if (!res || res.ok === false || res.error) {
     return {
       available: false,
