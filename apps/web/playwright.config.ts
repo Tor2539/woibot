@@ -5,8 +5,9 @@ import { defineConfig, devices } from "@playwright/test";
 // use it only when it actually exists so other machines and CI fall back
 // to Playwright's normal browser lookup.
 const sharedBrowsers = "C:\\Users\\WINDOWS\\OpenHandsTools\\pw-browsers";
-process.env.PLAYWRIGHT_BROWSERS_PATH =
-  process.env.PLAYWRIGHT_BROWSERS_PATH ?? (existsSync(sharedBrowsers) ? sharedBrowsers : undefined);
+if (process.env.PLAYWRIGHT_BROWSERS_PATH === undefined && existsSync(sharedBrowsers)) {
+  process.env.PLAYWRIGHT_BROWSERS_PATH = sharedBrowsers;
+}
 
 export default defineConfig({
   testDir: "./e2e",
