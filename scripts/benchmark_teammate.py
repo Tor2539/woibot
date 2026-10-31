@@ -79,7 +79,7 @@ DEFAULT_EMAIL = "takin@woibot.com"
 DEFAULT_PASSWORD = "Woibot-Strong-Pass-2026"
 
 JUDGE_URL = "https://api.together.xyz/v1/chat/completions"
-JUDGE_API_KEY = "TOGETHER_API_KEY_ENV"
+JUDGE_API_KEY = os.environ.get("TOGETHER_API_KEY", "")
 JUDGE_UA = "Mozilla/5.0"
 JUDGE_MODEL_DEFAULT = "deepseek-ai/DeepSeek-V4.1-Flash-1017"
 JUDGE_MAX_TOKENS = 2000          # spec: >= 2000
