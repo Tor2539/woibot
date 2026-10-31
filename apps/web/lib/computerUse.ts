@@ -14,6 +14,7 @@
  * If the computer is not running, this fails loudly.
  */
 import { execInContainer } from "./harness/container";
+import { computerFile } from "./computer";
 import { callWoibotLLM } from "./llm";
 
 export type UseStep = {
@@ -44,6 +45,11 @@ type Decision = {
 
 const Screenshot = 1280; // px width of the image shown to the model
 
+// Screenshot round-trips as a workspace FILE (not exec stdout) to dodge the
+// manager's ~20k stdout cap that silently truncates base64 payloads.
+const WORK_SCREEN_REL = ".woibot-screen.jpg";
+const WORK_SCREEN_FILE = `/home/woibot/workspace/${WORK_SCREEN_REL}`;
+
 function parseDecision(raw: string): Decision | null {
   const text = raw.replace(/```json|```/g, "").trim();
   const start = text.indexOf("{");
@@ -59,12 +65,18 @@ function parseDecision(raw: string): Decision | null {
 }
 
 async function grabScreen(userId: string): Promise<{ dataUrl: string; width: number; height: number } | null> {
-  const r = await execInContainer(
+  // Write the screenshot to a workspace file and stream it back through the
+  // manager file endpoint — manager exec stdout is capped (~20k chars), which
+  // truncates any base64 image, so stdout is NOT a safe transport for pixels.
+  const shot = await execInContainer(
     userId,
-    `export DISPLAY=:99; import -window root -resize ${Screenshot}x -quality 70 jpg:- 2>/dev/null | base64 -w0`,
+    `export DISPLAY=:99; import -window root -resize ${Screenshot}x -quality 70 "${WORK_SCREEN_FILE}" 2>/dev/null && stat -c %s "${WORK_SCREEN_FILE}"`,
   );
-  const b64 = r.stdout.trim();
-  if (r.exitCode !== 0 || !b64) return null;
+  if (shot.exitCode !== 0 || !shot.stdout.trim()) return null;
+  const upstream = await computerFile(userId, WORK_SCREEN_REL);
+  if (!upstream || !upstream.ok || !upstream.body) return null;
+  const buf = Buffer.from(await upstream.arrayBuffer());
+  if (buf.length < 1000) return null;
   // Xvfb is 1920x1080 → resize keeps the aspect ratio; compute from geometry.
   const geom = await execInContainer(
     userId,
@@ -73,7 +85,7 @@ async function grabScreen(userId: string): Promise<{ dataUrl: string; width: num
   const m = geom.stdout.trim().match(/^(\d+)x(\d+)/);
   const gw = m ? Number(m[1]) : 1920;
   const gh = m ? Number(m[2]) : 1080;
-  return { dataUrl: `data:image/jpeg;base64,${b64}`, width: gw, height: gh };
+  return { dataUrl: `data:image/jpeg;base64,${buf.toString("base64")}`, width: gw, height: gh };
 }
 
 async function act(userId: string, d: Decision, scale: number): Promise<{ ok: boolean; target: string }> {

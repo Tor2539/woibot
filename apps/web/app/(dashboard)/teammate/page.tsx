@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -1522,9 +1524,27 @@ function TeammateWorkspaceInner() {
                       Ubuntu 24.04 · Persistent Volume · Isolated per user
                     </div>
                   </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    Running
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-medium ${
+                      computer?.status === "running"
+                        ? "bg-emerald-500/15 text-emerald-400"
+                        : computer?.status
+                          ? "bg-amber-500/15 text-amber-400"
+                          : "bg-[var(--wb-hover)] text-[var(--wb-muted)]"
+                    }`}
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        computer?.status === "running" ? "bg-emerald-400 animate-pulse" : "bg-current"
+                      }`}
+                    />
+                    {computer?.status === "running"
+                      ? "Running"
+                      : computer?.status === "paused"
+                        ? "Paused"
+                        : computer?.status
+                          ? "ไม่ทำงาน"
+                          : "ยังไม่เชื่อมต่อ"}
                   </span>
                 </div>
 
@@ -1560,14 +1580,22 @@ function TeammateWorkspaceInner() {
                         <span className="text-[10.5px] text-[#8f929a]">
                           ควบคุมด้วยเมาส์/คีย์บอร์ดได้ในหน้าจอเต็ม
                         </span>
-                        <a
-                          href={computer.vncUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded-[6px] bg-[#2b66e0] px-2.5 py-1 text-[10.5px] font-medium text-white"
-                        >
-                          เปิดเต็มจอ ↗
-                        </a>
+                        <div className="flex items-center gap-1.5">
+                          <Link
+                            href="/computer"
+                            className="rounded-[6px] bg-[var(--wb-hover)] px-2.5 py-1 text-[10.5px] font-medium text-[var(--wb-fg)]"
+                          >
+                            หน้าควบคุมเต็ม
+                          </Link>
+                          <a
+                            href={computer.vncUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-[6px] bg-[#2b66e0] px-2.5 py-1 text-[10.5px] font-medium text-white"
+                          >
+                            เปิดเต็มจอ ↗
+                          </a>
+                        </div>
                       </div>
                     )}
                   </div>

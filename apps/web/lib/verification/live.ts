@@ -109,7 +109,7 @@ if [ -f package.json ]; then
 ${cmd}
   exit 0
 fi
-app=$(ls -td */index.html index.html 2>/dev/null | head -1)
+app=$(ls -td */*/index.html */index.html index.html 2>/dev/null | head -1)
 if [ -z "$app" ]; then echo '__RESULT__{"found":false}'; exit 0; fi
 dir=$(dirname "$app")
 python3 - "$app" "$dir" <<'PY'
