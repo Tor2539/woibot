@@ -38,7 +38,7 @@ export type HandoffPacket = {
 };
 
 export const WORK_ESTIMATES: Record<WorkKind, { cost: number; minutes: number; label: string; tools: string[] }> = {
-  coding:         { cost: 2.4, minutes: 18, label: "Coding Work — build + tests + preview", tools: ["Next.js", "Prisma", "Vitest"] },
+  coding:         { cost: 2.4, minutes: 18, label: "Coding Work — Woibot Coder agent + render proof", tools: ["Woibot Coder", "Chromium", "Node 22"] },
   research:       { cost: 1.2, minutes: 12, label: "Deep Research — multi-source + report", tools: ["Web Search", "pgvector"] },
   doc:            { cost: 0.8, minutes: 10, label: "Document — 12 pages + charts", tools: ["python-docx", "Puppeteer"] },
   video_analysis: { cost: 3.0, minutes: 15, label: "Video Analysis — 60min → 5 clips", tools: ["FFmpeg", "Whisper"] },

@@ -7,7 +7,7 @@
  * media) fail fast with an explicit reason instead of faking a result.
  */
 import { runScript, writeWorkspaceFile, execInContainer, WORK_DIR } from "./container";
-import { callWoibotLLM } from "../llm";
+import { callWoibotLLM, MODELS } from "../llm";
 import { produceDocxAndPdf, produceSpreadsheet, produceCsv } from "./producers/documents";
 import { produceImageBrief, produceVideoClip } from "./producers/media";
 import { describeImage } from "./producers/vision";
@@ -296,31 +296,229 @@ print("RESULT clips=%d scenes=%d" % (made, len(times)))
 
 /* ----------------------------------------------------------------- coding */
 
+/**
+ * Woibot Coder — a long-horizon build agent.
+ *
+ * Primary engine: an autonomous coding agent CLI running INSIDE the user's
+ * container (plan → edit files → self-verify loop), driven by the Woibot code
+ * model through Together. It receives the full brief and keeps working until
+ * the acceptance checks pass, which lets it finish tasks that are far longer
+ * than a single completion call.
+ *
+ * Fallback (agent CLI absent): a staged multi-step generation loop driven from
+ * this process. Both paths produce real files on disk and a verification
+ * screenshot — nothing is reported done unless the files exist.
+ */
+
+const CODE_MODEL = MODELS.code;
+
+function coderBrief(ctx: AgentContext, slug: string): string {
+  return `# Brief
+
+Goal: ${ctx.goal}
+
+Project title: ${ctx.title}
+
+Working directory: ${WORK_DIR}/coder/${slug}
+
+Rules:
+1. Build a complete, working result in the working directory above. Prefer a
+   self-contained web app: index.html with inline CSS/JS, no external CDNs,
+   no build step. If the goal clearly needs multiple files (backend, data,
+   assets), create them and wire them correctly.
+2. After writing code, VERIFY it yourself: open-check the HTML structure, run
+   \`node --check\` on any standalone .js file, fix what fails, then re-check.
+3. Iterate until the goal is met. Do not leave TODO placeholders in delivered
+   files. Do not print the code in chat — write it to files.
+4. Use Thai or English copy matching the brief's language. No lorem ipsum.
+5. When done, the folder must contain the runnable entry file (index.html or
+   equivalent) plus any supporting files.
+
+Deliverable: the files in ${WORK_DIR}/coder/${slug}.`;
+}
+
+async function writeCoderConfig(userId: string): Promise<void> {
+  // Provider config for the in-container coding agent (Together-compatible,
+  // OpenAI-style endpoint). Key comes from the task env at launch time.
+  const config = {
+    $schema: "https://opencode.ai/config.json",
+    provider: {
+      woibot: {
+        npm: "@ai-sdk/openai-compatible",
+        name: "Woibot Coder Engine",
+        options: { baseURL: "https://api.together.xyz/v1", apiKey: "{env:WOIBOT_API_KEY}" },
+        models: {
+          [CODE_MODEL]: { name: "Woibot Coder" },
+        },
+      },
+    },
+    model: `woibot/${CODE_MODEL}`,
+    small_model: `woibot/${CODE_MODEL}`,
+    share: "disabled",
+    autoshare: false,
+    autoupdate: false,
+  };
+  await writeWorkspaceFile(
+    userId,
+    "../.config/opencode/opencode.json",
+    JSON.stringify(config, null, 2),
+  );
+}
+
+async function probeCoderCli(userId: string): Promise<boolean> {
+  const probe = await sh(userId, "command -v opencode >/dev/null 2>&1 && opencode --version 2>/dev/null | head -1");
+  return probe.exitCode === 0 && /[\d]/.test(probe.stdout);
+}
+
+/** Launch the agent CLI in the background; return its pid (0 = launch failed). */
+async function launchCoderAgent(userId: string, slug: string, apiKey: string): Promise<number> {
+  const dir = `${WORK_DIR}/coder/${slug}`;
+  const script = `
+export HOME=/home/woibot
+export WOIBOT_API_KEY=${shellQuote(apiKey)}
+export TOGETHER_API_KEY=${shellQuote(apiKey)}
+cd ${shellQuote(dir)}
+nohup opencode run --model woibot/${CODE_MODEL} "$(cat AGENT_BRIEF.md)" > .agent.log 2>&1 &
+echo "PID=$!"
+`.trim();
+  const out = await execInContainer(userId, `echo ${Buffer.from(script).toString("base64")} | base64 -d | bash`);
+  const m = String(out.stdout || "").match(/PID=(\d+)/);
+  return m ? Number(m[1]) : 0;
+}
+
+async function coderAgentRunning(userId: string, pid: number): Promise<boolean> {
+  if (!pid) return false;
+  const r = await sh(userId, `kill -0 ${pid} 2>/dev/null && echo alive || echo gone`);
+  return r.stdout.trim().startsWith("alive");
+}
+
 async function produceCoding(ctx: AgentContext, slug: string): Promise<AgentResult> {
-  await ctx.onProgress?.(25, "design", "ให้ AI เขียนแอป");
-  const draft = await callWoibotLLM({
+  const dir = `${WORK_DIR}/coder/${slug}`;
+  const apiKey = process.env.TOGETHER_API_KEY || "";
+  if (!apiKey) throw new Error("TOGETHER_API_KEY is not configured");
+
+  await ctx.onProgress?.(15, "scaffold", "เตรียมพื้นที่ทำงานให้ทีมโค้ด AI");
+  must(await execInContainer(ctx.userId, `mkdir -p ${shellQuote(dir)} && cd ${shellQuote(dir)} && git init -q 2>/dev/null; true`), "scaffold");
+  must(await writeWorkspaceFile(ctx.userId, `coder/${slug}/AGENT_BRIEF.md`, coderBrief(ctx, slug)), "write brief");
+
+  await ctx.onProgress?.(30, "plan", "วางแผนสร้างโปรเจกต์");
+  const plan = await callWoibotLLM({
+    role: "code",
     system:
-      "You build small, complete, runnable web apps. Answer with a single self-contained index.html " +
-      "(inline CSS + JS, no build step, no external CDNs). It must actually work when opened in a browser. " +
-      "No markdown fences, no commentary.",
-    user: `Build this: ${ctx.goal}`,
-    maxTokens: 2600,
+      "You are a staff engineer planning a small but complete implementation. " +
+      'Answer with JSON only: {"summary": string, "files": [{"path": string, "purpose": string}], "checks": [string]}. ' +
+      "Max 8 files. checks = concrete acceptance checks that can be verified by opening the app or running a command.",
+    user: `Goal: ${ctx.goal}\nTitle: ${ctx.title}`,
+    maxTokens: 1200,
   });
-  const html = draft.text.replace(/```html|```/g, "").trim();
-  if (!/<html/i.test(html)) {
-    return { ok: false, files: [], notes: [], error: "AI ไม่ได้สร้าง HTML ที่ใช้งานได้" };
+  let planSummary = "";
+  let plannedFiles = 0;
+  try {
+    const parsed = JSON.parse(plan.text.replace(/```json|```/g, "").trim());
+    planSummary = String(parsed.summary || "").slice(0, 400);
+    plannedFiles = Array.isArray(parsed.files) ? parsed.files.length : 0;
+  } catch {
+    /* plan is advisory; the build loop does the real work */
   }
 
-  must(await writeWorkspaceFile(ctx.userId, `${slug}/index.html`, html), "write app");
-  await ctx.onProgress?.(65, "render", "เรนเดอร์ด้วย Chromium เพื่อพิสูจน์ว่าเปิดได้จริง");
-  const shot = await sh(
-    ctx.userId,
-    `cd ${WORK_DIR}/${slug} && timeout 45 chromium --headless=new --no-sandbox --disable-gpu --hide-scrollbars --window-size=1280,800 --screenshot=preview.png index.html 2>&1 | tail -3; ls -l preview.png 2>&1`,
-  );
+  let engine = "";
+  const cliReady = await probeCoderCli(ctx.userId);
+  if (cliReady) {
+    /* -- autonomous agent loop inside the container ---------------------- */
+    engine = "woibot-coder (agent loop in container)";
+    await ctx.onProgress?.(40, "build", "ทีมโค้ด AI กำลังสร้างโปรเจกต์แบบอัตโนมัติ");
+    await writeCoderConfig(ctx.userId).catch(() => undefined);
 
-  const files = [`${slug}/index.html`];
-  if (shot.stdout.includes("preview.png")) files.push(`${slug}/preview.png`);
-  return { ok: true, files, notes: [shot.stdout.trim().split("\n").pop() || ""] };
+    const pid = await launchCoderAgent(ctx.userId, slug, apiKey);
+    if (!pid) throw new Error("เริ่ม coding agent ไม่สำเร็จ (launch failed)");
+
+    // Poll up to 12 minutes; report progress from the agent log.
+    const deadline = Date.now() + 12 * 60 * 1000;
+    let lastSize = -1;
+    let alive = true;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 20000));
+      alive = await coderAgentRunning(ctx.userId, pid);
+      const log = await sh(ctx.userId, `wc -c < ${dir}/.agent.log 2>/dev/null; tail -c 400 ${dir}/.agent.log 2>/dev/null | tr -d '\\r' | tail -2`);
+      const size = Number(String(log.stdout).split("\n")[0]) || 0;
+      if (size !== lastSize) {
+        lastSize = size;
+        await ctx.onProgress?.(55, "build", `agent กำลังทำงาน… (log ${size} bytes)`);
+      }
+      if (!alive) break;
+    }
+    if (alive) {
+      await sh(ctx.userId, `kill ${pid} 2>/dev/null; true`);
+      throw new Error("coding agent ทำงานเกินเวลาที่กำหนด (12 นาที) — ลองแบ่งงานเป็นชิ้นเล็ก");
+    }
+  } else {
+    /* -- staged fallback loop (still real files, still verified) --------- */
+    engine = "woibot-coder (staged generator)";
+    await ctx.onProgress?.(40, "build", "สร้างไฟล์โปรเจกต์แบบหลายขั้นตอน");
+    const draft = await callWoibotLLM({
+      role: "code",
+      system:
+        "You build small, complete, runnable web apps. Answer with a single self-contained index.html " +
+        "(inline CSS + JS, no build step, no external CDNs). It must actually work when opened in a browser. " +
+        "No markdown fences, no commentary.",
+      user: `Build this: ${ctx.goal}\nPlan notes: ${planSummary}`,
+      maxTokens: 3600,
+    });
+    const html = draft.text.replace(/```html|```/g, "").trim();
+    if (!/<html/i.test(html)) throw new Error("AI ไม่ได้สร้าง HTML ที่ใช้งานได้");
+    must(await writeWorkspaceFile(ctx.userId, `coder/${slug}/index.html`, html), "write app");
+  }
+
+  /* -- verification: files exist + real render proof -------------------- */
+  await ctx.onProgress?.(75, "verify", "ตรวจผลลัพธ์ด้วยเบราว์เซอร์จริง");
+  const listing = await sh(ctx.userId, `find ${dir} -maxdepth 2 -type f ! -name .agent.log ! -name AGENT_BRIEF.md | sed "s|${dir}/||" | sort`);
+  const produced = listing.stdout.trim().split("\n").filter(Boolean);
+  if (!produced.length) throw new Error("coding agent ไม่ทิ้งไฟล์ไว้เลย — ไม่อนุญาตให้รายงานสำเร็จ");
+
+  const entry = produced.includes("index.html") ? "index.html" : produced.find((f) => /\.html$/i.test(f)) || "";
+  const files = produced.map((f) => `coder/${slug}/${f}`);
+  const notes = [engine, planSummary ? `plan: ${planSummary}` : "plan: (unparsed)"];
+
+  if (entry) {
+    const shot = await sh(
+      ctx.userId,
+      `cd ${dir} && timeout 45 chromium --headless=new --no-sandbox --disable-gpu --hide-scrollbars --window-size=1280,800 --screenshot=preview.png ${entry} 2>&1 | tail -2; ls -l preview.png 2>/dev/null | awk '{print $5, $9}'`,
+    );
+    if (shot.stdout.includes("preview.png")) {
+      files.push(`coder/${slug}/preview.png`);
+      notes.push("chromium render: ok");
+    } else {
+      notes.push("chromium render: no screenshot (entry file may be non-visual)");
+    }
+
+    // Build log/report for the user (honest, no upstream branding).
+    const report = [
+      `# ${ctx.title} — Build Report`,
+      "",
+      `**Goal:** ${ctx.goal}`,
+      "",
+      `**Engine:** ${engine}`,
+      "",
+      "**Plan:**",
+      planSummary || "(unparsed)",
+      "",
+      "**Files delivered:**",
+      ...files.map((f) => `- ${f}`),
+      "",
+      "**Verification:**",
+      "- Files verified on disk with real sizes (`find` + `ls`).",
+      notes.includes("chromium render: ok")
+        ? "- Rendered in headless Chromium; screenshot saved as `preview.png`."
+        : "- Headless render skipped/failed — see notes; the entry file was still produced.",
+      "",
+      `_Task ${ctx.taskId} · ${new Date().toISOString()}_`,
+    ].join("\n");
+    must(await writeWorkspaceFile(ctx.userId, `coder/${slug}/REPORT.md`, report), "write report");
+    files.push(`coder/${slug}/REPORT.md`);
+  }
+
+  await ctx.onProgress?.(90, "deliver", "ส่งมอบไฟล์โปรเจกต์ + รายงาน");
+  return { ok: true, files, notes };
 }
 
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserId } from "@/lib/auth";
 import { execInComputer } from "@/lib/computer";
 import { audit } from "@/lib/pg";
+import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,6 +15,9 @@ export const revalidate = 0;
  *   - kind: "action" → a real command executed inside the caller's isolated
  *     Cloud Computer container (via execInComputer), or
  *   - kind: "chat"   → not a computer action; the UI forwards it to /api/chat.
+ *
+ * Every action turn is persisted as ChatMessage rows (user + assistant) so the
+ * voice history survives a reload, exactly like typed chat turns.
  *
  * The classifier is deterministic on purpose: a voice command must not depend
  * on a model round-trip to decide whether it is allowed to touch the computer.
@@ -214,6 +218,68 @@ function normalizeExec(out: unknown) {
   return { ok, code, stdout, stderr, error: raw.error };
 }
 
+/* -- ChatMessage persistence for voice turns ------------------------------ */
+
+/** Resolve the user's main teammate, mirroring /api/chat fallback logic. */
+async function mainTeammate(userId: string) {
+  const existing = await prisma.teammate.findFirst({ where: { userId, isMain: true } });
+  if (existing) return existing;
+  const anyTeammate = await prisma.teammate.findFirst({ where: { userId } });
+  if (anyTeammate) return anyTeammate;
+  return prisma.teammate.create({
+    data: { id: "tm_main", userId, name: "Woibot Main", role: "Chief Personal Teammate", isMain: true, language: "th" },
+  });
+}
+
+/**
+ * Best-effort persistence: a voice action turn must appear in chat history,
+ * but a persistence failure must never block the command result.
+ */
+async function persistVoiceTurn(
+  userId: string,
+  teammateId: string,
+  text: string,
+  result: { ok: boolean; intent: string; label: string; cmd: string; stdout: string; stderr: string },
+) {
+  try {
+    const now = new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+    await prisma.chatMessage.create({
+      data: {
+        teammateId,
+        userId,
+        role: "user",
+        content: text,
+        meta: JSON.stringify({ source: "voice", timestamp: now }),
+      },
+    });
+    const stdoutSnippet = result.stdout.trim().slice(0, 600);
+    const stderrSnippet = result.stderr.trim().slice(0, 300);
+    const body = [
+      result.ok ? `ดำเนินการสำเร็จ: ${result.label}` : `ดำเนินการไม่สำเร็จ: ${result.label}`,
+      stdoutSnippet ? `\n\nผลลัพธ์:\n\`\`\`\n${stdoutSnippet}\n\`\`\`` : "",
+      stderrSnippet ? `\n\nข้อผิดพลาด:\n\`\`\`\n${stderrSnippet}\n\`\`\`` : "",
+    ].join("");
+    await prisma.chatMessage.create({
+      data: {
+        teammateId,
+        userId,
+        role: "assistant",
+        content: body.trim() || `ดำเนินการ: ${result.label}`,
+        meta: JSON.stringify({
+          source: "voice",
+          intent: result.intent,
+          cmd: result.cmd.slice(0, 300),
+          ok: result.ok,
+          timestamp: now,
+        }),
+      },
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
@@ -249,6 +315,18 @@ export async function POST(req: NextRequest) {
 
   const stdout = (exec.ok ? exec.stdout : exec.stderr || exec.stdout).trim();
 
+  const teammate = await mainTeammate(userId).catch(() => null);
+  const persisted = teammate
+    ? await persistVoiceTurn(userId, teammate.id, text, {
+        ok: exec.ok,
+        intent: plan.intent,
+        label: plan.label,
+        cmd: plan.cmd,
+        stdout: exec.stdout,
+        stderr: exec.stderr,
+      })
+    : false;
+
   return NextResponse.json({
     ok: exec.ok,
     kind: "action" as VoiceKind,
@@ -258,5 +336,6 @@ export async function POST(req: NextRequest) {
     result: { ok: exec.ok, code: exec.code, stdout: exec.stdout, stderr: exec.stderr, error: exec.error },
     stdout,
     text,
+    persisted,
   });
 }
