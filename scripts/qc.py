@@ -8,6 +8,11 @@ evidence it actually received (no optimistic defaults).
 """
 import argparse, base64, html, io, json, os, re, sys, time, urllib.request, urllib.error, urllib.parse, http.cookiejar, zipfile
 
+# Windows consoles may default to cp1252; keep unicode detail lines from crashing the gate.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 EMAIL = os.environ.get("QC_EMAIL", "takin@woibot.com")
 PASSWORD = os.environ.get("QC_PASSWORD", "Woibot-Strong-Pass-2026")
 
