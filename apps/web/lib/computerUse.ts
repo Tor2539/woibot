@@ -47,8 +47,8 @@ const Screenshot = 1280; // px width of the image shown to the model
 
 // Screenshot round-trips as a workspace FILE (not exec stdout) to dodge the
 // manager's ~20k stdout cap that silently truncates base64 payloads.
-const WORK_SCREEN_REL = ".woibot-screen.jpg";
-const WORK_SCREEN_FILE = `/home/woibot/workspace/${WORK_SCREEN_REL}`;
+const WORK_SCREEN_REL = "workspace/.woibot-screen.jpg"; // path relative to the user's home (bind mount)
+const WORK_SCREEN_FILE = `/home/woibot/${WORK_SCREEN_REL}`;
 
 function parseDecision(raw: string): Decision | null {
   const text = raw.replace(/```json|```/g, "").trim();
@@ -82,7 +82,7 @@ async function grabScreen(userId: string): Promise<{ dataUrl: string; width: num
     userId,
     "export DISPLAY=:99; xdotool getdisplaygeometry 2>/dev/null || xdpyinfo 2>/dev/null | awk '/dimensions/{print $2}'",
   );
-  const m = geom.stdout.trim().match(/^(\d+)x(\d+)/);
+  const m = geom.stdout.trim().match(/^(\d+)[x ](\d+)/);
   const gw = m ? Number(m[1]) : 1920;
   const gh = m ? Number(m[2]) : 1080;
   return { dataUrl: `data:image/jpeg;base64,${buf.toString("base64")}`, width: gw, height: gh };

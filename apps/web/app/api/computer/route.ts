@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
       userId,
       "export DISPLAY=:99; xdotool getdisplaygeometry 2>/dev/null || xdpyinfo 2>/dev/null | awk '/dimensions/{print $2}'",
     );
-    const m = String((out as any)?.stdout || "").trim().match(/^(\d+)x(\d+)/);
+    const m = String((out as any)?.stdout || "").trim().match(/^(\d+)[x ](\d+)/);
     if (!m) {
       return NextResponse.json({ ok: false, error: "geometry_unavailable", detail: out }, { status: 502 });
     }
