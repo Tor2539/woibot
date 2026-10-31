@@ -1476,7 +1476,7 @@ function TeammateWorkspaceInner() {
             className="flex h-[48px] shrink-0 items-center justify-between px-2.5"
             style={{ borderBottom: "1px solid var(--wb-line)" }}
           >
-            <div className="flex items-center gap-1 overflow-x-auto">
+            <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
               {[
                 { id: "computer" as const, label: "Computer", Icon: Monitor },
                 { id: "memory" as const, label: "Memory", Icon: Brain },
@@ -1490,6 +1490,7 @@ function TeammateWorkspaceInner() {
                     key={t.id}
                     type="button"
                     onClick={() => setInspectorTab(t.id)}
+                    title={t.label}
                     className={`inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11.5px] font-medium transition-colors ${
                       active
                         ? "bg-[var(--wb-active)] text-[var(--wb-fg)]"
@@ -1497,7 +1498,7 @@ function TeammateWorkspaceInner() {
                     }`}
                   >
                     <t.Icon className="h-3.5 w-3.5 shrink-0" />
-                    <span>{t.label}</span>
+                    <span className="hidden min-[420px]:inline">{t.label}</span>
                   </button>
                 );
               })}
