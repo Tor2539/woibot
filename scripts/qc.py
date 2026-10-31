@@ -73,6 +73,34 @@ class Client:
         except urllib.error.HTTPError as e:
             return e.code, {"error": e.read()[:400].decode("utf-8", "ignore")}, dict(e.headers)
 
+
+def run_task_polling(c, tid, run_timeout):
+    """POST /run and survive a client/edge read timeout.
+
+    Long task runs can outlive the HTTP response window (proxy cut or client
+    timeout) while still completing server-side. On a read timeout, poll
+    GET /api/tasks/{tid} until a terminal status or the deadline; the task's
+    verification and deliverables come back identical either way.
+    """
+    try:
+        st, run, _ = c.call(f"/api/tasks/{tid}/run", {}, timeout=run_timeout)
+        if st < 400 or "error" not in run:
+            return run
+    except (TimeoutError, OSError, urllib.error.URLError):
+        pass
+    # Response lost mid-flight: the run keeps executing server-side. Poll.
+    deadline = time.time() + run_timeout
+    task = {}
+    while time.time() < deadline:
+        time.sleep(15)
+        st, fresh, _ = c.call(f"/api/tasks/{tid}")
+        task = (fresh or {}).get("data") or (fresh or {}).get("task") or {}
+        if task.get("status") in {"completed", "failed", "partially_completed", "cancelled"}:
+            break
+    return {"task": task, "verification": task.get("verification") or {},
+            "error": "client_read_timeout_polled" if task else "poll_failed"}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default=os.environ.get("QC_BASE", "https://woibot.com"))
@@ -127,10 +155,10 @@ def main():
 
         # the doc pipeline runs 10+ sequential LLM calls, give it room
         run_timeout = 900 if kind == "doc" else 300
-        st, run, _ = c.call(f"/api/tasks/{tid}/run", {}, timeout=run_timeout)
+        run = run_task_polling(c, tid, run_timeout)
         st2, fresh, _ = c.call(f"/api/tasks/{tid}")
         task = (fresh or {}).get("data") or (fresh or {}).get("task") or (run or {}).get("task") or {}
-        ver = (run or {}).get("verification") or {}
+        ver = (run or {}).get("verification") or task.get("verification") or {}
         files = [d.get("fileName") for d in task.get("deliverables", [])]
         rec(f"task.run.{label}", task.get("status") == "completed", f"status={task.get('status')} err={(run or {}).get('error')}")
         rec(f"task.files.{label}", len(files) > 0, files)
