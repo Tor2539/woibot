@@ -84,8 +84,12 @@ def run_task_polling(c, tid, run_timeout):
     """
     try:
         st, run, _ = c.call(f"/api/tasks/{tid}/run", {}, timeout=run_timeout)
-        if st < 400 or "error" not in run:
+        if st < 400:
             return run
+        # A definitive HTTP error means the run never started; polling cannot
+        # help, so fail fast with the error payload.
+        return {"task": {}, "verification": {},
+                "error": f"run_http_{st}:{str(run.get('error'))[:200]}"}
     except (TimeoutError, OSError, urllib.error.URLError):
         pass
     # Response lost mid-flight: the run keeps executing server-side. Poll.
@@ -93,7 +97,10 @@ def run_task_polling(c, tid, run_timeout):
     task = {}
     while time.time() < deadline:
         time.sleep(15)
-        st, fresh, _ = c.call(f"/api/tasks/{tid}")
+        try:
+            st, fresh, _ = c.call(f"/api/tasks/{tid}")
+        except (TimeoutError, OSError, urllib.error.URLError):
+            continue  # transient read failure: keep polling until the deadline
         task = (fresh or {}).get("data") or (fresh or {}).get("task") or {}
         if task.get("status") in {"completed", "failed", "partially_completed", "cancelled"}:
             break
