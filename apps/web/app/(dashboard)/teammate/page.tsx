@@ -161,7 +161,12 @@ function TeammateWorkspaceInner() {
 
 
   // Right Inspector state (Grok Bot Bot-Details + Cursor Panel)
-  const [inspectorOpen, setInspectorOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
+  // SSR renders closed; the real value is set after hydration (layout effect)
+  // so server and client markup always match.
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  useEffect(() => {
+    setInspectorOpen(window.innerWidth >= 1024);
+  }, []);
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>("computer");
   const [computerTakeover, setComputerTakeover] = useState(false);
   const [teachRecording, setTeachRecording] = useState(false);

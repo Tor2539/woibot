@@ -4,7 +4,6 @@ import React, { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  CheckCircle2,
   Clock,
   Cloud,
   Laptop,
@@ -100,6 +99,11 @@ export default function WorkProjectDetailPage({ params }: { params: Promise<{ id
 
   const est = task.estimate || {};
   const ver = task.verification;
+  // The verify pipeline stores the report as a real Deliverable record
+  // (fileName "verification_report.json"); download must use that record id,
+  // otherwise /api/artifacts resolves nothing and 404s.
+  const verificationDeliverableId =
+    (task.deliverables || []).find((d: any) => d.fileName === "verification_report.json")?.id || null;
 
   return (
     <div className="p-4 lg:p-6 space-y-4 max-w-[1280px] mx-auto">
@@ -185,10 +189,10 @@ export default function WorkProjectDetailPage({ params }: { params: Promise<{ id
             <div className="text-[13.5px] font-semibold">Autonomous Execution Steps</div>
             <div className="space-y-2">
               {[
-                { step: "1. Parse HandoffPacket & Memory Context", status: "done", time: "1.2s" },
-                { step: "2. Provision Isolated Execution Sandbox", status: "done", time: "2.4s" },
-                { step: "3. Execute Implementation & Build Deliverables", status: "done", time: "11.8s" },
-                { step: "4. Run Per-Type Verification Pipeline (verification_report.json)", status: ver?.passed ? "done" : "pending", time: "3.4s" },
+                { step: "1. Parse HandoffPacket & Memory Context", time: "1.2s" },
+                { step: "2. Provision Isolated Execution Sandbox", time: "2.4s" },
+                { step: "3. Execute Implementation & Build Deliverables", time: "11.8s" },
+                { step: "4. Run Per-Type Verification Pipeline (verification_report.json)", time: "3.4s" },
               ].map((s, idx) => (
                 <div
                   key={idx}
@@ -196,7 +200,7 @@ export default function WorkProjectDetailPage({ params }: { params: Promise<{ id
                   style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
                 >
                   <div className="flex items-center gap-2.5">
-                    <CheckCircle2 className={`h-4 w-4 ${s.status === "done" ? "text-emerald-400" : "text-amber-400"}`} />
+                    <span className="font-mono text-[11px] text-[var(--wb-muted)]">{idx + 1}</span>
                     <span>{s.step}</span>
                   </div>
                   <span className="font-mono text-[11px] text-[var(--wb-muted)]">{s.time}</span>
@@ -238,12 +242,12 @@ export default function WorkProjectDetailPage({ params }: { params: Promise<{ id
           style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
         >
           <div className="flex items-center justify-between">
-            <div className="text-[14px] font-semibold text-emerald-400">
+            <div className="text-[14px] font-semibold text-[var(--wb-fg)]">
               {ver?.summary || "ยังไม่มีผลการตรวจสอบ — กด Verify เพื่อรันการตรวจจริง"}
             </div>
-            {ver?.checks && ver.checks.length > 0 && (
+            {verificationDeliverableId && (
               <a
-                href="/api/artifacts?download=verification_report"
+                href={`/api/artifacts?download=${verificationDeliverableId}`}
                 className="rounded-[7px] bg-[#2b66e0] px-3 py-1.5 text-[11.5px] font-medium text-white"
               >
                 Download verification_report.json
@@ -278,10 +282,7 @@ export default function WorkProjectDetailPage({ params }: { params: Promise<{ id
 
       {activeTab === "deliverables" && (
         <div className="grid gap-3 sm:grid-cols-2">
-          {(task.deliverables && task.deliverables.length > 0
-            ? task.deliverables
-            : null
-          ) ? (
+          {task.deliverables && task.deliverables.length > 0 ? (
             (task.deliverables as any[]).map((d: any) => (
               <div
                 key={d.id}
