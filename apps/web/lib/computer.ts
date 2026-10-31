@@ -17,6 +17,24 @@ export type ComputerStatus = {
   detail?: string;
 };
 
+/* Per-user exec serialization: each user owns exactly ONE container, and the
+   manager is a small Node service on a 2-vCPU VM. Two parallel execs to the
+   same container (e.g. two chat-created tasks auto-running at once) produced
+   "fetch failed" transport errors in field testing — so container operations
+   for the same user now queue behind each other. LLM work is unaffected. */
+const execLocks = new Map<string, Promise<unknown>>();
+
+async function withExecLock<T>(userId: string, fn: () => Promise<T>): Promise<T> {
+  const prev = execLocks.get(userId) || Promise.resolve();
+  const next = prev.catch(() => {}).then(fn);
+  execLocks.set(userId, next);
+  try {
+    return await next;
+  } finally {
+    if (execLocks.get(userId) === next) execLocks.delete(userId);
+  }
+}
+
 async function call(path: string, init?: RequestInit, timeoutMs = 20000) {
   if (!MANAGER_URL) return null;
   try {
@@ -35,6 +53,18 @@ async function call(path: string, init?: RequestInit, timeoutMs = 20000) {
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "manager_unreachable" };
   }
+}
+
+/** exec + friends: serialized per user, with one transport retry. */
+async function callExec(userId: string, path: string, init?: RequestInit, timeoutMs = 20000) {
+  return withExecLock(userId, async () => {
+    const first = await call(path, init, timeoutMs);
+    const transportErr = first && typeof first === "object" && "error" in first &&
+      /fetch failed|timeout|terminated|socket|ECONN|aborted/i.test(String((first as any).error));
+    if (!transportErr) return first;
+    await new Promise((r) => setTimeout(r, 5000));
+    return call(path, init, timeoutMs);
+  });
 }
 
 export async function ensureComputer(userId: string): Promise<ComputerStatus> {
@@ -81,7 +111,8 @@ export async function computerAction(userId: string, action: "pause" | "resume" 
 }
 
 export async function execInComputer(userId: string, cmd: string, timeoutMs = 20000) {
-  const out = await call(
+  const out = await callExec(
+    userId,
     `/users/${encodeURIComponent(userId)}/exec`,
     { method: "POST", body: JSON.stringify({ cmd }) },
     timeoutMs,
@@ -104,9 +135,11 @@ export async function computerLogs(userId: string) {
 export async function computerFile(userId: string, relPath: string): Promise<Response | null> {
   if (!MANAGER_URL) return null;
   try {
-    return await fetch(
-      `${MANAGER_URL}/users/${encodeURIComponent(userId)}/file?path=${encodeURIComponent(relPath)}`,
-      { headers: { "x-woibot-token": MANAGER_TOKEN }, cache: "no-store", signal: AbortSignal.timeout(30000) },
+    return await withExecLock(userId, async () =>
+      fetch(
+        `${MANAGER_URL}/users/${encodeURIComponent(userId)}/file?path=${encodeURIComponent(relPath)}`,
+        { headers: { "x-woibot-token": MANAGER_TOKEN }, cache: "no-store", signal: AbortSignal.timeout(30000) },
+      ),
     );
   } catch {
     return null;
