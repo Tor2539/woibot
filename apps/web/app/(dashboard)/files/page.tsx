@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Download, Eye } from "lucide-react";
+import { Download, Eye, FolderOpen } from "lucide-react";
 
 export default function FilesLibraryPage() {
   const router = useRouter();
@@ -45,12 +45,34 @@ export default function FilesLibraryPage() {
         </div>
       ) : artifacts.length === 0 ? (
         <div
-          className="rounded-[12px] px-4 py-8 text-center space-y-1.5"
+          className="flex flex-col items-center justify-center rounded-[12px] px-6 py-14 text-center space-y-3"
           style={{ backgroundColor: "var(--wb-raised)", border: "1px dashed var(--wb-line-strong)" }}
         >
-          <div className="text-[13px] font-semibold">ยังไม่มีไฟล์ในคลังของคุณ</div>
-          <div className="text-[11.5px] text-[var(--wb-muted)]">
-            ไฟล์จริงจะปรากฏที่นี่เมื่อ Teammate หรือ Work สร้างและตรวจสอบเสร็จ — หน้านี้ไม่แสดงไฟล์ตัวอย่างที่สร้างขึ้นเอง
+          <div className="flex h-14 w-14 items-center justify-center rounded-[14px]" style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}>
+            <FolderOpen className="h-6 w-6 text-[var(--wb-muted)]" />
+          </div>
+          <div className="space-y-1">
+            <div className="text-[14px] font-semibold">ยังไม่มีไฟล์ในคลังของคุณ</div>
+            <div className="mx-auto max-w-md text-[12px] leading-relaxed text-[var(--wb-muted)]">
+              ไฟล์จริงจะปรากฏที่นี่เมื่อ Teammate หรือ Work สร้างและตรวจสอบเสร็จ — หน้านี้ไม่แสดงไฟล์ตัวอย่างที่สร้างขึ้นเอง
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => router.push("/teammate")}
+              className="min-h-[40px] sm:min-h-0 inline-flex items-center gap-1.5 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] px-3.5 py-2 text-[12.5px] font-semibold text-white"
+            >
+              เริ่มสั่งงาน Teammate
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/work?area=code")}
+              className="min-h-[40px] sm:min-h-0 inline-flex items-center gap-1.5 rounded-[8px] px-3.5 py-2 text-[12.5px] font-medium text-[var(--wb-fg)] hover:bg-[var(--wb-hover)]"
+              style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
+            >
+              สร้างงานใน Work Studio
+            </button>
           </div>
         </div>
       ) : (

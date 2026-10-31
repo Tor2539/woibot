@@ -2,9 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 
+const PAGE_SIZE = 50;
+
 export default function SettingsBillingPage() {
   const [usage, setUsage] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [filterProduct, setFilterProduct] = useState<"all" | "teammate" | "work">("all");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetch("/api/usage")
@@ -23,6 +27,21 @@ export default function SettingsBillingPage() {
   const monthlyCap = guardrails?.monthlyCap;
   const perTaskCap = guardrails?.perTaskCap;
   const events = usage?.events || [];
+
+  const filteredEvents =
+    filterProduct === "all" ? events : events.filter((ev: any) => ev.product === filterProduct);
+  const total = filteredEvents.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * PAGE_SIZE;
+  const pageEvents = filteredEvents.slice(start, start + PAGE_SIZE);
+
+  const changeFilter = (p: "all" | "teammate" | "work") => {
+    setFilterProduct(p);
+    setPage(1);
+  };
+  const countBy = (p: "all" | "teammate" | "work") =>
+    p === "all" ? events.length : events.filter((ev: any) => ev.product === p).length;
 
   return (
     <div className="p-4 lg:p-6 space-y-6">
@@ -97,17 +116,42 @@ export default function SettingsBillingPage() {
         className="rounded-[12px] p-5 space-y-3"
         style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
       >
-        <div className="text-[14px] font-semibold">Isolated Usage Ledger (Teammate vs Work Events)</div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="text-[14px] font-semibold">Isolated Usage Ledger (Teammate vs Work Events)</div>
+          <div className="flex items-center gap-1.5">
+            {(["all", "teammate", "work"] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => changeFilter(p)}
+                className={`rounded-[7px] px-3 py-1.5 text-[12px] font-medium capitalize ${
+                  filterProduct === p
+                    ? "bg-[var(--wb-active)] text-[var(--wb-fg)] border border-[var(--wb-line-strong)]"
+                    : "text-[var(--wb-muted)] hover:text-[var(--wb-fg)]"
+                }`}
+              >
+                {p} ({countBy(p)})
+              </button>
+            ))}
+          </div>
+        </div>
         {loading ? (
           <div className="rounded-[10px] px-4 py-6 text-center text-[12px] text-[var(--wb-muted)]" style={{ backgroundColor: "var(--wb-panel)", border: "1px dashed var(--wb-line-strong)" }}>
             กำลังโหลดรายการใช้งาน...
           </div>
-        ) : events.length === 0 ? (
+        ) : filteredEvents.length === 0 ? (
           <div className="rounded-[10px] px-4 py-6 text-center space-y-1" style={{ backgroundColor: "var(--wb-panel)", border: "1px dashed var(--wb-line-strong)" }}>
-            <div className="text-[13px] font-semibold">ยังไม่มีรายการใช้งานในรอบที่เลือก</div>
-            <div className="text-[11.5px] text-[var(--wb-muted)]">เมื่อ Teammate หรือ Work ทำงาน ทุกเหตุการณ์จะถูกบันทึกลง Ledger แยกตามผลิตภัณฑ์</div>
+            <div className="text-[13px] font-semibold">
+              {events.length === 0 ? "ยังไม่มีรายการใช้งานในรอบที่เลือก" : `ไม่พบรายการใช้งานของ ${filterProduct}`}
+            </div>
+            <div className="text-[11.5px] text-[var(--wb-muted)]">
+              {events.length === 0
+                ? "เมื่อ Teammate หรือ Work ทำงาน ทุกเหตุการณ์จะถูกบันทึกลง Ledger แยกตามผลิตภัณฑ์"
+                : "ลองเลือกดู Ledger อื่นทางด้านบน"}
+            </div>
           </div>
         ) : (
+        <>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-left border-collapse text-[12.5px] tabular-nums">
             <thead>
@@ -123,7 +167,7 @@ export default function SettingsBillingPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--wb-line)]">
-              {events.map((ev: any) => (
+              {pageEvents.map((ev: any) => (
                 <tr key={ev.id}>
                   <td className="py-2.5 px-3">
                     <span
@@ -145,6 +189,43 @@ export default function SettingsBillingPage() {
             </tbody>
           </table>
         </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <div className="text-[11.5px] text-[var(--wb-muted)] tabular-nums">
+            {total === 0
+              ? "แสดง 0–0 จาก 0"
+              : `แสดง ${start + 1}–${Math.min(start + PAGE_SIZE, total)} จาก ${total}`}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((v) => Math.max(1, v - 1))}
+              disabled={safePage <= 1}
+              className={`rounded-[7px] px-3 py-1.5 text-[12px] font-medium ${
+                safePage <= 1
+                  ? "text-[var(--wb-muted)] opacity-50 cursor-not-allowed border border-[var(--wb-line)]"
+                  : "bg-[var(--wb-raised)] text-[var(--wb-fg)] hover:bg-[var(--wb-hover)] border border-[var(--wb-line)]"
+              }`}
+            >
+              Prev
+            </button>
+            <span className="text-[11.5px] text-[var(--wb-muted)] tabular-nums">
+              หน้า {safePage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((v) => Math.min(totalPages, v + 1))}
+              disabled={safePage >= totalPages}
+              className={`rounded-[7px] px-3 py-1.5 text-[12px] font-medium ${
+                safePage >= totalPages
+                  ? "text-[var(--wb-muted)] opacity-50 cursor-not-allowed border border-[var(--wb-line)]"
+                  : "bg-[var(--wb-raised)] text-[var(--wb-fg)] hover:bg-[var(--wb-hover)] border border-[var(--wb-line)]"
+              }`}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+        </>
         )}
       </div>
     </div>

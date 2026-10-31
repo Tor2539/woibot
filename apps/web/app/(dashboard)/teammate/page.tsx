@@ -161,7 +161,7 @@ function TeammateWorkspaceInner() {
 
 
   // Right Inspector state (Grok Bot Bot-Details + Cursor Panel)
-  const [inspectorOpen, setInspectorOpen] = useState(true);
+  const [inspectorOpen, setInspectorOpen] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>("computer");
   const [computerTakeover, setComputerTakeover] = useState(false);
   const [teachRecording, setTeachRecording] = useState(false);

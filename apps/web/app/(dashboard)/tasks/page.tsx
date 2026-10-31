@@ -13,6 +13,7 @@ import {
   Plus,
   Filter,
   RefreshCw,
+  Search,
 } from "lucide-react";
 
 const TEN_STATUSES = [
@@ -35,6 +36,7 @@ export default function UnifiedTasksPage() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [filterProduct, setFilterProduct] = useState<"all" | "teammate" | "work">("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [runMsg, setRunMsg] = useState<string>("");
@@ -96,6 +98,20 @@ export default function UnifiedTasksPage() {
   const filtered = tasks.filter((t) => {
     if (filterProduct !== "all" && t.product !== filterProduct) return false;
     if (filterStatus !== "all" && t.status !== filterStatus) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const haystack = [
+        t?.title,
+        t?.goal,
+        t?.description,
+        t?.traceId,
+        t?.id,
+      ]
+        .filter((v) => typeof v === "string" && v.length > 0)
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
     return true;
   });
 
@@ -165,22 +181,35 @@ export default function UnifiedTasksPage() {
         })}
       </div>
 
-      {/* Product Filter Bar */}
-      <div className="flex items-center gap-2">
-        {(["all", "teammate", "work"] as const).map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => setFilterProduct(p)}
-            className={`rounded-[7px] px-3 py-1.5 text-[12px] font-medium capitalize ${
-              filterProduct === p
-                ? "bg-[var(--wb-active)] text-[var(--wb-fg)] border border-[var(--wb-line-strong)]"
-                : "text-[var(--wb-muted)] hover:text-[var(--wb-fg)]"
-            }`}
-          >
-            {p === "all" ? "All Products" : p}
-          </button>
-        ))}
+      {/* Product Filter Bar + Search */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-2">
+          {(["all", "teammate", "work"] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setFilterProduct(p)}
+              className={`rounded-[7px] px-3 py-1.5 text-[12px] font-medium capitalize ${
+                filterProduct === p
+                  ? "bg-[var(--wb-active)] text-[var(--wb-fg)] border border-[var(--wb-line-strong)]"
+                  : "text-[var(--wb-muted)] hover:text-[var(--wb-fg)]"
+              }`}
+            >
+              {p === "all" ? "All Products" : p}
+            </button>
+          ))}
+        </div>
+        <div className="relative sm:ml-auto sm:w-72">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--wb-faint)]" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="ค้นหาชื่องาน, เป้าหมาย, หรือ trace_id…"
+            aria-label="ค้นหางาน"
+            className="w-full min-h-[40px] sm:min-h-0 rounded-[8px] border border-[var(--wb-line)] bg-[var(--wb-panel)] py-1.5 pl-9 pr-3 text-[12.5px] outline-none placeholder:text-[var(--wb-faint)] focus:border-[var(--wb-accent,#3b82f6)]"
+          />
+        </div>
       </div>
 
       {/* Responsive Table (Desktop) + Stacked Cards (Mobile <768px) */}
