@@ -24,6 +24,9 @@ RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs nextjs
 COPY --from=builder --chown=nextjs:nodejs /repo/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /repo/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /repo/apps/web/public ./apps/web/public
+# skills catalog for the auto-selection engine (loader tries both shapes)
+COPY --from=builder --chown=nextjs:nodejs /repo/apps/web/data/skills ./apps/web/data/skills
+COPY --from=builder --chown=nextjs:nodejs /repo/apps/web/data/skills ./data/skills
 USER nextjs
 EXPOSE 8080
 CMD ["node", "apps/web/server.js"]

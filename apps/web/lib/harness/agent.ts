@@ -11,6 +11,7 @@ import { callWoibotLLM, MODELS } from "../llm";
 import { produceDocxAndPdf, produceSpreadsheet, produceCsv } from "./producers/documents";
 import { produceImageBrief, produceVideoClip } from "./producers/media";
 import { describeImage } from "./producers/vision";
+import { selectSkills, skillPromptBlock } from "../skills/select";
 
 export type AgentContext = {
   taskId: string;
@@ -18,6 +19,8 @@ export type AgentContext = {
   goal: string;
   title: string;
   workKind: string;
+  /** Compact prompt block for the auto-selected skills (empty when none). */
+  skillBlock?: string;
   onProgress?: (progress: number, step: string, note?: string) => Promise<void> | void;
 };
 
@@ -65,7 +68,7 @@ async function produceDocument(ctx: AgentContext, slug: string): Promise<AgentRe
       "Use the language of the brief. Include a title, a one-paragraph executive summary, 3-5 sections with substance, " +
       "and a closing section with next steps. Never invent statistics that were not given; if a number is required, " +
       "state it as a placeholder in [square brackets].",
-    user: `Brief: ${ctx.goal}\nTitle: ${ctx.title}`,
+    user: `Brief: ${ctx.goal}\nTitle: ${ctx.title}${ctx.skillBlock ? `\n\n${ctx.skillBlock}` : ""}`,
     maxTokens: 2600,
   });
 
@@ -333,7 +336,7 @@ Rules:
 4. Use Thai or English copy matching the brief's language. No lorem ipsum.
 5. When done, the folder must contain the runnable entry file (index.html or
    equivalent) plus any supporting files.
-
+${ctx.skillBlock ? `\n${ctx.skillBlock}\n` : ""}
 Deliverable: the files in ${WORK_DIR}/coder/${slug}.`;
 }
 
@@ -635,6 +638,21 @@ async function produceCsvSimple(ctx: AgentContext, slug: string): Promise<AgentR
 /* ------------------------------------------------------------------- api */
 
 export async function runAgentTask(ctx: AgentContext): Promise<AgentResult> {
+  // Auto-select the top-3 catalog skills for this goal and carry the rendered
+  // block into the LLM briefs below. Best effort only: if selection fails for
+  // any reason the task still runs, just without the skills section.
+  let skillBlock = "";
+  try {
+    const selected = await selectSkills(ctx.goal, 3);
+    skillBlock = skillPromptBlock(selected);
+  } catch (e) {
+    console.warn(
+      "[skills] selection unavailable, continuing without:",
+      e instanceof Error ? e.message : String(e),
+    );
+  }
+  if (skillBlock) ctx = { ...ctx, skillBlock };
+
   const slug = slugFor(ctx.title);
   const kind = ctx.workKind;
 

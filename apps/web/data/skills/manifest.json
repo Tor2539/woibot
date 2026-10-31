@@ -1,0 +1,29 @@
+{
+  "total": 256,
+  "generatedAt": "2026-10-31T04:01:58.339Z",
+  "sources": [
+    {
+      "id": "scientific",
+      "repo": "K-Dense-AI/claude-scientific-skills",
+      "homepage": "https://github.com/K-Dense-AI/claude-scientific-skills",
+      "license": "MIT",
+      "licenseVerified": true,
+      "count": 177
+    },
+    {
+      "id": "engineering",
+      "repo": "obra/superpowers",
+      "homepage": "https://github.com/obra/superpowers",
+      "license": "MIT",
+      "licenseVerified": true,
+      "count": 15
+    }
+  ],
+  "authored": {
+    "count": 64,
+    "location": "apps/web/data/skills/authored",
+    "license": "woibot-original"
+  },
+  "minInstructionsChars": 400,
+  "generator": "scripts/sync-skills.mjs"
+}

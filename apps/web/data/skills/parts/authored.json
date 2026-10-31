@@ -1,0 +1,834 @@
+[
+  {
+    "id": "wb-ad-copy-frameworks",
+    "name": "Ad Copy Frameworks",
+    "description": "Writes high-converting ad copy using proven structures (PAS, AIDA, before-after-bridge) matched to audience awareness level, with variants for testing. Use for search ads, social ads, and landing headlines.",
+    "tags": [
+      "marketing",
+      "writing",
+      "conversion"
+    ],
+    "instructions": "# Ad Copy Frameworks\n\nAds fail from vague promises, not bad grammar. Match the structure to how aware the audience already is.\n\n## Steps\n\n1. Place the audience on the awareness ladder: unaware of the problem, aware of the problem, aware of solutions, comparing options, or ready to buy. Structure choice follows:\n   - Problem-unaware: PAS (Problem, Agitate, Solution) — open with the pain in their words.\n   - Solution-shopping: Before-After-Bridge — show the transformation, then the mechanism.\n   - Comparing options: AIDA with proof — interest via specifics (numbers, names), desire via differentiators.\n   - Ready to buy: offer-first copy — price, deadline, guarantee up front.\n2. Write the promise with a specific number or mechanism: \"cut report prep from 6 hours to 20 minutes\" beats \"save time\". Specificity is the cheapest credibility.\n3. Address the single biggest objection inside the copy (guarantee, proof, social count, or a risk-reversing line).\n4. Draft the required variants: 3 hooks x 2 bodies minimum, each changing exactly one variable (pain vs gain lead, mechanism vs outcome) so test results are readable.\n5. Match the destination: the landing page must continue the ad's promise in its headline — click-to-page message mismatch kills conversions and wastes spend.\n6. Check compliance and tone: no unverifiable claims (\"best\", \"#1\" without proof), platform policy limits, and the brand voice guide.\n7. Set the test plan: primary metric (CTR for cold, conversion for warm), budget per variant, and the rule you will use to pick a winner before launching.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-swot-analysis",
+    "name": "SWOT Analysis Builder",
+    "description": "Builds a grounded SWOT analysis where every point ties to evidence and ends in prioritized implications. Use for business reviews, competitive scans, and strategy discussions.",
+    "tags": [
+      "analysis",
+      "business",
+      "strategy"
+    ],
+    "instructions": "# SWOT Analysis Builder\n\nA SWOT is only useful when each point is specific, evidenced, and tied to an action. Generic word salads are worthless.\n\n## Steps\n\n1. Define the unit of analysis precisely: the whole company, one product, one market entry, or one competitor. State it at the top.\n2. Collect evidence before opinions: performance numbers, customer feedback, market data. If given none, mark points as \"hypothesis — needs data\" rather than stating them as facts.\n3. Fill the four quadrants with 3-5 specific points each:\n   - Strengths: internal capabilities that genuinely differentiate (say why they are hard to copy).\n   - Weaknesses: internal gaps with real consequences (\"no recurring revenue\" not \"could be better\").\n   - Opportunities: external shifts the unit can actually act on.\n   - Threats: external risks with likely impact and timing.\n4. For every point, attach the evidence or assumption behind it in parentheses.\n5. Derive implications, not just lists: for each quadrant, end with \"so what\" — one action or decision it suggests.\n6. Rank the final 3 highest-leverage moves that combine quadrants (e.g. use strength S1 to capture opportunity O2).\n7. Note what data would most reduce uncertainty in the weakest quadrant.\n\n## Output\n\nTable for the quadrants, then \"Top 3 implications\" as a short list.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-app-security-review",
+    "name": "Application Security Review Basics",
+    "description": "Checks web applications for the highest-impact vulnerability classes: input handling, auth, secrets, access control, and dependency risk, producing a prioritized findings list. Use before launches and after major changes.",
+    "tags": [
+      "security",
+      "coding",
+      "web"
+    ],
+    "instructions": "# Application Security Review Basics\n\nFocus on the vulnerability classes that cause real incidents. This is a first-pass review that complements — not replaces — dedicated security testing.\n\n## Steps\n\n1. Map the attack surface: entry points (forms, APIs, file uploads, webhooks), auth boundaries, admin functions, and where user data lands (DB, logs, exports).\n2. Input handling: every input validated server-side against an allowlist where possible; SQL built only with parameterized queries; user content rendered with context-aware escaping; file uploads restricted by type/size and stored outside executable paths.\n3. Authentication and sessions: passwords hashed with a modern algorithm, login rate-limited, session tokens random and expiring, logout invalidates server-side, password reset flows do not leak whether an account exists.\n4. Access control (the classic breach): for each sensitive action and object, verify the server checks the requesting user's permission every time — including API endpoints and object IDs in URLs (test changing the ID to another user's resource).\n5. Secrets: no keys, tokens, or passwords in code, config files, logs, or error messages; secrets come from environment or a secrets manager; scan the repo history for accidental commits.\n6. Transport and headers: HTTPS enforced, cookies marked Secure/HttpOnly/SameSite, security headers set (CSP at minimum), no mixed content.\n7. Dependencies: check for known-vulnerable versions of libraries in use and remove unused ones; note versions that need upgrading.\n8. Output the findings table: finding, location, risk (high/med/low), and the concrete fix. Highs get an owner and a date. Verify fixes with the same steps used to find them.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-brand-style-mini-guide",
+    "name": "Brand Style Mini-Guide",
+    "description": "Defines a compact, usable brand style: color palette with roles, type pairing, voice traits, and do/don't examples. Use for new brands, campaign consistency, and quick brand refreshes.",
+    "tags": [
+      "design",
+      "branding",
+      "business"
+    ],
+    "instructions": "# Brand Style Mini-Guide\n\nA style guide is only useful if it fits on one page and gets used. Define roles, not just colors.\n\n## Steps\n\n1. Capture the brand's personality in 3-4 adjectives with one anti-adjective each (e.g. \"confident, not arrogant; warm, not childish\"). Every later choice must pass these filters.\n2. Define the palette by role, not just hue: primary (brand presence, CTAs), secondary (supporting surfaces), accent (highlights, sparingly), neutrals (text, borders, backgrounds). Give hex/RGB values and a contrast check for text-on-background pairs.\n3. Pair two typefaces max: one for headings (personality) and one for body (readability). Specify sizes for h1, h2, body, caption, and minimum size.\n4. Voice: 3-5 traits with examples (\"says 'thanks for flagging this' not 'we apologize for the inconvenience'\"), plus a short list of words the brand never uses.\n5. Imagery rules: subject matter, treatment (bright, natural, cropped tight), and what is banned (stock clichés, mismatched filters).\n6. Write 2 do/don't example pairs — a good headline and a bad one, a good color use and a misuse — concrete enough to settle arguments.\n7. Keep it to one page with a version note; a guide nobody can find or read is not a guide.\n\n## Output\n\nThe one-page guide text, organized by palette, type, voice, imagery, and examples.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-budget-planner",
+    "name": "Budget Planner and Tracker",
+    "description": "Builds category-based budgets with realistic assumptions, buffers, and a variance-tracking loop for projects, events, or business units. Use at planning time and for monthly reviews.",
+    "tags": [
+      "finance",
+      "planning",
+      "business"
+    ],
+    "instructions": "# Budget Planner and Tracker\n\nA budget is a hypothesis about spending. Build it so reality can be compared against it, and adjust on evidence.\n\n## Steps\n\n1. Define the budget period and granularity: monthly for operations, by phase for projects. Line items must map to how money is actually spent (vendors, categories), not how an accountant reports it.\n2. List fixed costs first (rent, salaries, subscriptions) with their known values, then variable costs with a driver and rate per driver (support cost = tickets x cost per ticket). Drivers make budgets responsive to volume changes.\n3. For uncertain items, give a three-point estimate: low / expected / high, and budget the expected with a documented note on what would push it high.\n4. Add a contingency line (10-20% depending on uncertainty) as its own line item — never spread invisible buffer across lines, which hides overruns.\n5. Sum and sanity-check against available funds or target; if over, cut by ranking lines: cut nice-to-haves entirely before shaving must-haves thinly everywhere.\n6. Record every assumption next to its line (headcount, volumes, prices) — the assumption list is what makes variance review diagnosable.\n7. Set the tracking loop: monthly actual vs budget with a variance rule (investigate anything over ±10% or ±5,000), forecast the period-end from the trend, and update assumptions — not just numbers.\n8. Version the file (v1 initial, v2 post-review) and keep the original intact for audit.\n\n## Checks\n\n- Contingency visible as a line item.\n- Every estimated line has a driver or a three-point note.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-bug-report-writer",
+    "name": "Bug Report Writer",
+    "description": "Writes bug reports engineers can reproduce on the first try: minimal steps, expected vs actual, environment, and evidence attached. Use for any defect, glitch, or unexpected behavior.",
+    "tags": [
+      "qa",
+      "testing",
+      "collaboration"
+    ],
+    "instructions": "# Bug Report Writer\n\nA bug report is a reproduction recipe. If the engineer cannot reproduce it, it does not exist.\n\n## Steps\n\n1. Write a one-line summary that names the broken behavior and the place: \"Cart total ignores discount code on payment step\" — not \"cart broken\".\n2. Reproduce it yourself once more while writing the steps down; steps must be exact: URL, account type, data entered, click order. Remove steps that do not matter by testing without them (minimal repro).\n3. State expected vs actual explicitly: \"Expected: 1,000 THB total (100 x 0.9). Actual: 1,100 THB\". Numbers, not adjectives.\n4. Record environment: page/version, browser and OS (or app version), account/role, date and time with timezone.\n5. Attach evidence: screenshot with the relevant part visible, console errors if any, and the network response when the bug involves data. Crop to what matters.\n6. Note frequency and scope: always or intermittent? one user or all? started when? This determines severity faster than any description.\n7. Classify severity (blocker/critical/major/minor) by user impact, not by how embarrassed anyone is. Workaround present? Say it in one line — it decouples the fix from the pain.\n8. After filing, stay available for questions and add follow-up comments as new evidence appears (\"also happens on mobile web\").\n\n## Checks\n\n- Engineer can reproduce without asking you anything.\n- Expected and actual both contain concrete values.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-chart-choice-guide",
+    "name": "Chart Choice and Design Guide",
+    "description": "Picks the right visualization for a question and designs it honestly: correct scales, readable labels, no junk. Use when turning tables into charts or reviewing chart drafts.",
+    "tags": [
+      "data",
+      "visualization",
+      "design"
+    ],
+    "instructions": "# Chart Choice and Design Guide\n\nStart from the question, not the chart type. Then design so the chart can be understood in five seconds without a legend treasure hunt.\n\n## Steps\n\n1. Name the question the chart answers: comparison, composition, distribution, trend, or relationship.\n2. Pick the default form for that question:\n   - Comparison across categories: bar chart (horizontal when labels are long).\n   - Composition of a whole: stacked bar for few segments; avoid pies beyond 3-4 slices.\n   - Trend over time: line chart with consistent intervals; never connect unevenly spaced points as if they were even.\n   - Distribution: histogram or box plot; never a bar chart of averages alone.\n   - Relationship between two numerics: scatter plot.\n3. Axis honesty: bar charts start at zero; line charts may zoom but must label the baseline; state units and time window in the axis title.\n4. Design: direct-label the series when possible instead of a legend; sort bars by value (unless order is inherent, like months); cap series count at 4-5 or split into small multiples.\n5. Annotate the takeaway as the chart title (\"Churn doubled after the March price change\"), with the descriptive title as a subtitle.\n6. Check readability: contrast, color-blind-safe palette, one accent color for the thing that matters, gridlines light or absent.\n7. Add source and date under the chart; if any series is partial or provisional, mark it visibly.\n\n## Checks\n\n- The takeaway is stated in the title.\n- Removing any element makes the chart worse or it should be removed.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-code-review-checklist",
+    "name": "Code Review Checklist",
+    "description": "Reviews code changes systematically for correctness, safety, readability, and test coverage, with feedback phrased to be actionable and kind. Use before approving PRs or handoffs.",
+    "tags": [
+      "coding",
+      "quality",
+      "collaboration"
+    ],
+    "instructions": "# Code Review Checklist\n\nReview in one pass per concern. Comment on code, not people; every comment should be either a question, a suggestion, or a blocker, labeled as such.\n\n## Steps\n\n1. Understand the intent first: read the task description and the diff summary. If you cannot state what the change is supposed to do, ask before nitpicking.\n2. Correctness: trace the main path and at least two edge cases (empty input, error path, boundary value). Check off-by-one risks, null/undefined handling, and error propagation — do errors get surfaced or swallowed?\n3. Safety and side effects: new inputs validated, secrets absent from code and logs, destructive operations guarded, queries parameterized, permissions checked where the data boundary changes.\n4. Design fit: does the change follow existing patterns in the codebase? Duplication that should reuse an existing helper? New abstraction justified by at least two use sites?\n5. Tests: does the change include or update tests for the behavior added? Would the tests fail if the feature were reverted? If untested, say exactly which case deserves the test.\n6. Readability: names say what things do, functions do one thing, dead code and debug prints removed, comments explain why rather than what.\n7. Label feedback: \"blocker\" (must fix), \"should\" (strong preference), \"nit\" (optional). Ask questions when behavior might be intentional — it often is.\n8. End with an explicit verdict: approve, approve with comments, or request changes, plus the one thing that most improves the PR.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-cold-outreach-writer",
+    "name": "Cold Outreach Writer",
+    "description": "Writes cold email and LinkedIn outreach that earns replies: relevant personalization, a specific reason to reach out, one low-friction ask, and graceful follow-ups. Use for prospecting and partnerships.",
+    "tags": [
+      "sales",
+      "writing",
+      "marketing"
+    ],
+    "instructions": "# Cold Outreach Writer\n\nCold messages fail when they are about the sender. The recipient gives 10 seconds for one reason: relevance to their problem.\n\n## Steps\n\n1. Research the recipient for one specific, recent hook: a launch, job posting, funding, expansion, or a visible pain in their work. Generic flattery (\"love your work\") reads as a template in the first three words.\n2. State why them, specifically, in one sentence: their situation + the gap you noticed. \"You're hiring SDRs in Bangkok — scaling outbound usually hits reply-rate walls\" beats any pitch deck opener.\n3. Make the value proposition concrete and short: what changes for them, with a number or named mechanism. One sentence. If it needs a paragraph, it is not a cold email.\n4. One low-friction ask: interest check, 15 minutes, or permission to send a 2-page case. Never a form, never \"pick a time next week\" in message one. End with a question that is easy to answer from a phone.\n5. Keep it under 90 words total; no attachments in the first message (filters and etiquette).\n6. Plan the follow-up sequence: 3 touches max over ~2 weeks; each follow-up adds something new (a relevant result, a useful observation) — \"just bumping this\" teaches them to ignore you. Final message: polite close-the-loop line; it often gets the reply.\n7. Track what matters: reply rate by hook type and ask type; kill templates that go two sequences below reply threshold rather than sending harder.\n\n## Checks\n\n- Sender uses \"you\" more than \"we/I\".\n- The ask can be answered in five words.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-competitor-analysis",
+    "name": "Competitor Analysis Framework",
+    "description": "Produces a structured competitor analysis covering positioning, offer, pricing, channels, and moats, ending with actionable differentiation moves. Use before launches, pricing changes, or strategy reviews.",
+    "tags": [
+      "analysis",
+      "business",
+      "research"
+    ],
+    "instructions": "# Competitor Analysis Framework\n\nAnalyze competitors to make a decision, not to fill a slide. Start from the decision.\n\n## Steps\n\n1. State the decision this analysis serves (e.g. \"should we enter the mid-market?\"). Every section must inform it.\n2. Pick 3-5 direct competitors plus 1-2 adjacent ones. For each, gather what is actually verifiable: public pricing, product pages, reviews, job postings, changelogs.\n3. For each competitor, fill a standard profile:\n   - Positioning: who they claim to serve and with what promise (use their own words).\n   - Offer: core product, add-ons, what is deliberately missing.\n   - Pricing: model, tiers, packaging tricks, discount signals.\n   - Channels: where they sell and how they acquire (site, marketplaces, partners).\n   - Moat: what protects them — brand, switching costs, data, scale, network effects — or \"none visible\".\n4. Build a comparison table on the 4-6 attributes that matter for the decision. Mark unknown cells explicitly as unknown; do not guess.\n5. Identify gaps: segments underserved, promises competitors cannot keep, features everyone bundles but customers complain about (use reviews as evidence).\n6. End with 2-4 differentiation moves, each tied to a competitor weakness and a customer pain, with the first verification step for each.\n\n## Checks\n\n- Every factual claim traces to a named source.\n- The recommendation connects to the stated decision, not generic advice.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-contract-review-checklist",
+    "name": "Contract Review Checklist (Non-Lawyer Basics)",
+    "description": "Reviews everyday business contracts for scope, money terms, liability, termination, and data rights, producing a structured question list for legal counsel. Use before signing vendor, service, and partnership agreements.",
+    "tags": [
+      "legal",
+      "business",
+      "quality"
+    ],
+    "instructions": "# Contract Review Checklist (Non-Lawyer Basics)\n\nBusiness review catches the deal-shaped risks; legal review catches the law-shaped ones. Do yours first, in writing.\n\n## Steps\n\n1. Confirm the parties' legal names match reality (registered names, not brand names) and that the signer has authority. A contract with the wrong entity is a problem before any clause is read.\n2. Scope: what exactly is delivered, by when, with what acceptance criteria? Vague deliverables (\"support as needed\") become disputes. Rewrite the vague ones as measurable terms and propose them.\n3. Money: total cost including fees, taxes, expenses, and escalation clauses; payment triggers (on signing? on milestone? on acceptance?) and late-payment terms both directions.\n4. Term and termination: length, renewal (auto-renew with what notice window?), and exit rights for convenience or cause, including what happens to deliverables and prepayments on exit.\n5. Liability: caps, exclusions, and indemnities. Note anything uncapped or one-sided (we indemnify them broadly; they cap at pocket change). Flag for legal, do not negotiate alone.\n6. IP and data: who owns deliverables, background IP, and — critically — your data during and after the term. Exit must include data return in a usable format and deletion certificate.\n7. Confidentiality and non-solicit: duration and whether they are mutual.\n8. Compliance and assignment: can they subcontract or assign to a third party without consent? Where is governing law/forum?\n9. Produce the output: a table of clause, what it says in plain words, risk level, and the question to raise — then route flagged items to a qualified lawyer. This checklist does not replace legal advice.\n\n## Checks\n\n- Every money, exit, and data term captured in plain language.\n- Uncertain items explicitly routed to counsel, not resolved by guesswork.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-copyedit-pass",
+    "name": "Copyedit and Clarity Pass",
+    "description": "Edits any draft through three passes covering structure, sentence-level clarity, and consistency, without changing the author's meaning. Use before sending reports, proposals, web copy, or docs.",
+    "tags": [
+      "writing",
+      "editing",
+      "quality"
+    ],
+    "instructions": "# Copyedit and Clarity Pass\n\nEdit in three separate passes. Mixing them makes each pass weaker.\n\n## Steps\n\n1. Structure pass: read only the headings and first sentences in order. Does the document flow logically? Move or cut whole sections before touching sentences.\n2. Clarity pass, sentence by sentence:\n   - Replace passive voice when the actor matters (\"We shipped the fix\", not \"The fix was shipped\").\n   - Cut filler: \"in order to\" becomes \"to\"; \"due to the fact that\" becomes \"because\".\n   - One thought per sentence; split anything over ~30 words.\n   - Prefer concrete nouns over abstractions (\"delivery delays\" not \"operational challenges\").\n3. Consistency pass: one spelling variant, one tense for past events, one format for dates, numbers, and units; matching terminology (do not alternate between \"client\" and \"customer\" for the same thing).\n4. Preserve meaning: if a sentence can only be fixed by changing what it claims, flag it to the author instead of rewriting silently.\n5. Final read aloud (mentally): anything you stumble on, the reader will too.\n\n## Output\n\nReturn the edited text, then a short list of substantive changes or open questions, separated clearly.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-customer-reply-writer",
+    "name": "Customer Support Reply Writer",
+    "description": "Writes support replies that answer the question, show the customer was heard, and end with clear next steps — for both resolved and unresolved cases. Use for email, chat, and ticket responses.",
+    "tags": [
+      "support",
+      "writing",
+      "business"
+    ],
+    "instructions": "# Customer Support Reply Writer\n\nA good support reply does three things: proves the human read the ticket, answers or clearly states the path, and sets expectations.\n\n## Steps\n\n1. Answer the actual question first — if the answer exists, it is the first line, not paragraph three. Then add context. Burying the answer to \"sound helpful\" wastes the customer's time.\n2. Mirror their language (Thai or English), their formality level, and their terms for the product. If they say \"the billing page\", you say \"the billing page\", not \"InvoiceHub module\".\n3. Show you read the specifics: reference their order number, their error, their earlier message. One specific detail does more for trust than three apologies.\n4. Bad news first when it is bad: cannot refund, feature unavailable, ETA slipped. State it plainly, give the reason in one line, then pivot to what you CAN do. Never make the customer excavate the no from a wall of text.\n5. When unresolved: name the exact next step, who owns it, and when they will hear back (\"our engineering team is checking; I'll update you by tomorrow 17:00 or sooner\"). Then actually update at that time even if the update is \"still investigating\".\n6. Ask for what you need explicitly and minimally: one screenshot, one piece of info — batch your questions into a single numbered list instead of a slow tennis match.\n7. Close with their next action and an easy escalation path. No canned \"let us know if you have any other questions\" when the case is clearly still open — it reads as dismissal.\n\n## Checks\n\n- The answer (or the state of the investigation) is in the first two lines.\n- Any promise made has an owner and a time.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-data-cleaning-checklist",
+    "name": "Data Cleaning Checklist",
+    "description": "Applies a safe, reversible data-cleaning sequence for messy tables: standardization, missing-value policy, deduplication, and outlier handling, with every decision logged. Use before analysis or dashboards.",
+    "tags": [
+      "data",
+      "quality",
+      "spreadsheets"
+    ],
+    "instructions": "# Data Cleaning Checklist\n\nClean data reproducibly: every transformation is logged and reversible, and no row is silently destroyed.\n\n## Steps\n\n1. Work on a copy. Keep the raw file untouched and name the cleaned output distinctly.\n2. Standardize before you decide anything: trim whitespace, unify case for category labels, parse all dates to one format and timezone, strip currency symbols into separate numeric columns with one unit column.\n3. Fix structure before content: one observation per row, one attribute per column. Split combined fields (\"City, Country\"), unpivot repeated month columns if needed.\n4. Missing values — choose a policy per column and write it down: drop row (only when the key fields are missing), drop column (mostly empty and non-essential), impute (state the method: median, mode, forward-fill for time series), or keep as \"unknown\" category. Never fill numeric fields with zero without justification.\n5. Duplicates: exact rows first; then natural-key duplicates (same invoice ID twice) — investigate before keeping the latest.\n6. Outliers: separate \"impossible\" (fix or drop with note) from \"surprising but real\" (keep; consider robust statistics). Document every excluded row count per rule.\n7. Validate after cleaning: row counts before vs after with a per-rule breakdown, re-run type checks, spot-check 5 rows against the raw file.\n8. Produce a cleaning log: ordered list of transformations with parameters, so the process can be re-run on next month's file.\n\n## Checks\n\n- Raw file untouched; cleaned file traceable to it.\n- Every drop/impute rule has a count and a reason.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-data-privacy-audit",
+    "name": "Data Privacy Audit Basics",
+    "description": "Audits what personal data a product collects, where it flows, who can access it, and whether practice matches policy, producing a gap list and remediation plan. Use before compliance reviews and integrations.",
+    "tags": [
+      "security",
+      "compliance",
+      "legal"
+    ],
+    "instructions": "# Data Privacy Audit Basics\n\nYou cannot protect or correctly disclose data you have not inventoried. Start with facts, compare with promises, close the gaps.\n\n## Steps\n\n1. Inventory personal data end to end: each data category (identity, contact, payment, behavior, files), where it is collected, where it is stored, retention period, and every system that reads it. Include copies: logs, backups, exports, analytics.\n2. Map flows: for each category, the internal and third-party recipients (analytics, payments, email tools, AI services). For each processor, note the contract basis and data location if known.\n3. Compare practice against promises: does the privacy notice match the inventory? Undisclosed sharing, missing retention limits, or \"we may use for improvements\" language with no boundary are the classic gaps.\n4. Check the controls: who can access personal data (least privilege?), is access logged, is data encrypted at rest and in transit, and can a specific user's data actually be located and deleted on request within the promised time?\n5. Check consent flows where consent is the basis: collected before use, purpose stated, easy to withdraw, and the withdrawal actually stops the processing.\n6. Test a data request end to end: simulate an access request and a deletion request; time them and note every manual step. Manual steps are fine if documented — impossible ones are findings.\n7. Produce the gap list: finding, evidence, risk, and remediation with owner and date (stop collecting X, shorten retention, sign processor agreement, add access logging).\n8. Date the audit and set the next review; inventories rot within months.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-dataset-first-look",
+    "name": "Dataset First-Look Profiler",
+    "description": "Profiles any new CSV or spreadsheet before analysis: shape, types, missing values, distributions, outliers, and data quality traps. Use as the mandatory first step before any chart, model, or report.",
+    "tags": [
+      "data",
+      "analysis",
+      "quality"
+    ],
+    "instructions": "# Dataset First-Look Profiler\n\nNever analyze a dataset you have not profiled. The first look decides whether later results can be trusted.\n\n## Steps\n\n1. Establish shape and identity: row count, column count, what one row represents (a customer? an order? a click?), and the collection window.\n2. Check types and units per column: dates parsed as dates, numbers as numbers, categories as categories. Note columns that are numeric IDs (do not average them) and mixed-type columns.\n3. Quantify missingness: per-column null counts and the pattern behind them (random gaps versus whole blocks, which hint at upstream failures).\n4. Duplicates: exact duplicate rows and duplicate natural keys (same customer ID twice) — decide keep/drop policy explicitly before analysis.\n5. Distribution scan per numeric column: min/max, mean vs median gap (skew), impossible values (negative age, 1000% discount) and outliers flagged by range or z-score.\n6. Category sanity: cardinality of each categorical column, near-duplicate labels (\"THB\" vs \"thb\"), and free-text columns that should have been categories.\n7. Time sanity: sort key continuity, gaps in the date range, timezone mixing, and future-dated rows.\n8. Write a one-paragraph data quality verdict: what can be analyzed as-is, what needs cleaning, and what conclusions the data cannot support. Attach the cleaning checklist derived from steps 3-7.\n\n## Output\n\nProfile table (column, type, nulls, notes), then the verdict paragraph.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-decision-matrix",
+    "name": "Weighted Decision Matrix",
+    "description": "Structures multi-option decisions with explicit criteria, weights, and sensitivity checks so trade-offs are visible and defensible. Use for tool selection, vendor choice, hiring, and feature priorities.",
+    "tags": [
+      "analysis",
+      "decisions",
+      "business"
+    ],
+    "instructions": "# Weighted Decision Matrix\n\nTurn a gut-feel choice into a scoring the team can argue with and later audit.\n\n## Steps\n\n1. Write down the decision and the real constraint (budget, deadline, must-have capability) before scoring anything.\n2. Choose 4-7 criteria that reflect the goal, mixing hard requirements (must pass or the option is disqualified) and weighted preferences. Name each criterion so two people would score it the same way.\n3. Assign weights that sum to 100. Derive weights by ranking criteria, not by making them all \"important\".\n4. Score each option 1-5 per criterion with a one-line justification per score. If a score is a guess, mark it \"low confidence\".\n5. Disqualify first: any option failing a hard requirement is removed before weighting, no matter how attractive otherwise.\n6. Compute weighted totals, then show the table with scores and justifications side by side.\n7. Sensitivity check: change the top criterion's weight or the two most uncertain scores and see if the winner changes. Report which conclusion is stable and which is fragile.\n8. Recommend the winner, note the strongest counterargument, and list the 1-3 facts that, if learned, would change the decision.\n\n## Checks\n\n- Weights sum to 100 and were ranked, not defaulted.\n- Every low-confidence score is flagged.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-deployment-checklist",
+    "name": "Deployment Checklist",
+    "description": "Runs a pre-deploy and post-deploy checklist covering build, config, migrations, smoke tests, monitoring, and rollback readiness. Use for production releases of apps and services.",
+    "tags": [
+      "ops",
+      "devops",
+      "quality"
+    ],
+    "instructions": "# Deployment Checklist\n\nDeployments go wrong on the boring steps. The checklist makes the boring steps non-optional.\n\n## Pre-deploy\n\n1. Version and artifacts pinned: what exact build is going out (commit, image tag), built from a clean checkout; note the previous version for rollback.\n2. Config diff reviewed: environment variables, feature flags, and secrets for the target environment — no missing, no surprising new defaults.\n3. Migrations: reviewed, reversible where possible, tested against a production-like dataset, and the order relative to code deploy decided (backward-compatible first).\n4. Dependencies of the release verified: downstream services informed if contracts changed; permissions for service accounts correct.\n5. Team ready: deploy window chosen, owner named, second person available for verification, on-call aware.\n\n## Deploy\n\n6. Deploy during the chosen window; watch the rollout progress and the first error rates/latency in real time rather than assuming success from a green pipeline.\n7. Smoke test the critical user paths immediately after deploy (login, core action, payment path as applicable) with a real account.\n\n## Post-deploy\n\n8. Monitor for the agreed soak period (30-60 min minimum for meaningful changes): error rate, latency, key business metric.\n9. Verify rollback readiness one last time: the previous version's artifacts still available and the rollback command known.\n10. Close out: changelog updated, deployment noted in the team channel with version and owner, any anomalies logged as issues while fresh.\n\n## Checks\n\n- Rollback tested or explicitly accepted as a risk, in writing.\n- Smoke tests passed against production, not staging.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-financial-statement-explainer",
+    "name": "Financial Statement Explainer",
+    "description": "Reads and explains financial statements for non-finance decision makers: what each statement says, how they connect, and which 6 numbers matter for the decision at hand. Use before finance meetings and investment discussions.",
+    "tags": [
+      "finance",
+      "analysis",
+      "business"
+    ],
+    "instructions": "# Financial Statement Explainer\n\nTranslate statements into decisions. The reader needs \"is this business healthy and what should we watch\", not an accounting lecture.\n\n## Steps\n\n1. Orient the reader: three statements, three jobs — P&L (profitability over a period), balance sheet (what is owned/owed at a point in time), cash flow (cash actually moving). State the period and currency up front.\n2. Walk the P&L top down: revenue, gross margin, operating expenses, operating profit, net profit. Explain each as a rate or relationship (\"gross margin 62% means 62 satangs per baht of sales remain for operating costs\"), not as jargon.\n3. Read the balance sheet for structure: current assets vs current liabilities (short-term cushion), debt vs equity mix, and anything unusual (large receivables = sales booked but uncollected).\n4. Read cash flow as the truth serum: operating cash flow vs net profit — profit without operating cash is a question, not a triumph. Note investing and financing directions.\n5. Compute the 6 numbers that matter for most decisions: revenue growth %, gross margin %, operating margin %, current ratio, debt-to-equity, operating cash flow. Present as a small table with prior period for comparison.\n6. Flag anomalies with a plain-language hypothesis and what document would confirm it (\"receivables doubled — check for one large unpaid deal or a term change\").\n7. Answer the actual question posed (can we afford X? is the business investable?) using only computed numbers; label what the statements cannot answer.\n\n## Checks\n\n- Every ratio explained in one plain sentence.\n- Profit-vs-cash tension explicitly addressed.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-incident-postmortem-writer",
+    "name": "Blameless Postmortem Writer",
+    "description": "Writes postmortems that prevent recurrence: timeline from evidence, root cause with mechanism, contributing factors, and owned action items with verification. Use after any significant incident.",
+    "tags": [
+      "ops",
+      "quality",
+      "writing"
+    ],
+    "instructions": "# Blameless Postmortem Writer\n\nA postmortem asks \"how did the system allow this\", never \"who pressed the button\". People make sense inside their context; systems are what we can fix.\n\n## Steps\n\n1. Set the frame in one line: impact in user terms (who, what, how long), severity, and the detection time from alert to awareness.\n2. Build the timeline from evidence only — alert timestamps, logs, chat messages, deploy records, ticket times. Each entry: time (with timezone), event, source. No interpretation inside the timeline.\n3. Find root cause as a mechanism, not a location: not \"the bug was in the queue code\" but \"the retry storm saturated the DB connection pool because retries had no backoff cap\". If you cannot write the because-chain, keep digging.\n4. List contributing factors honestly: what made detection slow, what made the fix hard, what made the blast radius big (missing alerts, stale runbook, no rate limit, single point of failure).\n5. Ask the standard amplifiers: Did monitoring see it or did a human? Did we follow the runbook — and was the runbook right? Was there a safer action (rollback/flag) we did not take because it was undocumented or unclear who could decide?\n6. Action items: for each factor, a specific change with an owner and a date, split into prevention (stop recurrence) and mitigation (limit blast radius / time-to-detect). Verify each item would actually have changed this incident's timeline — same test as root cause.\n7. Close with what went well (detection, communication, luck to engineer away) and a review date for action items.\n8. Circulate to the team and archive where future responders will find it; recurring-incident reports should link to the previous postmortem.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-incident-response-playbook",
+    "name": "Incident Response Playbook Template",
+    "description": "Creates a working incident playbook with severity levels, roles, first-hour checklist, communication templates, and a postmortem path. Use for services, stores, and internal systems.",
+    "tags": [
+      "security",
+      "ops",
+      "planning"
+    ],
+    "instructions": "# Incident Response Playbook Template\n\nThe middle of an incident is the wrong time to design the process. Write the playbook now, rehearse it once, and update it after every incident.\n\n## Steps\n\n1. Define severity levels with concrete triggers and response times: S1 (service down or data at risk — respond now, all hands), S2 (major feature broken, workaround exists — respond within hours), S3 (minor degradation — next business day). One paragraph each, no ambiguity.\n2. Assign roles by function, not name: Incident Lead (coordinates, decides), Comms Lead (updates stakeholders), Investigator(s), Scribe (timeline log). Backup for each when the primary is asleep.\n3. First-hour checklist: confirm the incident and set severity; open the incident channel and start the scribe log; stabilize or roll back first, diagnose second (a running earlier version beats a perfect fix at 2am); notify affected stakeholders per the severity matrix.\n4. Write the containment options in advance per failure type: how to roll back a deploy, disable a feature flag, switch traffic, or take a component offline — each with the exact command or console path and who is authorized.\n5. Communication templates: first notice (what we know, impact, next update time), progress update every 30-60 minutes for S1, resolution notice (cause, fix, follow-ups). Pre-draft the skeletons so filling takes one minute.\n6. Escalation map: who to call at each severity, in order, with the fallback if unreachable.\n7. Postmortem path: within 48 hours, timeline, root cause, contributing factors, action items with owners — blameless, focused on systems.\n8. Rehearse quarterly with a tabletop scenario and fix what the rehearsal exposes.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-interview-guide-design",
+    "name": "Structured Interview Guide",
+    "description": "Designs structured interviews with job-linked questions, behavior anchors, and consistent scoring so different interviewers produce comparable evidence. Use for hiring loops and panel prep.",
+    "tags": [
+      "hr",
+      "hiring",
+      "quality"
+    ],
+    "instructions": "# Structured Interview Guide\n\nUnstructured interviews feel great and predict little. Structure = same questions, same rubric, evidence over vibes.\n\n## Steps\n\n1. Derive 3-5 competencies from the job's outcomes (e.g. technical depth, stakeholder communication, ownership). Each competency gets at least one dedicated interviewer — coverage, not repetition.\n2. For each competency, write questions with follow-up probes that dig for evidence: behavioral past (\"tell me about a time X — what did you do, what happened\") and situational future (\"how would you approach X here\"). Prepare the probes in advance so pressure does not produce leading questions.\n3. Define scoring anchors before the interview: what a 1, 3, 5 answer actually sounds like per competency (\"5 = quantified result + reflection on failure; 1 = vague claims, no specifics\"). Interviewers score against anchors, not against each other's presence.\n4. Assign stages: who asks what, in what order, and the handoff rule (later interviewers do not re-ask; they drill gaps from the debrief notes).\n5. Ban the known noise: no puzzles unrelated to the job, no questions about protected characteristics, no \"culture fit\" without a defined behavior behind it.\n6. Build the debrief form: per competency, score, one quoted piece of evidence, and one open question. Debriefs start with independent scoring to avoid anchoring on the most senior voice.\n7. After each hire, review which questions and scores actually predicted performance; revise the guide. Structure is a living system, not a formality.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-interview-guide-designer",
+    "name": "User and Stakeholder Interview Guide",
+    "description": "Builds interview guides that surface real behavior and reasons instead of polite opinions: question ladders, probes, and bias controls. Use for customer discovery, usability, and stakeholder input.",
+    "tags": [
+      "research",
+      "business",
+      "education"
+    ],
+    "instructions": "# User and Stakeholder Interview Guide\n\nPeople predict badly and remember selectively. Ask about past behavior and specifics, not hypotheticals and averages.\n\n## Steps\n\n1. Write the learning goal: 2-3 things you genuinely do not know, phrased as questions the interview could answer (\"why do new users abandon setup at step 3?\").\n2. Open with warm-up facts that establish context without judgment: role, situation, when they last did the relevant task. Two minutes, closed questions only.\n3. Build question ladders: start concrete (\"walk me through the last time you did X, step by step\"), then dig into moments (\"what happened right after step 2?\"), then reasons (\"what made that the right choice?\"). Abstractions come last.\n4. Ban hypothetical questions (\"would you use...?\") and prediction questions (\"how often would you...?\") — replace with past behavior and specifics. If you must test a concept, show it and ask what they would change, not whether they like it.\n5. Prepare probes that don't lead: \"tell me more\", \"what did you expect to happen?\", \"you mentioned X twice — what's behind that?\".\n6. Control your biases: do not demonstrate the product while asking for independent recall; do not nod harder at ideas you like; note contradicting evidence on purpose.\n7. End with two questions always: \"what should I have asked but didn't?\" and \"who else should I talk to?\".\n8. Debrief within an hour: facts, quotes with context, and the 2-3 insights — memory of interviews decays fast.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-job-description-writer",
+    "name": "Job Description Writer",
+    "description": "Writes job descriptions that attract the right candidates: real responsibilities with time weights, honest requirements split into must-haves and nice-to-haves, and a clear hiring process. Use for open roles.",
+    "tags": [
+      "hr",
+      "hiring",
+      "writing"
+    ],
+    "instructions": "# Job Description Writer\n\nJob descriptions filter applications. Vague ones attract broad mismatch; honest, specific ones shorten the funnel.\n\n## Steps\n\n1. Start from the role's reason to exist: what problem does this hire solve in the next 6-12 months? Write the top 3 outcomes the person must achieve (\"ship the new checkout flow\", \"grow APAC pipeline from 20 to 60 SQLs/month\").\n2. Convert outcomes into responsibilities with realistic time weights (40% X, 30% Y...). Cut responsibilities no one would spend >5% of their time on — they inflate the role.\n3. Split requirements honestly into must-have (would disqualify a candidate if missing — max 4-5) and nice-to-have (teachable). Every extra must-have shrinks the pool, especially for candidates who self-filter.\n4. Name the team, reporting line, and how the role collaborates (who they work with daily). Candidates weigh context heavily; anonymity signals dysfunction.\n5. State the concrete process: stages, expected timeline, what each stage assesses. Also name salary range or \"range available on request\" per your policy — opacity costs qualified applicants.\n6. Describe what the person will learn or gain; senior candidates read growth signals, not perks.\n7. Language check: avoid internal jargon and coded requirements (\"rockstar\", \"young and energetic\"); use plain titles that match how candidates actually search (align with market naming even if your org chart differs).\n8. Read once as a candidate: would a strong, busy person apply within 5 minutes of reading? If the value proposition is unclear, rewrite the first paragraph.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-keyword-research-plan",
+    "name": "Keyword Research Plan",
+    "description": "Builds a keyword strategy from seed topics by clustering search intent, estimating difficulty versus value, and mapping clusters to pages. Use for content planning and site structure.",
+    "tags": [
+      "seo",
+      "marketing",
+      "planning"
+    ],
+    "instructions": "# Keyword Research Plan\n\nKeywords are stand-ins for people with questions. Cluster them by the question asked, then answer each cluster with one page.\n\n## Steps\n\n1. Start from business value, not search volume: which queries, if you ranked, would bring people who buy or convert? List seed topics from your product, customer questions, and sales objections.\n2. Expand each seed into question variants, comparison terms (\"X vs Y\", \"best X for Z\"), and problem phrasings. Use autocomplete, related searches, and customer language from support tickets — real phrasing beats thesaurus guessing.\n3. Classify intent per keyword: informational (learn), commercial (compare), transactional (act), navigational (find a site). Mixed-intent clusters get split, because one page cannot win two different intents.\n4. Cluster keywords that a single page could satisfy together (same question, variants of phrasing). Each cluster = one candidate page; overlapping clusters get merged.\n5. Estimate difficulty honestly: look at who currently ranks (big brands? weak forums?) and your site's authority relative to them. Mark clusters as quick-win, medium-term, or aspiration.\n6. Score clusters by value: estimated traffic potential x relevance to the business (a buying-intent cluster with modest volume often beats a huge informational one).\n7. Map clusters to pages: existing page to improve vs new page to create, with the target keyword, format (guide, comparison, tool, category), and the internal links it will receive.\n8. Output a prioritized list: cluster, keywords, intent, difficulty, value, page action — ordered by value/difficulty ratio, first 3 marked for immediate work.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-kpi-dashboard-design",
+    "name": "KPI Dashboard Design",
+    "description": "Designs dashboards that answer named business questions with a small set of well-defined KPIs, clear targets, and honest trend framing. Use for management reports, ops dashboards, and weekly reviews.",
+    "tags": [
+      "data",
+      "business",
+      "visualization"
+    ],
+    "instructions": "# KPI Dashboard Design\n\nA dashboard is not a data dump. It is a set of questions with answers, targets, and a call to act.\n\n## Steps\n\n1. Interview the audience (or infer from the brief): list the 3-5 recurring questions they must answer weekly, e.g. \"is revenue on track?\", \"are we over budget?\". The dashboard answers those questions — nothing else.\n2. Map each question to one primary KPI with an exact definition (numerator, denominator, window, filter). Write the definition in the dashboard footer; ambiguity here causes most arguments.\n3. Add context to every KPI: target or last period, delta, and whether up is good. A number without comparison is unreadable.\n4. Choose honest framings: period-to-date against the same period last cycle; cumulative line against target line; rolling averages for noisy daily data (state the window).\n5. Layout in reading order: headline KPIs with deltas on top, trend of the primary KPI second, breakdowns (by channel, region, product) below, drill-down tables last.\n6. Mark data freshness (\"data through Oct 29, 06:00\") and note known caveats (missing channel, delayed attribution).\n7. Trim ruthlessly: if a widget has no owner or decision attached, cut it. Review the set quarterly — KPIs retire when they stop driving decisions.\n\n## Output\n\nQuestion-to-KPI mapping table, layout sketch description, and definition footer text.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-landing-page-copy",
+    "name": "Landing Page Copywriter",
+    "description": "Writes landing page copy section by section (hero, proof, benefits, objections, CTA) engineered around one conversion goal. Use for product pages, campaign pages, and signup flows.",
+    "tags": [
+      "marketing",
+      "writing",
+      "web"
+    ],
+    "instructions": "# Landing Page Copywriter\n\nEvery section answers the question a skeptical visitor is silently asking. Answer in order, or they bounce.\n\n## Steps\n\n1. Fix one conversion goal and one primary audience for the page. Two goals on one page means zero.\n2. Hero section answers three questions in five seconds: what is it, who is it for, why should I care. Headline = the outcome in the customer's words; subhead = mechanism or proof; CTA button = the action as a verb with value (\"Start free\", not \"Submit\").\n3. Below hero, prove it: 2-3 concrete benefits with numbers or specifics, a testimonial with a name and context (no \"great product!\"), and logos or usage counts if real.\n4. Handle objections in the order they arise: price (justify with value math or comparison), effort (\"setup in 10 minutes\"), trust (guarantee, security, support). Each objection gets its own short section.\n5. Explain the mechanism briefly — how it works in 3 steps reduces fear of complexity and qualifies the right buyers.\n6. Repeat the CTA after every major section; make the primary path visually continuous.\n7. Write the FAQ from real questions (sales emails, support tickets), not imagined ones — 4-6 items max.\n8. Tighten: cut every sentence that does not add information, proof, or emotion. Then read the page as a stranger: could you say what this is and what to do next in 10 seconds?\n\n## Checks\n\n- Headline, testimonial, and CTA contain specifics, not adjectives.\n- Objections appear before the second CTA.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-launch-campaign-plan",
+    "name": "Launch Campaign Planner",
+    "description": "Plans product or feature launch campaigns with audience targeting, channel mix, message hierarchy, timeline, and measurement. Use for launches, promotions, and market entries.",
+    "tags": [
+      "marketing",
+      "planning",
+      "business"
+    ],
+    "instructions": "# Launch Campaign Planner\n\nCampaigns succeed on focus: one audience, one promise, repeated clearly across channels.\n\n## Steps\n\n1. Define the launch objective in one measurable sentence (\"500 trial signups in 3 weeks\") and the audience segment that matters most. A launch aimed at everyone converts no one.\n2. Write the core message: what changes for the customer, in their words. Derive 2-3 supporting proof points (feature, number, testimonial).\n3. Map the audience's existing attention: which channels they already use (email list, communities, social, partners, events). Prioritize owned channels first, then earned, then paid.\n4. Sequence the campaign in phases: teaser/preview (build the list, warm the audience), launch day (simultaneous push across chosen channels), follow-up week 1-2 (objection handling, proof content, second wave).\n5. Build the channel plan as a table: channel, asset, owner, date, expected contribution. Every asset names its single CTA.\n6. Prepare the assets list with specs: announcement email, landing page section, social variants (per platform format), and a press/partner note if relevant.\n7. Define measurement: primary metric with baseline, leading indicators (email CTR, page conversion), and a daily check during launch week; decide in advance what slowdown triggers a plan B.\n8. Debrief template ready: planned vs actual per channel, lessons, what to reuse.\n\n## Checks\n\n- One primary metric with a baseline and a deadline.\n- Every asset has an owner and a date.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-lesson-plan-builder",
+    "name": "Lesson Plan Builder",
+    "description": "Builds lesson plans with measurable objectives, a paced activity sequence, checks for understanding, and adjustments for fast and slow finishers. Use for classrooms, workshops, and corporate training.",
+    "tags": [
+      "education",
+      "planning",
+      "training"
+    ],
+    "instructions": "# Lesson Plan Builder\n\nLearning objectives first, activities second. A lesson without observable objectives cannot fail visibly — and so cannot improve.\n\n## Steps\n\n1. Write 1-3 objectives as observable behavior: \"students can compute a 15% discount without a calculator\", not \"understand percentages\". Each objective gets its assessment before the lesson is built (backward design).\n2. Hook (5 minutes): open with a problem, question, or surprising example that makes the skill's usefulness obvious. Save the definition for after the learner sees why it matters.\n3. Model the skill explicitly: work one full example aloud, thinking through decisions, then a second example with the learner(s) contributing decisions.\n4. Guided practice: learners attempt similar problems while help is close at hand; check every attempt and correct immediately. Design 3-5 items of increasing difficulty.\n5. Independent practice: learners work alone; you circulate and note error patterns. Include one stretch challenge for fast finishers that extends, not just adds volume.\n6. Checks for understanding throughout: mini-whiteboards, quick writes, or one-question polls at each phase — not only at the end. Plan what you will do if 30% miss the check (re-teach differently, not louder).\n7. Close with retrieval: 2-3 questions from today plus one from a previous lesson (spacing matters), and state next lesson's link.\n8. Timing table per phase with a contingency: what to cut if running late (never the checks; cut extension material).\n\n## Checks\n\n- Objectives observable; assessments match objectives.\n- A plan for both fast finishers and strugglers exists.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-meeting-minutes",
+    "name": "Meeting Minutes Writer",
+    "description": "Turns meeting notes, transcripts, or recordings into structured minutes with decisions, owners, deadlines, and open questions separated from discussion. Use after any meeting that produced commitments.",
+    "tags": [
+      "writing",
+      "meetings",
+      "productivity"
+    ],
+    "instructions": "# Meeting Minutes Writer\n\nGood minutes are scannable by someone who missed the meeting and answer only three questions: what was decided, who does what, what is still open.\n\n## Steps\n\n1. Collect the raw material: notes, transcript, chat log, agenda. Note the meeting date, attendees, and purpose at the top.\n2. Separate content into four buckets as you read:\n   - Decisions (what was agreed, including any dissent noted)\n   - Action items (task, owner, deadline)\n   - Open questions (unresolved, with who is expected to resolve them)\n   - Discussion highlights (one line each, only if context matters)\n3. Write action items as \"Owner: verb + object + deadline\", e.g. \"Mina: send revised quote to vendor by Tue\". If no owner was named, write \"[unassigned]\" — do not invent one.\n4. Mark decisions that were made without full agreement as \"provisional\" rather than smoothing them over.\n5. Format: header block (date, attendees, purpose), then Decisions, Action Items, Open Questions, Notes. Keep the whole thing under one page when possible.\n6. Close with the date and topic of the next meeting if scheduled.\n\n## Checks\n\n- Every commitment has an owner and a date (or an explicit gap marker).\n- Someone absent could act on this without asking a follow-up question.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-objection-handling-playbook",
+    "name": "Objection Handling Playbook",
+    "description": "Builds a playbook for the sales objections that actually occur: clarifying the real concern, responding with evidence, and converting to next steps. Use for sales team enablement and call prep.",
+    "tags": [
+      "sales",
+      "training",
+      "business"
+    ],
+    "instructions": "# Objection Handling Playbook\n\nAn objection is information, not a wall. The playbook's job is to turn the common ones into documented, evidence-backed responses the whole team can use.\n\n## Steps\n\n1. Collect the real objections from recorded calls, lost-deal notes, and CRM — ranked by frequency. The top 5-8 get playbook entries; invented objections waste training time.\n2. For each objection, separate the stated concern from the underlying one: \"too expensive\" often means \"not yet convinced of value\" or \"budget cycle timing\". Add a clarifying move: \"happy to talk price — so I point at the right value: what are you comparing us to?\"\n3. Write the response pattern per objection: acknowledge (one line, no defensiveness), reframe with evidence (a metric, a case with numbers, a risk comparison), and confirm (\"does that address the concern, or is there another piece?\").\n4. Categorize each objection as value, timing, trust, authority, or fit — different categories need different evidence, and the category tells you which proof to reach for.\n5. Mark the no-path objections honestly: when the fit truly is wrong, the play is a graceful referral or a smaller-start option — protecting future trust beats forcing a bad deal.\n6. For \"need to ask my boss/committee\": provide the one-pager that helps them sell internally (problem, options, costs, risks of status quo) and offer to join the internal discussion.\n7. Rehearse with role-play: 10 minutes per objection, rotating roles monthly; record the best phrasings heard in real calls and fold them back into the playbook.\n8. Version and date the playbook; stale evidence (\"our case study from 3 years ago\") undermines the moment it is spoken.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-okr-planner",
+    "name": "OKR Planning Facilitator",
+    "description": "Drafts Objectives and Key Results that are outcome-focused, measurable, and owned, with a check-in cadence and anti-pattern review. Use for quarterly planning at team or company level.",
+    "tags": [
+      "business",
+      "planning",
+      "management"
+    ],
+    "instructions": "# OKR Planning Facilitator\n\nObjectives are direction; key results are evidence. If a KR could be completed by working hard alone, it is a task, not a result.\n\n## Steps\n\n1. Gather context: company priorities, last period's OKR scores and why they missed, and known constraints (budget, team changes, dependencies).\n2. Draft 1-3 objectives per team. Each is qualitative, inspiring, and time-bound (\"Deliver the fastest checkout in our segment\"). Reject objectives that are just project names.\n3. Under each objective, write 2-4 key results that measure outcomes: \"checkout completion +5pp\", \"p95 latency < 800ms\", \"NPS 42 to 48\". Each KR: baseline value, target value, measurement source, and owner.\n4. Anti-pattern check per KR: could it be hit by shipping a feature (task)? Is it a milestone without a metric (task)? Does it measure activity (hours, tickets closed) instead of effect? Rewrite those.\n5. Link vertically: each team objective should support a company objective; state the linkage. Orphan objectives need a reason to exist.\n6. Identify dependencies and risks between KRs; name the owner of each dependency and the fallback if it slips.\n7. Set the cadence: weekly check-ins on confidence (0-10) per KR with blockers, a mid-quarter review that may rewrite KRs (the objective stays), and end-of-quarter scoring (0-1.0) with a lessons note.\n8. Publish with a one-line \"what we will NOT do\" per team to make trade-offs real.\n\n## Checks\n\n- Every KR has baseline, target, source, and owner.\n- Nothing on the list is merely a to-do wearing a metric costume.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-onboarding-plan-builder",
+    "name": "Onboarding Plan Builder",
+    "description": "Builds 30-60-90 day onboarding plans with a first-week logistics checklist, staged goals, named buddies, and progress checkpoints. Use for new hires in any role.",
+    "tags": [
+      "hr",
+      "onboarding",
+      "planning"
+    ],
+    "instructions": "# Onboarding Plan Builder\n\nOnboarding failure is rarely about documents; it is about unclear expectations and missing social connection. Plan both.\n\n## Before day 1\n\n1. Logistics checklist: accounts and hardware ready and tested, calendar invites sent, first-week schedule shared, and the manager's welcome message drafted. Access failures on day 1 cost weeks of momentum.\n2. Assign an onboarding buddy (peer, not manager) and a mentor for craft questions; name both to the new hire.\n\n## Weeks 1-2: orient and connect\n\n3. First-week schedule: short intro meetings with key collaborators (each 25 minutes, with \"what does your team need from this role\" as the standing question), tool walkthroughs, and reading list in priority order (max 5 items — long lists get ignored).\n4. Give one small, shippable task by day 3-5 that touches the real workflow; early contribution beats early theory.\n\n## Days 30-60: contribute with support\n\n5. Set 30-day goals: own 2-3 real tasks end to end with a named reviewer. Success = delivered with feedback, not solo perfection.\n6. 60-day goals: first independent deliverable or process improvement; give the new hire a map of the team's recurring work and where they now own a piece.\n\n## Days 90: full ownership\n\n7. 90-day goals: full ownership of a defined area, plus a retro conversation: what in the onboarding actually helped, what was noise (feed back into this plan).\n8. Checkpoints at days 7, 30, 60, 90 with the manager: a fixed 3-question agenda (what's clear, what's blocking, what to adjust). Document outcomes lightly; patterns across hires reveal systemic gaps.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-one-page-proposal",
+    "name": "One-Page Proposal Writer",
+    "description": "Writes persuasive one-page proposals structured around the client's problem, solution, proof, and terms, ending with an explicit decision request. Use for services, partnerships, and internal initiatives.",
+    "tags": [
+      "business",
+      "sales",
+      "writing"
+    ],
+    "instructions": "# One-Page Proposal Writer\n\nA proposal wins when the reader can say yes in one sitting. One page forces the thinking to be sharp.\n\n## Steps\n\n1. Open with the client's problem in their words: the cost or risk of the status quo, quantified if any data exists (\"manual reconciliation costs ~6 staff-hours weekly\"). Never open with your own company history.\n2. State the outcome you propose as a result, not an activity: \"reduce reconciliation to under 1 hour weekly\" — not \"we will implement software\".\n3. Describe the approach in 3-5 numbered steps with durations; name what changes for the client's team at each step (who does what).\n4. Add proof selectively: one relevant case or metric per claim. No proof available? Say what will be verified early instead (\"first-week pilot shows baseline numbers\").\n5. Present terms clearly: price, timeline, what is included, what is not, payment schedule. Vague scope now becomes a dispute later — list exclusions explicitly.\n6. Handle the obvious objection in one line (the \"what if\" the client is already thinking).\n7. End with a single decision request and a date: \"Reply approved by Friday to start Monday\". Offer exactly one alternative if useful (smaller pilot), never a menu.\n8. Ruthlessly cut to one page: move detail to an appendix on request. Proposals get longer during editing only if a claim needs evidence.\n\n## Checks\n\n- Problem, outcome, and ask all appear in the first five lines.\n- Scope, exclusions, and price are unambiguous.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-onpage-seo-audit",
+    "name": "On-Page SEO Audit",
+    "description": "Audits pages for title/meta quality, heading structure, content relevance, internal links, and technical basics that affect ranking. Use to improve specific pages or prepare new content.",
+    "tags": [
+      "seo",
+      "web",
+      "marketing"
+    ],
+    "instructions": "# On-Page SEO Audit\n\nRank pages by making them the best answer for a specific query. Audit against one target keyword per page.\n\n## Steps\n\n1. Identify each page's target keyword and search intent (informational, comparison, transactional). All on-page elements must serve that intent — a mismatch caps rankings regardless of other fixes.\n2. Title tag: contains the target keyword near the front, ~50-60 characters, compelling enough to earn clicks (title = ranking input AND ad copy).\n3. Meta description: ~150-160 characters, states the page's specific value with a reason to click. Not a ranking factor directly, but click-through is.\n4. Heading structure: exactly one H1 containing the target keyword or a close variant; H2s break the topic into the subtopics searchers expect; no heading levels skipped for styling reasons.\n5. Content relevance and depth: answers the actual question completely — compare against the current top 5 results for the keyword and note what they cover that this page misses (missing subtopics, data, examples). Add substance, not synonyms.\n6. Internal linking: page receives links from related pages with descriptive anchor text, and links out to 2-5 relevant internal pages. Orphan pages get flagged.\n7. Technical basics: single canonical URL, no duplicate-title pages, image alt texts present and descriptive, page loads fast enough (check Core Web Vitals if available), mobile rendering sound.\n8. Produce the fix list ordered by expected impact: title/H1 fixes, content gaps to fill, link changes, technical corrections — each with the exact new text where applicable.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-performance-review-writer",
+    "name": "Performance Review Writer",
+    "description": "Writes fair, evidence-based performance reviews with specific examples, balanced strengths and growth areas, and forward-looking commitments. Use for review cycles and check-in summaries.",
+    "tags": [
+      "hr",
+      "management",
+      "writing"
+    ],
+    "instructions": "# Performance Review Writer\n\nA review is evidence + trajectory, not a personality verdict. Specific examples over adjectives; future focus over autopsy.\n\n## Steps\n\n1. Gather evidence across the full period: goals set, deliverables with dates, peer feedback, metrics, and incidents with context. Recency bias is the default failure — weight the whole period.\n2. For each review area, write the claim with a supporting example: \"Reliability: shipped the billing migration on schedule and handled the cutover with zero downtime (March)\" — claim without example reads as opinion.\n3. Balance honestly: 2-3 strengths with evidence, 1-2 growth areas with evidence. All-positive reviews waste the format; all-negative ones destroy trust. Growth areas get described as specific behaviors to change, not character labels (\"runs large meetings without an agenda\" not \"poor communicator\").\n4. Distinguish impact from effort: recognize effort in growth areas, tie ratings to impact. State what the difference means for the next period concretely.\n5. For missed goals, include context fairly: what changed, what the person controlled, what they did about it. Same for over-achievement — note whether goals were sandbagged.\n6. Write the forward section: 2-3 priorities for next period, the support or resources committed, and the skill to develop. This is the part that changes next year's review.\n7. Calibrate language: avoid absolutes (\"never\", \"always\") unless documented; avoid comparisons to named colleagues; keep tone factual and respectful — the person will reread this more than once.\n8. Check before finalizing: would the person recognize every example? Is anything here a surprise? Surprises in a review mean the feedback loop failed earlier — note it as a process fix.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-poster-flyer-design",
+    "name": "Poster and Flyer Design Brief",
+    "description": "Designs posters and flyers that communicate one message instantly, with hierarchy, contrast, and print-safe specs. Use for events, promotions, and announcements.",
+    "tags": [
+      "design",
+      "marketing",
+      "documents"
+    ],
+    "instructions": "# Poster and Flyer Design Brief\n\nA poster gets 2-3 seconds of attention. One message, one action, zero clutter.\n\n## Steps\n\n1. Define in one line: the single message, the single action (visit, call, scan, attend), and the audience. Everything else is decoration — cut it.\n2. Establish hierarchy in three levels and assign sizes: headline (dominant, readable at 3 meters), key detail block (when/where/price), supporting info (small print). If two elements have the same visual weight, they compete — rank them.\n3. Pick a constrained palette: one dominant color, one accent, neutrals for text. Ensure text-to-background contrast ratio is at least 4.5:1 for body text.\n4. Choose typography that matches tone (event = bold display face, corporate = clean grotesque); max two families, and give the headline real size (never crowd it to fit more words — shorten the headline instead).\n5. Compose on a grid: strong focal point (image or headline) at top or center, clear reading path to the action, generous margins (at least 10-15% of width). Leave breathing room; emptiness is a feature.\n6. Make the action unmissable: QR code large with quiet zone, or URL/phone in the key detail block with the accent color.\n7. Prepare production specs: correct bleed (typically 3mm) and safe margins, 300 DPI for print or sized-for-screen pixels for digital, CMYK-safe colors for print, filename with size and version.\n8. Final check at thumbnail size (shrunk to 10%): is the message still readable? If not, increase contrast or reduce content.\n\n## Output\n\nDesign description with hierarchy, palette, typography, layout, and production specs.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-pricing-analysis",
+    "name": "Pricing Strategy Analysis",
+    "description": "Analyzes and recommends pricing using value signals, willingness-to-pay evidence, competitor anchors, and packaging logic, with a test plan. Use for new offers, price changes, and tier design.",
+    "tags": [
+      "business",
+      "finance",
+      "strategy"
+    ],
+    "instructions": "# Pricing Strategy Analysis\n\nPrice is a positioning decision with numbers attached. Analyze value first, competitors second, costs last.\n\n## Steps\n\n1. Quantify the value delivered: what does the customer gain (revenue up, cost down, time saved, risk removed) and in what currency? Price anchored to a fraction of delivered value is easier to defend than cost-plus.\n2. Gather willingness-to-pay signals: current conversion at existing price, win/loss reasons, price objections in sales notes, survey data if available. Mark what is evidence versus assumption.\n3. Collect competitor anchors: price points, models (flat, per-seat, usage), packaging boundaries, and what their top tier signals. Position deliberately: premium, parity, or penetration — with a reason.\n4. Choose the model before the number: flat vs per-seat vs usage vs hybrid. Per-seat rewards account growth; usage scales with delivered value; flat simplifies the sale. State the revenue math under each.\n5. Design 3 tiers (if tiering): good / better / best where the middle tier is the intended destination; each tier boundary answers a real customer difference, not feature trivia.\n6. Compute unit economics at the proposed prices: margin per unit, break-even volume, revenue at current and projected volumes.\n7. Plan the rollout as a test: grandfathering policy for existing customers, the metric that will judge success (revenue per lead, conversion, churn), review date, and the script for communicating the change.\n8. Write the recommendation with the top three risks and the evidence that would reverse it.\n\n## Checks\n\n- Value logic stated before competitor copying.\n- Rollout has a success metric and a review date.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-privacy-policy-drafter",
+    "name": "Privacy Notice and Disclaimers Drafter",
+    "description": "Drafts plain-language privacy notices, disclaimers, and usage terms drafts for small products, with placeholders where a qualified lawyer must confirm. Use for websites, apps, and data collection flows.",
+    "tags": [
+      "legal",
+      "compliance",
+      "writing"
+    ],
+    "instructions": "# Privacy Notice and Disclaimers Drafter\n\nDraft in plain language, collect only what is real, and mark every point where local law requires counsel. This produces a draft for legal review — never a final legal document.\n\n## Steps\n\n1. Inventory the data actually collected: each field, its purpose, where it is stored, who can see it, and how long it is kept. The notice must match this table exactly — aspirational notices are themselves a compliance risk.\n2. For each data item, write the purpose and the legal basis placeholder (consent, contract necessity, legitimate interest — as advised by counsel). No purpose, no collection: recommend cutting fields that serve no stated purpose.\n3. Draft the notice sections in this order: what we collect, why, who we share it with (name processors: payments, analytics, hosting), retention period per category, user rights (access, correction, deletion, export — adjust to jurisdiction with counsel), how to exercise rights, contact, and update policy.\n4. Write at B1-B2 reading level: short sentences, concrete nouns, zero legalese except terms counsel requires.\n5. Disclaimers: for content products, draft the \"not professional advice\" line (financial/medical/legal) with the specific profession named; for estimates or calculations, state assumptions and that results are indicative.\n6. Terms-of-use outline: acceptable use, accounts and suspension, IP ownership, limitation of liability placeholder, governing law placeholder.\n7. Mark every jurisdiction-dependent item with [LEGAL REVIEW REQUIRED] and produce a summary list of those items for the lawyer — this is the deliverable's main value.\n\n## Checks\n\n- Notice matches the data inventory one-to-one.\n- All jurisdiction-sensitive placeholders flagged, none invented.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-professional-email",
+    "name": "Professional Email Composer",
+    "description": "Writes clear, respectful business emails that lead with the point, make the ask explicit, and set expectations for next steps. Use for client updates, internal requests, follow-ups, and difficult messages.",
+    "tags": [
+      "writing",
+      "email",
+      "business"
+    ],
+    "instructions": "# Professional Email Composer\n\nEmails succeed when the reader knows within five seconds what happened and what they must do.\n\n## Steps\n\n1. Lead with the point: put the outcome, request, or headline in the first one or two sentences. Background comes after, never before.\n2. Make the ask explicit and singular where possible: one bolded or clearly stated action with a deadline, e.g. \"Please confirm budget approval by Friday 17:00\".\n3. Structure longer emails with short labelled sections: \"Context\", \"What changed\", \"What I need from you\".\n4. Match formality to the relationship: mirror the other party's greetings and sign-offs; default to plain, warm, and specific over clever.\n5. For difficult messages (delay, decline, bad news): acknowledge the impact in one line, state the fact without burying it, then give the reason and the recovery plan.\n6. Keep the subject line informative: \"Q3 report: 2-day delay, new ETA Oct 12\" beats \"Update\".\n7. Before sending, verify: does the email answer \"what, so what, now what\"? Is every attachment mentioned? Are names and dates correct?\n\n## Pitfalls\n\n- Multiple asks hidden in one paragraph — split or rank them.\n- Apologizing twice; apologize once, then move to the plan.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-project-charter-writer",
+    "name": "Project Charter Writer",
+    "description": "Writes project charters that align stakeholders before work starts: problem, objectives, scope boundaries, roles, milestones, risks, and success measures. Use at project kickoff.",
+    "tags": [
+      "pm",
+      "planning",
+      "business"
+    ],
+    "instructions": "# Project Charter Writer\n\nThe charter is the cheapest moment to fix a project. Ambiguity here compounds into every later meeting.\n\n## Steps\n\n1. State the problem and why now, in the sponsor's terms: the pain, its measurable cost, and the trigger. A project without a quantified pain collects requirements forever.\n2. Define objectives as outcomes with numbers: \"reduce invoice processing time from 5 days to 1 by Q3\". Objectives are the yardstick for every later scope argument.\n3. Write scope as three lists: in scope (specific deliverables), out of scope (explicit exclusions — the list that saves the project), and dependencies on other teams with named contacts.\n4. Name the roles: sponsor (removes blockers, approves), owner (day-to-day accountability), core team with allocation %, and advisory stakeholders. Unnamed roles cause rework when decisions stall.\n5. Set milestones with dates and one acceptance criterion each; mark which milestone is the \"no-return\" point (budget spent, contract signed) and what decision it triggers.\n6. List top 5 risks with likelihood, impact, and mitigation owner; include at least one \"assumption that would sink us if wrong\" and how it will be validated early.\n7. Define success measurement: metric, baseline, target, measurement method, and review date. Also define the stop condition — what result means the project should stop or pivot.\n8. Keep to one-two pages, get explicit sign-off from sponsor and owner, and version it: charters change through formal change notes, not hallway agreement.\n\n## Checks\n\n- Out-of-scope list exists and is specific.\n- Every milestone has a date and acceptance criterion.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-quiz-generator",
+    "name": "Assessment Quiz Generator",
+    "description": "Generates fair, well-constructed quizzes with distractor design, difficulty spread, answer keys, and objective alignment. Use for classrooms, courses, and training checkpoints.",
+    "tags": [
+      "education",
+      "assessment",
+      "quality"
+    ],
+    "instructions": "# Assessment Quiz Generator\n\nA good quiz measures the objective, not reading comprehension of the question. Bad distractors turn assessment into guesswork.\n\n## Steps\n\n1. List the objectives being tested and allocate items per objective by importance. Every item traces to an objective; if one cannot be traced, cut it.\n2. Build a difficulty spread: ~40% easy (confidence and warm-up), ~40% medium (real discrimination), ~20% hard (separates strong learners). Order easy to hard.\n3. Write multiple-choice stems as complete questions or self-contained problems (no half-sentences); randomize correct positions; avoid \"all of the above\" (it rewards elimination logic, not knowledge).\n4. Design distractors as realistic errors: use the mistakes learners actually make (common misconceptions, sign errors, wrong formula step). A distractor nobody would choose is decoration.\n5. Ensure one defensibly correct answer per item; if experts could argue for two, rewrite rather than accept ambiguity.\n6. Add open-ended items for skills MCQs cannot reach (explain, justify, show work) with a scoring rubric: full/partial/minimal credit criteria written in advance.\n7. Produce the answer key with one-line rationale per item (why the key is right and where each distractor comes from) — this doubles as feedback material and an accuracy check.\n8. Review for bias and clarity: no culturally specific assumptions, language level matches learners, item lengths similar between options (the longest option should not signal \"correct\").",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-release-readiness-review",
+    "name": "Release Readiness Review",
+    "description": "Runs a pre-release gate across functionality, data, performance, rollback, and communication, producing a go/no-go with evidence per criterion. Use before deploying features, migrations, or launches.",
+    "tags": [
+      "qa",
+      "devops",
+      "quality"
+    ],
+    "instructions": "# Release Readiness Review\n\nA release gate works only with evidence per criterion, not vibes. No evidence = not ready.\n\n## Steps\n\n1. List the release contents: features, fixes, migrations, config changes. Each item gets an owner and a verification status.\n2. Functionality: P1 test cases passed on the staging environment that matches production as closely as possible; record the actual run date and result, not \"tested\" as a claim.\n3. Data: any schema change or migration has been run on a production-like dataset, has a tested backup/restore step, and the rollback path is written down and rehearsed once.\n4. Performance: known load verified (or a stated risk accepted), page/endpoint latency checked against the current baseline, no new N+1 or unbounded queries in changed code paths.\n5. Safety: feature flags default states correct for a partial rollout, errors and alerts configured for the new paths, and rollback procedure executable by someone other than the author.\n6. Communication: changelog entry drafted, support team briefed with known issues and workarounds, customer-facing notice scheduled if behavior changes.\n7. Timing: release date avoids the freeze window and someone is on call for the first 24 hours with the checklist in hand.\n8. Verdict: GO / NO-GO / GO WITH CONDITIONS, where conditions are specific, named, and dated (\"X verified by Tue 10:00\"). Unmet conditions with no owner = NO-GO.\n\n## Output\n\nCriterion-by-criterion table with evidence, then the verdict line.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-research-report-builder",
+    "name": "Multi-Source Research Report Builder",
+    "description": "Produces decision-ready research reports from multiple web sources with source tracking, conflicting-evidence handling, and explicit confidence labels. Use for market scans, due diligence, and background briefs.",
+    "tags": [
+      "research",
+      "analysis",
+      "writing"
+    ],
+    "instructions": "# Multi-Source Research Report Builder\n\nThe deliverable is a decision aid: every claim traceable to a source, every conflict surfaced, every gap admitted.\n\n## Steps\n\n1. Convert the question into research questions (3-5 specific, answerable sub-questions) and note who needs the answer by when. Broad questions produce broad mush.\n2. Plan source diversity deliberately: at least 3 independent source types (official statistics, industry publications, practitioner blogs, primary documents). Two outlets republishing the same press release are one source.\n3. For each source, record as you read: URL, publisher, date, and the specific claim it supports. Claims older than the relevant window get a date caveat.\n4. Evaluate each source: primary > secondary; named author and date > anonymous; method stated > method implied. Note conflicts between sources explicitly — do not average away disagreement; report \"A says X (2024 report), B says Y (vendor blog)\".\n5. Synthesize by sub-question: answer, evidence (2-3 strongest sources), confidence (high = multiple independent sources agree; medium = limited or mixed; low = single source or inference).\n6. Label every inference: \"we infer\" versus \"source states\". Unlabeled inference is how rumors become facts in reports.\n7. Close with: implications for the decision, what the research could not answer, and the 2-3 fastest ways to close the biggest gap (a specific dataset, an interview, a test).\n8. Format: executive summary (5 lines), findings per sub-question with confidence tags, source list with dates, limitations.\n\n## Checks\n\n- No claim appears without a source or an inference label.\n- Conflicts reported, not smoothed.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-risk-register-builder",
+    "name": "Risk Register Builder",
+    "description": "Creates and maintains a project risk register with specific risk statements, probability-impact scoring, response plans, and review cadence. Use from kickoff through delivery.",
+    "tags": [
+      "pm",
+      "planning",
+      "quality"
+    ],
+    "instructions": "# Risk Register Builder\n\nVague risks get no plans. \"Communication might be an issue\" protects nothing; a register entry names cause, event, and consequence.\n\n## Steps\n\n1. Collect risks from the team, past project reports, and the plan's assumptions. Write each as a three-part statement: \"Because [cause], [event] may occur, resulting in [consequence]\". This structure forces specificity.\n2. Score each risk: probability (low/med/high) and impact (low/med/high) against the project's objectives. Score impact in the units that matter — schedule days, cost, or scope loss — not adjectives alone.\n3. Rank by a simple matrix; the top 5 get response plans now, the rest get monitoring triggers. A register with 40 equally-treated risks is a filing exercise, not management.\n4. For top risks, choose a response type deliberately: avoid (change the plan), mitigate (reduce probability or impact), transfer (contract/insurance), or accept (with a stated trigger for re-review). Name the owner — risks without owners are wishes.\n5. Add early-warning indicators per top risk: the measurable signal that the risk is materializing (vendor misses two milestones; defect rate trend; key-person overtime) and where that signal appears.\n6. Note contingency: for the biggest schedule/cost risks, what pre-agreed action happens when the indicator fires (use buffer, drop scope item Y, activate alternate vendor).\n7. Set the cadence: review the register in the regular project meeting (15 minutes: new risks, changed scores, fired indicators), and re-score monthly.\n8. Retire risks with a note when they close; a register full of stale entries trains the team to ignore it.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-root-cause-analysis",
+    "name": "Root Cause Analysis Guide",
+    "description": "Runs a disciplined root cause investigation for incidents, defects, or process failures using 5 Whys and factor mapping, ending with corrective actions tested against recurrence.",
+    "tags": [
+      "analysis",
+      "quality",
+      "operations"
+    ],
+    "instructions": "# Root Cause Analysis Guide\n\nFix causes, not symptoms. A corrective action that would not stop recurrence is the wrong action.\n\n## Steps\n\n1. Define the problem precisely: what happened, when, where, how often, and what the measurable gap is versus expected behavior.\n2. Map the sequence of events timeline first (facts only, no blame, no interpretation).\n3. Ask \"why\" iteratively (5 Whys), staying on the causal chain:\n   - Each \"why\" must be answered with something checkable, not a person's name. Blaming individuals hides system causes.\n   - Stop when you reach a process, design, or policy factor you could actually change.\n4. Broaden with factor families when 5 Whys stalls: people and training, process and procedure, tools and equipment, information and communication, environment.\n5. Distinguish root cause from contributing causes; both get actions, but label them differently.\n6. For each proposed corrective action, run the recurrence test: \"If this action were in place last month, would the incident have been prevented or caught earlier?\" If no, keep digging.\n7. Assign each action an owner, deadline, and verification method (how we will know it worked).\n8. Write the summary: problem, timeline, root cause, contributing factors, corrective actions, verification date.\n\n## Checks\n\n- Would the recurrence test pass for every action?\n- Is any conclusion resting on an assumption marked as needing data?",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-runbook-writer",
+    "name": "Runbook Writer",
+    "description": "Writes operational runbooks for recurring tasks and failure modes: purpose, prerequisites, numbered procedure with verification, and rollback. Use for deployments, maintenance, and on-call operations.",
+    "tags": [
+      "ops",
+      "devops",
+      "documentation"
+    ],
+    "instructions": "# Runbook Writer\n\nA runbook is executed at 2am by someone half-awake. Assume nothing is remembered; verify everything written.\n\n## Steps\n\n1. Header: what this runbook does, when to run it (trigger/schedule), expected duration, and who is authorized. If it has a schedule, say which system enforces it.\n2. Prerequisites checklist: access needed, systems that must be up, capacity or quota headroom, and the backup/snapshot to take first. A runbook without its prerequisites fails at step 3.\n3. Numbered procedure: one command or action per step with the exact command to copy-paste (no \"restart the service\" — the actual command, with the actual service name), plus the expected output of that command so the executor knows it worked.\n4. Verification step after each significant phase: the exact check (health endpoint, log line, metric) that proves the phase succeeded. \"Continue\" without evidence is how partial failures compound.\n5. Rollback section: the decision criteria (when to stop and roll back) and the exact rollback steps, tested at least once. An untested rollback is a rumor.\n6. Failure appendix: the 3-5 most likely failure modes, the symptom to look for, and the first action for each. When unknown, the escalation contact and what information to bring.\n7. Keep it current: after every execution note date + executor at the bottom; after any system change, update the commands and re-test. A stale runbook is more dangerous than none.\n8. Store where it will be found during the incident (linked from the alert or dashboard), not in a folder nobody opens.\n\n## Checks\n\n- Every step has expected output and a verification.\n- Rollback steps exist and have been executed at least once.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-safe-refactoring",
+    "name": "Safe Refactoring Workflow",
+    "description": "Restructures code without changing behavior using a characterization-first, small-steps approach with verification between every step. Use for cleanup, renaming, extraction, and dependency isolation.",
+    "tags": [
+      "coding",
+      "refactoring",
+      "quality"
+    ],
+    "instructions": "# Safe Refactoring Workflow\n\nRefactoring means behavior stays identical while structure improves. Every step is verifiable and reversible.\n\n## Steps\n\n1. Pin current behavior before touching anything: existing tests passing, or if coverage is thin, write characterization tests that capture what the code does today, including quirky outputs. These stay green throughout.\n2. Refactor in commits-sized steps, each doing exactly one kind of change: rename, extract function, move file, inline variable, introduce parameter. Mixing kinds makes review impossible.\n3. Keep the new code honest: extracted functions get names that state intent (\"parseInvoiceRows\", not \"handle\"), and each extraction leaves the caller's logic readable top-down.\n4. After every step, run the verification (tests, type check, lint, and a manual smoke of the affected flow if tests are sparse). Failing step? Revert that step; do not push a broken intermediate state onward.\n5. Watch the seams: imports and exports updated consistently, no circular dependencies introduced, side effects still fire in the same order.\n6. Resist scope creep. Bugs discovered mid-refactor get noted, not fixed inside the refactor (separate change, separate review).\n7. Finish by deleting dead code the refactor orphaned and re-running the full verification suite one final time.\n8. Summarize for review: what structural change was made, what behavior guarantee holds, evidence it holds (tests/checks run).\n\n## Checks\n\n- Characterization tests unchanged and green at the end.\n- Each step is independently revertible.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-secret-hygiene-checklist",
+    "name": "Secret Hygiene Checklist",
+    "description": "Finds and prevents credential leaks across code, config, logs, and shared channels, with rotation steps for the worst cases. Use for repos, deployments, and team workflow audits.",
+    "tags": [
+      "security",
+      "devops",
+      "quality"
+    ],
+    "instructions": "# Secret Hygiene Checklist\n\nSecrets leak through four doors: code, config, logs, and chat. Check all four and make the safe path the easy path.\n\n## Steps\n\n1. Scan the codebase and its git history for known secret patterns (API keys, tokens, passwords, private keys) with a scanning tool or pattern search. History counts: deleting a secret from HEAD does not remove it from old commits.\n2. Check config and deployment files: .env files excluded from version control (verify .gitignore), example files contain only placeholders, CI variables not echoed to logs, and container images free of baked-in credentials.\n3. Check logs and error reporting: no tokens, authorization headers, or request bodies containing credentials; scrub at the logging boundary, not by policy.\n4. Check shared channels: chat threads, docs, and ticket attachments are common leak sites. Rotate anything found in a channel — assume it is public.\n5. Assess blast radius for each finding: scope of the credential (read-only? production? payment?), expiry, and what it unlocks. Prioritize rotation accordingly.\n6. Rotate exposed credentials immediately, in this order: revoke/reissue, update all consumers, verify the old secret is dead, and check access logs for misuse during the exposure window.\n7. Fix the workflow so it does not repeat: move secrets to a manager (env vars from a secure store, platform secrets), add secret scanning to CI so future commits are caught, and create a documented onboarding path for how devs get local secrets.\n8. Report: findings, actions taken, and the prevention measures installed.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-slide-deck-design",
+    "name": "Presentation Slide Designer",
+    "description": "Structures and designs slide decks that support a spoken message: one idea per slide, visible text, honest charts, and a narrative arc. Use for pitches, reports, and training decks.",
+    "tags": [
+      "design",
+      "presentations",
+      "business"
+    ],
+    "instructions": "# Presentation Slide Designer\n\nSlides are props for the speaker, not documents to read. Design each slide to be understood in 4 seconds.\n\n## Steps\n\n1. Write the narrative first, as a sequence of one-sentence claims (\"the market grew, but our share fell\"). Each claim becomes one slide; the slide title IS the claim, not a topic label.\n2. Choose the evidence type per slide: a number (make it huge), a chart (previously cleaned), a comparison table (max 3 columns), a screenshot (cropped to the point), or an image (relevant, not decorative).\n3. Apply the 4-second rule: title states the takeaway, body carries only what supports it, everything else moves to appendix or speaker notes.\n4. Text discipline: no full paragraphs; bullets of max 8-10 words; font sizes that survive the back row (titles ~28pt+, body ~18pt+ on standard slides).\n5. Charts: one chart one message; highlight the series or point that proves the title, grey out the rest; label directly; state the source and period.\n6. Consistency: one layout grid, two fonts max, palette fixed across the deck; alignment is exact, not approximate.\n7. Build the arc: opening slide with the question or stakes, evidence middle, decision or ask at the end. Include an agenda only for decks over 15 slides.\n8. Read the deck titles in sequence — they must tell the whole story by themselves. If they do not, reorder or merge slides.\n\n## Checks\n\n- Every slide passes the 4-second test.\n- The ask is explicit on the final content slide.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-social-content-calendar",
+    "name": "Social Content Calendar Builder",
+    "description": "Builds a practical social media content calendar with content pillars, per-platform formats, a posting rhythm, and a measurement loop. Use for weekly planning or monthly batch production.",
+    "tags": [
+      "marketing",
+      "social-media",
+      "planning"
+    ],
+    "instructions": "# Social Content Calendar Builder\n\nConsistency beats brilliance. A sustainable rhythm of useful posts outperforms sporadic virality attempts.\n\n## Steps\n\n1. Define the audience and the account's job: entertain, teach, sell, or recruit — usually one primary. State the conversion goal (follows, DMs, signups).\n2. Set 3-4 content pillars that serve that job (e.g. for a bakery: behind-the-scenes, how-to tips, customer stories, offers). Pillars keep the mix intentional instead of random.\n3. Choose the platform mix the team can actually sustain; each platform gets a native format plan (short video, photo carousel, text post) — never paste one format everywhere.\n4. Pick the posting rhythm from real capacity: posts per week per platform that survive a busy week. A calendar that dies in week two is worthless; start under capacity.\n5. Lay out 2-4 weeks in a table: date, platform, pillar, format, hook (first line), CTA, asset needed, owner, status.\n6. Write hooks that pass the thumb test: open with the payoff, a question, or a specific number; no generic greetings. Draft the hook column before writing full captions.\n7. Plan the measurement loop: weekly 15-minute review of top/bottom posts by engagement and goal actions; feed the winners into next month's pillars.\n8. Include a reuse map: each substantial piece (video, long post) is sliced into 2-3 derivative posts — the calendar should produce more from less.\n\n## Checks\n\n- Every slot has pillar, hook, CTA, owner.\n- Rhythm matches real team capacity.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-sop-writer",
+    "name": "SOP and Process Writer",
+    "description": "Writes standard operating procedures that a new hire can follow on day one: purpose, trigger, numbered steps with decision points, and failure handling. Use for recurring operational work.",
+    "tags": [
+      "business",
+      "operations",
+      "documentation"
+    ],
+    "instructions": "# SOP and Process Writer\n\nAn SOP exists so the same work produces the same result without heroics. Write it for the person doing it for the first time under time pressure.\n\n## Steps\n\n1. Name the process precisely and state its purpose in one sentence, plus when it must be used (trigger) and who owns it.\n2. List inputs and outputs: what the performer needs before starting (access, documents, approvals) and what exists when the process is done correctly.\n3. Write numbered steps in imperative voice, one action per step, in the exact order performed. Include the small things experts forget they do (where the file lives, which template, which system tab).\n4. Mark decision points explicitly: \"IF amount > 50,000 THB → manager approval; ELSE → proceed\". Decisions hidden inside prose cause errors.\n5. For each step, note the failure mode and what to do when it happens: who to contact, what to record, when to stop and escalate.\n6. Add quality checks: how the performer verifies their own work before handover (checklist of 3-5 items).\n7. Record exceptions: the three most common deviations from the process and the sanctioned way to handle each.\n8. Review with the person who actually does the work — they will correct the fantasy version the manager remembers. Date the document and version it; retire outdated copies.\n\n## Checks\n\n- A new hire could execute it without asking questions.\n- Every decision point and failure path is covered.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-source-credibility-check",
+    "name": "Source Credibility Checker",
+    "description": "Evaluates whether a source can support a claim: provenance, expertise, evidence, motive, and date, producing a verdict with what the source may and may not be used for. Use before citing anything.",
+    "tags": [
+      "research",
+      "analysis",
+      "quality"
+    ],
+    "instructions": "# Source Credibility Checker\n\nA source is credible for a claim, not in general. A vendor's blog may be fine for feature lists and useless for market share.\n\n## Steps\n\n1. Establish provenance: who published this, on what platform, and is the original source found (not a repost or syndication)? Trace to the primary document where possible.\n2. Check authorship: named and identifiable, with relevant credentials or track record? Anonymous or organizational voice without a named expert lowers confidence for factual claims.\n3. Check the evidence behind the claim: does it cite data, methods, or documents? Are the numbers internally consistent (percentages, totals, sample sizes)? Uncited assertion = opinion, whatever the byline.\n4. Check motive and funding: who benefits from this framing? Ads, sponsored content, advocacy positions, or a product being reviewed all matter. Declare the conflict, do not just discount silently.\n5. Check currency: publication date and whether the claim is time-sensitive (prices, market data, regulations). Undated pages get treated as stale by default.\n6. Cross-check the core claim against one independent source type. Agreement raises confidence; disagreement goes into the report as a conflict, not a tie-break.\n7. Produce the verdict: rating (strong / usable with caveats / weak) and a usage note — exactly which claims this source may support and which it may not, with the reason.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-study-guide-maker",
+    "name": "Study Guide Maker",
+    "description": "Turns dense material into effective study guides with concept maps, spaced-repetition questions, worked examples, and self-test sections. Use for exam prep and course reviews.",
+    "tags": [
+      "education",
+      "study",
+      "productivity"
+    ],
+    "instructions": "# Study Guide Maker\n\nRecognition is not recall. A study guide should train the brain to produce answers, not just nod at them.\n\n## Steps\n\n1. Extract the core structure first: the 5-10 key concepts and how they relate. Present as a concept map or numbered hierarchy — understanding relationships matters more than memorizing lists.\n2. For each concept, write a plain-language explanation (2-3 sentences), one concrete example, and one common confusion with its correction. The \"common confusion\" line is where most value hides.\n3. Convert every learning point into retrieval questions with answers on a separate section or flipped format: \"Q: What distinguishes X from Y? A: ...\" — at least 60% application or why/how questions, not pure definitions.\n4. Sequence for spaced repetition: mark which questions to revisit after 1 day, 1 week, and before the exam; provide a simple schedule box the learner can tick.\n5. Include 2-3 fully worked examples for the hardest skills, showing each step and the reason for it, plus one unfinished worked example the learner completes (completion practice beats reading).\n6. Add a self-test section at the end simulating the real assessment format and time pressure, with the scoring key.\n7. Keep total length honest: a guide that rereads the textbook is not a guide. Target the material that covers ~80% of likely questions; note explicitly what was left out.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-survey-design",
+    "name": "Survey and Questionnaire Designer",
+    "description": "Designs surveys that produce analyzable data: question types, unbiased wording, scale consistency, sampling notes, and an analysis plan defined before launch. Use for customer research and employee feedback.",
+    "tags": [
+      "research",
+      "data",
+      "business"
+    ],
+    "instructions": "# Survey and Questionnaire Designer\n\nBad survey questions manufacture findings. Design the analysis before the questions.\n\n## Steps\n\n1. Define the decision the survey serves and the 3-5 metrics or cuts you will need from it (e.g. \"satisfaction by plan tier\", \"top request themes\"). Every question must map to one.\n2. Choose the sample and note the bias risk: who is reachable vs who is excluded (only happy customers answer; only power users saw the feature). State the caveat that will travel with results.\n3. Write questions one construct at a time: a question measures one thing. Split \"Was the app fast and easy to use?\" into two questions — double-barreled questions are unanalyzable.\n4. Wording rules: no leading adjectives (\"How excellent was...\"), no negations (\"Do you never...\"), no jargon, no memory questions beyond ~2 weeks (\"last time you used it\" not \"how often in general\").\n5. Scales: pick one polarity and stick to it across the survey (5-point, anchored with labels on endpoints); use NPS, CSAT, or star consistently — never mix 1-5 and 1-10 mid-survey.\n6. Sequence: easy engaging questions first, sensitive ones last, one screen-break per section, and keep the whole thing under 5 minutes (state the time in the invite).\n7. Add one open-ended question maximum (\"what one thing should we improve?\") and plan its analysis (tagging scheme with 5-8 codes).\n8. Pilot with 5 people: check completion time, question misreads, and whether the analysis plan can actually be filled from the answers. Fix, then launch.\n\n## Checks\n\n- Analysis plan exists and every question feeds it.\n- No leading, double-barreled, or negated items.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-systematic-debugging",
+    "name": "Systematic Debugging Method",
+    "description": "Finds root causes before attempting fixes using evidence-first reproduction, binary search over the failure surface, and hypothesis testing. Use for any bug, error, or unexpected behavior.",
+    "tags": [
+      "coding",
+      "debugging",
+      "quality"
+    ],
+    "instructions": "# Systematic Debugging Method\n\nNo fixes without root cause investigation first. A patch that silences the symptom is a bug deferred.\n\n## Steps\n\n1. Reproduce reliably. Find the minimal, repeatable trigger — command, input, or click sequence. An intermittent bug is understood only when you can make it happen at will or identify the timing condition.\n2. Write down the expected vs actual behavior in one sentence each. Vague problems produce vague fixes.\n3. Gather evidence without theorizing: full error messages, logs around the failure, the exact inputs, what recently changed (code, config, data, dependencies).\n4. Form exactly one hypothesis at a time, phrased as \"X causes Y because Z, so doing Q should change the output\". Design the cheapest test that supports or kills it.\n5. Localize by binary search: comment out, log, or bypass half the pipeline between working state and failing state; repeat until the failing component is isolated.\n6. When found, understand the mechanism (why it fails), not just the location (where it fails). If you cannot explain the cause in one sentence, you have not found it.\n7. Fix the cause. Add the regression test that would have caught this bug. Check for the same pattern in sibling code paths.\n8. Verify by reproducing the original trigger: it must now pass, and nothing else broke. Note in the write-up: symptom, root cause, fix, test.\n\n## Checks\n\n- You can explain the bug mechanism to a colleague in two sentences.\n- A test now covers the failure.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-test-plan-writer",
+    "name": "Test Plan Writer",
+    "description": "Writes practical test plans mapping features to test cases with priorities, environments, and entry/exit criteria. Use before releases, migrations, and integrations.",
+    "tags": [
+      "qa",
+      "testing",
+      "planning"
+    ],
+    "instructions": "# Test Plan Writer\n\nA test plan answers \"what must be true for this to ship, and how will we prove it\". Cases without priorities waste the testing window.\n\n## Steps\n\n1. List the features and flows in scope, each with the user-visible promise it makes (\"checkout completes with a discount code\"). Out of scope goes on an explicit not-testing list.\n2. Derive test cases from promises, not from code: each promise gets a happy-path case plus its most likely failure modes (empty inputs, expired session, double submit, network drop).\n3. Prioritize with a simple scheme: P1 blocks release (money, data loss, login), P2 must-fix (main flows, common errors), P3 nice-to-have (cosmetic, edge cases). If everything is P1, the plan has no structure — re-rank.\n4. Specify per case: steps with exact test data, expected result, and how to verify (what screen, what value, what email). \"It works\" is not an expected result.\n5. Define environments: where tests run (staging with what seed data), browser/device matrix limited to the real user distribution, and any accounts or flags needed.\n6. Write entry and exit criteria: entry = build deployed and smoke test passing; exit = all P1/P2 passed, known issues logged with severity, and no open blocker.\n7. Plan regression depth honestly: full suite vs the subset touching changed modules — state which and why.\n8. Add the bug-reporting convention: where to log, what fields (steps, expected, actual, environment, screenshot), and who triages.\n\n## Output\n\nTest plan document with scope, case table (id, promise, steps, data, expected, priority), environments, criteria, and bug process.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-thai-english-translation",
+    "name": "Thai-English Business Translation",
+    "description": "Translates business documents between Thai and English preserving meaning, register, and format, with translator notes for untranslatable items. Use for emails, contracts drafts, marketing, and reports.",
+    "tags": [
+      "translation",
+      "writing",
+      "business"
+    ],
+    "instructions": "# Thai-English Business Translation\n\nTranslation preserves intent, not words. Register (formal/casual), politeness level, and cultural framing must survive the trip.\n\n## Steps\n\n1. Identify the document type, audience, and purpose before translating; the target register follows: business emails stay polite-neutral, marketing may adapt more freely, contract language stays conservative and literal.\n2. Translate meaning units, not words: Thai sentences often omit subjects and use particles for tone; English needs explicit subjects. Conversely, English passives and legal hedges need natural Thai equivalents, not word order mimicry.\n3. Handle Thai politeness markers (ครับ/ค่ะ/นะคะ): in English, carry politeness through phrasing (\"would you kindly\", \"we appreciate\") rather than literal insertion; in Thai→English formal letters, mirror the closing formula conventions.\n4. Numbers, dates, and names: preserve exact figures; Thai Buddhist-era dates convert to CE with a note; keep honorifics and titles consistent with the target convention (Khun → Mr/Ms or keep \"Khun\" if the audience knows Thai context).\n5. Culture-bound items (food, administrative terms, units): translate + brief gloss on first use (\"som tam (papaya salad)\"), keep official Thai terms with romanization where no equivalent exists.\n6. Preserve formatting exactly: tables, bullet structure, line breaks, emphasis. The translated document should be drop-in usable.\n7. Produce a translator's note listing: items you interpreted, ambiguity in the source (\"the source's ค่ะ suggests a female speaker — tone adapted\"), and any place meaning cannot be fully carried. Notes prevent downstream misunderstandings.\n8. Self-review the next day or with fresh eyes: read only the target text — does it read as if originally written in that language?\n\n## Checks\n\n- No figure, date, or name altered.\n- Register matches the document's purpose.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-ticket-triage",
+    "name": "Support Ticket Triage",
+    "description": "Triage incoming support tickets by urgency, impact, and type with clear routing, first-response standards, and escalation triggers. Use for support queues and on-call intakes.",
+    "tags": [
+      "support",
+      "ops",
+      "quality"
+    ],
+    "instructions": "# Support Ticket Triage\n\nTriage exists so that the most urgent work gets the first attention, and nothing silently rots. Speed of first response matters more than speed of resolution for perceived quality.\n\n## Steps\n\n1. Classify each incoming ticket on two axes:\n   - Urgency: is the customer blocked right now?\n   - Impact: one customer or many (same issue reported repeatedly = incident, not ticket).\n2. Assign severity: S1 blocked with no workaround or money/data at risk; S2 blocked with a workaround; S3 question or non-blocking issue; S4 request (feature, export, bulk change).\n3. Route by type: technical bug → engineering queue with reproduction info; billing → finance with transaction IDs; how-to → support with the relevant article or a written mini-guide; account/access → identity verification FIRST before any change.\n4. First response standards by severity: S1 within 30 minutes (acknowledgment + who is on it), S2 within 4 hours, S3 same business day. Acknowledgment ≠ resolution; say what happens next.\n5. Escalation triggers, written down: three reports of the same issue in a day, any S1 open past 2 hours, any legal/threat/security keyword — escalate to the named owner, not to the group.\n6. Enrich before routing: verify account status, recent changes on the customer's side, and known incidents — 30 seconds of checking kills 30 minutes of back-and-forth.\n7. Close the loop on triage decisions: when a ticket is downgraded or merged into an incident, the customer is told, and the original ticket references the master issue.\n8. Review the queue daily for aging tickets past their standard; anything breached gets a proactive update, not silence.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-translation-quality-check",
+    "name": "Translation Quality Reviewer",
+    "description": "Reviews translations for accuracy, completeness, terminology consistency, and naturalness against the source, with a categorized issue report. Use before publishing translated documents.",
+    "tags": [
+      "translation",
+      "quality",
+      "editing"
+    ],
+    "instructions": "# Translation Quality Reviewer\n\nReview systematically, not by vibes: accuracy first, then completeness, then consistency, then style. Each pass catches a different failure.\n\n## Steps\n\n1. Accuracy pass, segment by segment: compare source and target for mistranslation, added content (target says more than source), and dropped content (source says more than target). Numbers, names, dates, and negations get special attention — negation flips are the costliest error class.\n2. Completeness: headers, footnotes, table cells, image captions, list items — fragments outside body paragraphs are the most commonly dropped pieces. Verify formatting structure mirrors the source.\n3. Terminology consistency: the same source term maps to exactly one target term throughout (build a mini glossary while checking); inconsistent terms confuse readers more than an imperfect but steady choice.\n4. Register match: formality level consistent end to end and appropriate to the document (a contract must not read like a brochure). Check politeness markers and honorifics carried correctly.\n5. Naturalness: read the target aloud; flag target-language grammar that a native writer would not produce, calques that sound foreign, and punctuation conventions violated (spacing, quotes, date order).\n6. Locale conventions: dates, times, currency, units, phone number formats, and address order match the target audience's conventions.\n7. Report issues in a table: location, category (accuracy/completeness/terminology/register/naturalness), severity (blocker = meaning changed; major = reader misled; minor = polish), and suggested fix. Blockers get re-verified after fixing.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-uat-script-builder",
+    "name": "UAT Script Builder",
+    "description": "Builds user acceptance test scripts that non-technical business users can execute and sign off, focused on real business scenarios with explicit pass criteria. Use before go-lives and major updates.",
+    "tags": [
+      "qa",
+      "business",
+      "testing"
+    ],
+    "instructions": "# UAT Script Builder\n\nUAT proves the system works for the business, in the business's language. Technical checks stay out; scenarios and sign-offs come in.\n\n## Steps\n\n1. Extract 8-15 end-to-end business scenarios with the process owner: \"customer orders 3 items, applies membership discount, pays by bank transfer, receives invoice by email\". Cover each money path, each approval path, and the most common exception paths.\n2. For each scenario write steps the user can follow without code knowledge: click paths in UI terms, the exact test data to use, and what they should see. One scenario per script section.\n3. Give each scenario explicit pass criteria as observable outcomes: \"invoice PDF downloads and total shows 1,850 THB including 7% VAT\". Ambiguity here turns sign-off into arguments.\n4. Include realistic data prepared in advance (accounts, records, permissions) — list who prepares it and where it lives. UAT stalls for days waiting for data; prevent that.\n5. Assign executors who actually do the job daily, plus a note-taker to log results in a shared table: scenario, executor, date, pass/fail, issue reference.\n6. Agree the rules before starting: what counts as a fail (any deviation from expected = fail with screenshot), how issues get triaged daily, and what the sign-off requires (all P1 scenarios passed; P2 agreed with the owner).\n7. Keep sessions short (max 2-3 hours) and batch issues daily rather than collecting a pile for the end.\n\n## Output\n\nScenario table (id, scenario, steps, data, pass criteria, executor) plus sign-off sheet.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-ui-layout-review",
+    "name": "UI Layout and Usability Review",
+    "description": "Reviews screens and page layouts against core usability principles: hierarchy, affordance, consistency, accessibility, and mobile behavior, producing prioritized fixes. Use for web pages, apps, and forms.",
+    "tags": [
+      "design",
+      "web",
+      "ux"
+    ],
+    "instructions": "# UI Layout and Usability Review\n\nJudge the screen the way a first-time user does: scan, hesitate, click. Every fix should remove hesitation.\n\n## Steps\n\n1. Define the primary task the screen supports and the primary user. Walk through completing that task, narrating each step and noting where you hesitated or looked for something.\n2. Hierarchy: does the eye land on the right thing first? Primary action visually strongest; secondary actions clearly lighter; destructive actions separated and muted.\n3. Affordances: buttons look pressable, links identifiable, inputs show clear boundaries and placeholder vs value, disabled states visibly disabled. Anything clickable that does not look clickable (or vice versa) is a defect.\n4. Consistency: same actions look the same across the flow; spacing and type scale repeat; terminology matches everywhere (one word for the same object).\n5. Content: labels speak the user's language, error messages say what went wrong and how to fix it, empty states tell users what to do next, forms ask for the minimum and explain why for anything sensitive.\n6. Accessibility baseline: contrast >= 4.5:1 for text, focus states visible, keyboard path completes the task, hit targets >= 44px, text reflows at mobile width without horizontal scroll.\n7. Prioritize the fixes in three tiers: blockers (task cannot be completed), major friction (hesitation or error risk), polish. One-line rationale each.\n\n## Output\n\nFindings list tagged by tier with the element, the problem, and the suggested fix.",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-web-app-from-brief",
+    "name": "Web App From Brief",
+    "description": "Builds small, complete, runnable web applications from a product brief, preferring a self-contained approach with real content, working interactions, and verified output. Use for landing pages, tools, demos, and internal apps.",
+    "tags": [
+      "coding",
+      "web",
+      "development"
+    ],
+    "instructions": "# Web App From Brief\n\nDeliver something that actually runs. Every feature claimed must exist in the files.\n\n## Steps\n\n1. Parse the brief into: purpose, primary user, core interactions, content, and success criteria. If the brief is thin, choose sensible defaults and state them in a short plan before coding.\n2. Plan the file structure: a self-contained index.html with inline CSS and JS is ideal when allowed; split files only when the app genuinely needs them (data, assets, backend).\n3. Build the page skeleton first: semantic HTML with real headings and sections, accessible controls (labels, alt text, focus states), and no placeholder lorem — write real copy matching the brief's language.\n4. Style with restraint: one accent color, consistent spacing scale, responsive down to ~380px, readable type sizes. Layout must survive different content lengths.\n5. Implement interactions as small, testable functions: form validation with visible error messages, state kept in one object, event handlers wired to real behavior. No dead buttons.\n6. Verify like a user: open the file in a browser, click every control, submit the form with bad input and good input, resize the window. Fix what breaks, then re-check.\n7. Check code health: no console errors, no unused code paths, `node --check` passes for standalone JS files, no external CDNs unless the brief requires them.\n8. Finish with a short README section in comments or a separate file: what it does, how to run it, known limits.\n\n## Checks\n\n- Every visible control does something real.\n- The page works from file:// without a build step (when self-contained).",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  },
+  {
+    "id": "wb-business-doc-writer",
+    "name": "Business Document Writer",
+    "description": "Drafts complete, print-ready business documents with a clear executive summary, evidence-based sections, and concrete next steps. Use for reports, proposals, memos, and briefs that a decision-maker will actually read.",
+    "tags": [
+      "writing",
+      "business",
+      "documents"
+    ],
+    "instructions": "# Business Document Writer\n\nWrite documents a busy reader can act on: short, structured, and honest about what is known versus unknown.\n\n## Steps\n\n1. Restate the goal in one sentence and identify the audience (decision-maker, reviewer, or general staff). Tone and depth follow from this.\n2. Outline first, draft second: title, one-paragraph executive summary, 3-5 body sections, closing next steps. If the outline is weak, fix it before writing prose.\n3. Put the conclusion in the executive summary. Every section after it should support, not surprise.\n4. One idea per section, with a heading that states the takeaway (\"Costs concentrate in logistics\", not \"Costs\").\n5. Separate fact from judgment: state facts plainly, and label estimates or assumptions explicitly, e.g. \"assumes current pricing holds\".\n6. Use placeholders in [square brackets] for any number, name, or date that was not provided. Never invent statistics.\n7. Close with next steps that have owners and dates where possible, even if the owner is \"[assign]\".\n8. Edit once for length (cut 20%) and once for clarity (read every paragraph's first sentence in sequence; it should summarize the document).\n\n## Checks\n\n- Can a reader get the full picture from summary + headings alone?\n- Are all numbers either sourced or bracketed placeholders?\n- Does every section earn its place?",
+    "source": "woibot-authored",
+    "license": "woibot-original"
+  }
+]
