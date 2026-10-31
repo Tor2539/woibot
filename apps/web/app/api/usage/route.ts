@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUserId, errorResponse, successResponse } from "@/lib/auth";
-import { getUsageSummary, PLANS, WORK_RATES } from "@/lib/billing";
+import { getUsageSummary, incrementWorkUsed, PLANS, WORK_RATES } from "@/lib/billing";
 
 // GET /api/usage — billing summary with ledger separation (PRD 12 / docs/billing.md)
 export async function GET(req: NextRequest) {
@@ -27,7 +27,10 @@ export async function GET(req: NextRequest) {
     const teammatePct = teammateAllowance ? Math.round((teammateTokensUsed / teammateAllowance) * 100) : 0;
 
     // Work quota pct
-    const workPct = summary.quota ? Math.round((summary.quota.monthlyUsed / summary.quota.monthlyCap) * 100) : 0;
+    const workPct =
+      summary.quota && Number(summary.quota.monthlyCap) > 0
+        ? Math.round((summary.quota.monthlyUsed / summary.quota.monthlyCap) * 100)
+        : 0;
 
     return successResponse({
       user,
@@ -115,14 +118,74 @@ export async function POST(req: NextRequest) {
     });
 
     if (body.product === "work") {
-      await prisma.workQuota.updateMany({
-        where: { userId },
-        data: { monthlyUsed: { increment: body.cost } },
-      });
+      // Plain read-modify-write: the pg delegate cannot handle { increment }
+      // operators (it jsonb-merges them literally and corrupts the row).
+      await incrementWorkUsed(userId, body.cost);
     }
 
     return successResponse(event, 201);
   } catch (e: unknown) {
     return errorResponse(e instanceof Error ? e.message : "Failed to record usage", 500);
+  }
+}
+
+// PATCH /api/usage — update Work spend guardrails (Settings → Save Guardrails)
+// Body: { monthlyCap?: number, perTaskCap?: number, alertThreshold?: number }
+export async function PATCH(req: NextRequest) {
+  try {
+    const userId = await getUserId(req);
+    if (!userId) return errorResponse("Unauthorized", 401);
+
+    const body = (await req.json()) as {
+      monthlyCap?: number;
+      perTaskCap?: number;
+      alertThreshold?: number;
+    };
+
+    const monthlyCap = body.monthlyCap !== undefined ? Number(body.monthlyCap) : undefined;
+    const perTaskCap = body.perTaskCap !== undefined ? Number(body.perTaskCap) : undefined;
+    const alertThreshold = body.alertThreshold !== undefined ? Number(body.alertThreshold) : undefined;
+
+    if (monthlyCap !== undefined && (!Number.isFinite(monthlyCap) || monthlyCap <= 0)) {
+      return errorResponse("monthlyCap must be a positive number (USD)", 400);
+    }
+    if (perTaskCap !== undefined && (!Number.isFinite(perTaskCap) || perTaskCap <= 0)) {
+      return errorResponse("perTaskCap must be a positive number (USD)", 400);
+    }
+    if (alertThreshold !== undefined && (!Number.isFinite(alertThreshold) || alertThreshold < 0 || alertThreshold > 1)) {
+      return errorResponse("alertThreshold must be between 0 and 1", 400);
+    }
+
+    const existing = await prisma.workQuota.findUnique({ where: { userId } });
+    if (!existing) return errorResponse("workQuota not found — workspace not initialized", 404);
+
+    const nextMonthlyCap = monthlyCap ?? Number(existing.monthlyCap);
+    const nextPerTaskCap = perTaskCap ?? Number(existing.perTaskCap);
+    if (nextPerTaskCap > nextMonthlyCap) {
+      return errorResponse("perTaskCap ต้องไม่มากกว่า monthlyCap", 400);
+    }
+
+    const updated = await prisma.workQuota.update({
+      where: { id: existing.id },
+      data: {
+        ...(monthlyCap !== undefined ? { monthlyCap: nextMonthlyCap } : {}),
+        ...(perTaskCap !== undefined ? { perTaskCap: nextPerTaskCap } : {}),
+        ...(alertThreshold !== undefined ? { alertThreshold } : {}),
+      },
+    });
+
+    const usedRaw = Number(updated.monthlyUsed);
+    const used = Number.isFinite(usedRaw) ? usedRaw : 0;
+    return successResponse({
+      quota: {
+        monthlyCap: Number(updated.monthlyCap),
+        perTaskCap: Number(updated.perTaskCap),
+        alertThreshold: updated.alertThreshold,
+        monthlyUsed: used,
+        remaining: Math.max(0, Number(updated.monthlyCap) - used),
+      },
+    });
+  } catch (e: unknown) {
+    return errorResponse(e instanceof Error ? e.message : "Failed to update caps", 500);
   }
 }

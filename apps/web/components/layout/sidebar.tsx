@@ -71,10 +71,10 @@ export const WORK_JOBS_SIDEBAR = [
 ];
 
 export const TEAMMATE_NAV = [
-  { href: "/teammate", icon: MessageSquare, label: { th: "Teammate Chat", en: "Teammate Chat" }, badge: "Live" },
-  { href: "/tasks", icon: CheckSquare, label: { th: "Tasks & Approvals", en: "Tasks & Approvals" }, badge: "1" },
+  { href: "/teammate", icon: MessageSquare, label: { th: "Teammate Chat", en: "Teammate Chat" } },
+  { href: "/tasks", icon: CheckSquare, label: { th: "Tasks & Approvals", en: "Tasks & Approvals" } },
   { href: "/routines", icon: Repeat2, label: { th: "Routines (Cron/Events)", en: "Routines" } },
-  { href: "/apps", icon: Blocks, label: { th: "Connected Apps & Vault", en: "Apps & Vault" }, badge: "8" },
+  { href: "/apps", icon: Blocks, label: { th: "Connected Apps & Vault", en: "Apps & Vault" } },
   { href: "/computer", icon: Monitor, label: { th: "Cloud Computer (:99)", en: "Cloud Computer" } },
   { href: "/files", icon: FolderOpen, label: { th: "Files & Library", en: "Files & Library" } },
   { href: "/team", icon: Users2, label: { th: "Team Bots & Rooms", en: "Team Bots & Rooms" } },
@@ -487,9 +487,9 @@ export function Sidebar({
                               <Icon className="h-3.5 w-3.5 shrink-0 text-[var(--wb-muted)]" />
                               <span className="truncate">{item.label[lang]}</span>
                             </span>
-                            {item.badge && (
+                            {(item as { badge?: string }).badge && (
                               <span className="rounded-full bg-[var(--wb-raised)] border border-[var(--wb-line)] px-1.5 py-0 text-[10px] font-medium text-[var(--wb-muted)] tabular-nums">
-                                {item.badge}
+                                {(item as { badge?: string }).badge}
                               </span>
                             )}
                           </Link>

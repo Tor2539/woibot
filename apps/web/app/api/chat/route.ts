@@ -13,10 +13,13 @@ export async function GET(req: NextRequest) {
     const teammateId = req.nextUrl.searchParams.get("teammateId") || "tm_main";
 
     const teammates = await prisma.teammate.findMany({ where: { userId } });
-    let activeTeammate = teammates.find((t: any) => t.id === teammateId) || teammates[0];
+    // Scope to the caller's own bots only: an id that belongs to another user
+    // must never resolve (cross-tenant read/write protection).
+    const requested = teammates.find((t: any) => t.id === teammateId);
+    let activeTeammate = requested || teammates.find((t: any) => t.isMain) || teammates[0];
     if (!activeTeammate) {
       activeTeammate = await prisma.teammate.create({
-        data: { id: "tm_main", userId, name: "Woibot Main", role: "Chief Personal Teammate", isMain: true, language: "th" },
+        data: { id: `tm_main_${userId.slice(-6)}`, userId, name: "Woibot Main", role: "Chief Personal Teammate", isMain: true, language: "th" },
       });
     }
 
@@ -59,10 +62,14 @@ export async function POST(req: NextRequest) {
     if (!body.message?.trim()) return errorResponse("message is required", 400);
 
     const teammateId = body.teammateId || "tm_main";
-    let teammate = await prisma.teammate.findFirst({ where: { id: teammateId } });
+    // Cross-tenant protection: the id must belong to THIS user. A foreign id
+    // falls back to the caller's own main bot instead of another user's bot.
+    let teammate = await prisma.teammate.findFirst({ where: { id: teammateId, userId } });
     if (!teammate) {
-      teammate = await prisma.teammate.findFirst({ where: { userId } });
+      teammate = await prisma.teammate.findFirst({ where: { userId, isMain: true } })
+        || await prisma.teammate.findFirst({ where: { userId } });
     }
+    if (!teammate) return errorResponse("Teammate not found", 404);
 
     const userMsg = await prisma.chatMessage.create({
       data: {
@@ -177,6 +184,20 @@ export async function POST(req: NextRequest) {
     const isApprovalAsk = /ส่งจริง|โอนเงิน|ลบข้อมูล|deploy.*prod|publish/.test(s);
 
     const wantsCode = body.forceWork && body.workKind === "coding";
+
+    // Multi-turn context: the model MUST see recent conversation history, or
+    // every turn is stateless ("บันทึกที่ให้มา" in the previous message is
+    // invisible). Load the last 10 turns (excluding the message just saved).
+    const historyRows = await prisma.chatMessage.findMany({
+      where: { teammateId: teammate.id, ...(userMsg?.id ? { id: { not: userMsg.id } } : {}) },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    });
+    const history = historyRows
+      .reverse()
+      .map((m: any) => `${m.role === "user" ? "User" : "Assistant"}: ${String(m.content || "").slice(0, 700)}`)
+      .join("\n\n");
+
     const llmRes = await callWoibotLLM({
       role: wantsCode ? "code" : "general",
       images: (body.images || []).filter((u) => /^data:image\//.test(u)).slice(0, 4).map((u) => ({ dataUrl: u })),
@@ -185,9 +206,13 @@ User Memories:
 ${memorySnippet}
 Rules:
 - Reply in the same language as the user (Thai default).
+- The "Recent conversation" is real history: pronouns (มัน, ตัวนั้น, โน้ตที่ให้มา) refer to it — always ground your answer there first, then memories.
+- Track state updates the user announces (งบประมาณใหม่, ยกเลิก/เปลี่ยนผู้รับผิดชอบ): the latest statement wins.
 - Be concise, direct, executive-grade, no fluff, no AI-slop emojis.
 - Mention concrete actions taken on Connected Apps (Gmail, Google Calendar, Slack, Notion, GitHub) or Cloud Computer.`,
-      user: body.message,
+      user: history
+        ? `Recent conversation:\n${history}\n\nCurrent user message: ${body.message}`
+        : body.message,
     });
 
     const metaObj: Record<string, any> = {

@@ -37,7 +37,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     const traceId = sourceTask.traceId || `trace_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
 
     // Fetch recent chat history for context (last 10 messages across user's teammates)
-    const teammates = await prisma.teammate.findMany({ where: { userId }, select: { id: true } });
+    const teammates = await prisma.teammate.findMany({ where: { userId }, select: { id: true, isMain: true } });
     const teammateIds = teammates.map((t: any) => t.id);
     const recentMessages = teammateIds.length ? await prisma.chatMessage.findMany({
       where: { teammateId: { in: teammateIds } },
@@ -83,7 +83,9 @@ export async function POST(req: NextRequest, { params }: Params) {
           workKind: kind,
           status: "queued",
           executionMode: packet.execution_mode,
-          traceId: `trace_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,
+          // Same trace id as the packet so usage events, deliverables and the
+          // handoff card all chain under one trace (PRD 7.2 continuity).
+          traceId,
           handoffPacket: JSON.stringify(packet),
           estimate: JSON.stringify({ ...est, approved: false }),
           progress: 0,
@@ -91,7 +93,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       });
 
       // Mark source as handed off (optional: create handoff chat message)
-      const mainTeammate = teammates[0]?.id;
+      const mainTeammate = teammates.find((t: any) => t.isMain)?.id || teammates[0]?.id;
       if (mainTeammate) {
         await prisma.chatMessage.create({
           data: {
@@ -112,7 +114,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       data: { handoffPacket: JSON.stringify({ ...packet, reverse: true }) },
     });
 
-    const mainTeammate = teammates[0]?.id;
+    const mainTeammate = teammates.find((t: any) => t.isMain)?.id || teammates[0]?.id;
     if (mainTeammate) {
       await prisma.chatMessage.create({
         data: {

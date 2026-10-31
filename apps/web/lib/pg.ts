@@ -224,6 +224,20 @@ async function attachIncludes(collection: string, rows: any[], include?: Record<
   return rows;
 }
 
+/** Split a patch into plain jsonb fields and Prisma-style {increment:n} operators. */
+function splitPatch(data: Where): { plain: Record<string, any>; increments: [string, number][] } {
+  const plain: Record<string, any> = {};
+  const increments: [string, number][] = [];
+  for (const [k, v] of Object.entries(data || {})) {
+    if (v && typeof v === "object" && !Array.isArray(v) && typeof (v as any).increment === "number") {
+      increments.push([k, (v as any).increment]);
+    } else {
+      plain[k] = v;
+    }
+  }
+  return { plain, increments };
+}
+
 function createDelegate(collection: string, prefix: string) {
   return {
     async findMany(args?: {
@@ -289,11 +303,29 @@ function createDelegate(collection: string, prefix: string) {
       await ensureSchema();
       const params: any[] = [collection];
       const whereSql = whereToSql(args.where, params);
-      params.push(JSON.stringify(args.data));
-      const patchIdx = params.length;
+      const { plain, increments } = splitPatch(args.data);
+      const setParts: string[] = [];
+      for (const [key, n] of increments) {
+        params.push(n);
+        const nIdx = params.length;
+        // real arithmetic on the stored value — never jsonb-merge an operator object
+        setParts.push(
+          `data = jsonb_set(data, '{${key}}', to_jsonb(COALESCE((data->>'${key}')::numeric, 0) + $${nIdx}::numeric))`,
+        );
+      }
+      if (Object.keys(plain).length > 0) {
+        params.push(JSON.stringify(plain));
+        const patchIdx = params.length;
+        setParts.push(`data = data || $${patchIdx}::jsonb`);
+      }
+      if (setParts.length === 0) {
+        const r0 = await this.findFirst({ where: args.where });
+        if (!r0) throw new Error(`${collection} record not found`);
+        return r0;
+      }
       const { rows } = await getPool().query(
         `update woibot_records
-            set data = data || $${patchIdx}::jsonb, updated_at = now()
+            set ${setParts.join(", ")}, updated_at = now()
           where collection=$1 and ${whereSql}
           returning data`,
         params,
@@ -306,10 +338,23 @@ function createDelegate(collection: string, prefix: string) {
       await ensureSchema();
       const params: any[] = [collection];
       const whereSql = whereToSql(args.where, params);
-      params.push(JSON.stringify(args.data));
-      const patchIdx = params.length;
+      const { plain, increments } = splitPatch(args.data);
+      const setParts: string[] = [];
+      for (const [key, n] of increments) {
+        params.push(n);
+        const nIdx = params.length;
+        setParts.push(
+          `data = jsonb_set(data, '{${key}}', to_jsonb(COALESCE((data->>'${key}')::numeric, 0) + $${nIdx}::numeric))`,
+        );
+      }
+      if (Object.keys(plain).length > 0) {
+        params.push(JSON.stringify(plain));
+        const patchIdx = params.length;
+        setParts.push(`data = data || $${patchIdx}::jsonb`);
+      }
+      if (setParts.length === 0) return { count: 0 };
       const res = await getPool().query(
-        `update woibot_records set data = data || $${patchIdx}::jsonb, updated_at = now()
+        `update woibot_records set ${setParts.join(", ")}, updated_at = now()
           where collection=$1 and ${whereSql}`,
         params,
       );

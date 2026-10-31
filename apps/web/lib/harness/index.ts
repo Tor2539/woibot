@@ -230,6 +230,7 @@ export async function executeTask(taskId: string) {
       : name.endsWith(".md") ? "text/markdown"
       : name.endsWith(".csv") ? "text/csv"
       : name.endsWith(".json") ? "application/json"
+      : name.endsWith(".xlsx") ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       : name.endsWith(".mp4") ? "video/mp4"
       : name.endsWith(".png") ? "image/png"
       : name.endsWith(".html") ? "text/html"

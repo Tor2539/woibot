@@ -382,7 +382,7 @@ export default function TeamBotsPage() {
           <button
             type="submit"
             disabled={creating || !bots.length}
-            className="inline-flex w-full items-center justify-center gap-1.5 rounded-[8px] bg-[#2b66e0] px-4 py-2 text-[12.5px] font-semibold text-white hover:bg-[#2458c6] disabled:opacity-50"
+            className="inline-flex min-h-[40px] sm:min-h-0 w-full items-center justify-center gap-1.5 rounded-[8px] bg-[#2b66e0] px-4 py-2 text-[12.5px] font-semibold text-white hover:bg-[#2458c6] disabled:opacity-50"
           >
             {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             {creating ? "กำลังสร้างกลุ่ม..." : "Create Group"}
@@ -466,7 +466,7 @@ export default function TeamBotsPage() {
           <button
             type="submit"
             disabled={sending || bots.length < 2}
-            className="inline-flex w-full items-center justify-center gap-1.5 rounded-[8px] bg-[#2b66e0] px-4 py-2 text-[12.5px] font-semibold text-white hover:bg-[#2458c6] disabled:opacity-50"
+            className="inline-flex min-h-[40px] sm:min-h-0 w-full items-center justify-center gap-1.5 rounded-[8px] bg-[#2b66e0] px-4 py-2 text-[12.5px] font-semibold text-white hover:bg-[#2458c6] disabled:opacity-50"
           >
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUpRight className="h-4 w-4" />}
             {sending ? "กำลังส่งต่อ..." : "Send to Teammate"}
@@ -546,7 +546,8 @@ export default function TeamBotsPage() {
                       type="button"
                       onClick={() => handleDeleteGroup(group.id)}
                       title="ลบกลุ่มนี้"
-                      className="shrink-0 rounded-[6px] p-1.5 text-[var(--wb-faint)] hover:bg-[var(--wb-hover)] hover:text-[var(--wb-danger)]"
+                      aria-label="ลบกลุ่มนี้"
+                      className="flex min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 shrink-0 items-center justify-center rounded-[6px] p-1.5 text-[var(--wb-faint)] hover:bg-[var(--wb-hover)] hover:text-[var(--wb-danger)]"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -688,7 +689,7 @@ export default function TeamBotsPage() {
             <button
               type="submit"
               disabled={botBusy}
-              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-[8px] bg-[#2b66e0] px-4 py-2 text-[12.5px] font-semibold text-white hover:bg-[#2458c6] disabled:opacity-50"
+              className="inline-flex min-h-[40px] sm:min-h-0 shrink-0 items-center justify-center gap-1.5 rounded-[8px] bg-[#2b66e0] px-4 py-2 text-[12.5px] font-semibold text-white hover:bg-[#2458c6] disabled:opacity-50"
             >
               {botBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               Create
@@ -738,9 +739,9 @@ export default function TeamBotsPage() {
                 </div>
 
                 <div className="flex items-center justify-between gap-2 pt-2" style={{ borderTop: "1px solid var(--wb-line)" }}>
-                  <span className="min-w-0 truncate text-[11px] text-emerald-400">
-                    ● {bot.persona?.statusText || "Ready on Cloud"}
-                  </span>
+                  {bot.persona?.statusText ? (
+                    <span className="min-w-0 truncate text-[11px] text-emerald-400">● {bot.persona.statusText}</span>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => router.push(`/teammate?bot=${bot.id}`)}

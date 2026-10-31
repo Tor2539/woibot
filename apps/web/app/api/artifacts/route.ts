@@ -8,8 +8,20 @@ export async function GET(req: NextRequest) {
   if (!userId) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   const downloadId = req.nextUrl.searchParams.get("download");
   if (downloadId) {
-    const art = await prisma.artifact.findFirst({ where: { id: downloadId } });
-    const del = await prisma.deliverable.findFirst({ where: { id: downloadId } });
+    // Scoped to the owner: artifacts belong to the user; deliverables belong
+    // to the user via their task. No cross-user reads.
+    const art = await prisma.artifact.findFirst({ where: { id: downloadId, userId } });
+    let del: Record<string, any> | null = null;
+    if (!art) {
+      const candidate = await prisma.deliverable.findFirst({ where: { id: downloadId } });
+      if (candidate?.taskId) {
+        const ownerTask = await prisma.task.findFirst({ where: { id: candidate.taskId, userId } });
+        if (ownerTask) del = candidate;
+      }
+    }
+    if (!art && !del) {
+      return NextResponse.json({ ok: false, error: "ไม่พบไฟล์นี้ — อาจถูกลบหรือไม่ใช่ของบัญชีคุณ" }, { status: 404 });
+    }
     const title = art?.title || del?.fileName || "woibot-deliverable.md";
     const content =
       art?.content ||
@@ -113,9 +125,12 @@ Use clean Markdown sections, executive summary, and concrete metrics/tables. No 
 }
 
 export async function PATCH(req: NextRequest) {
+  const userId = await getUserId(req);
+  if (!userId) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
   if (!body.id) return NextResponse.json({ ok: false, error: "id required" }, { status: 400 });
-  const existing = await prisma.artifact.findFirst({ where: { id: body.id } });
+  // Only the owner may edit — id alone must never be enough.
+  const existing = await prisma.artifact.findFirst({ where: { id: body.id, userId } });
   if (!existing) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
 
   const nextVer = (Number(existing.versions) || 1) + (body.bumpVersion ? 1 : 0);
@@ -134,8 +149,13 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const userId = await getUserId(req);
+  if (!userId) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ ok: false, error: "id required" }, { status: 400 });
+  // Only the owner may delete — unauthenticated deletes are a critical bug.
+  const existing = await prisma.artifact.findFirst({ where: { id, userId } });
+  if (!existing) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
   await prisma.artifact.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

@@ -6,10 +6,21 @@ export async function GET(req: NextRequest) {
   const userId = await getUserId(req);
   if (!userId) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   const rows = await prisma.connectedApp.findMany({ where: { userId } });
-  const secrets = await prisma.vaultSecret.findMany({ where: { userId } });
   const apps = rows.map((r: any) => ({
     ...r,
     scopes: safeJsonParse(r.scopes, ["read"]),
+  }));
+  // Vault secrets are write-only: the DB stores only a masked hint. Project
+  // explicit fields so no plaintext secret value can ever leak through a GET,
+  // even if extra columns are added later.
+  const secretRows = await prisma.vaultSecret.findMany({ where: { userId } });
+  const secrets = secretRows.map((s: any) => ({
+    id: s.id,
+    name: s.name,
+    hostAllowlist: s.hostAllowlist,
+    scope: s.scope,
+    maskedValue: s.maskedValue,
+    updatedAt: s.updatedAt,
   }));
   return NextResponse.json({ ok: true, apps, secrets });
 }
@@ -59,7 +70,9 @@ export async function POST(req: NextRequest) {
         provider,
         status: "connected",
         scopes: JSON.stringify(scopes || ["read", "write"]),
-        account: account || "takin@woxacorp.com",
+        // No fabricated account: if the caller didn't link an account, store
+        // null and the UI shows "Not linked" instead of a made-up email.
+        account: account || null,
       },
     });
     return NextResponse.json({ ok: true, app: { ...created, scopes: safeJsonParse(created.scopes, []) } });

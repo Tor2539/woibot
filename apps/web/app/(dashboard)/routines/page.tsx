@@ -110,6 +110,17 @@ export default function RoutinesPage() {
       </form>
 
       {/* Routines List */}
+      {routines.length === 0 ? (
+        <div
+          className="rounded-[12px] px-4 py-8 text-center space-y-1.5"
+          style={{ backgroundColor: "var(--wb-raised)", border: "1px dashed var(--wb-line-strong)" }}
+        >
+          <div className="text-[13px] font-semibold">ยังไม่มี Routine ที่ตั้งไว้</div>
+          <div className="text-[11.5px] text-[var(--wb-muted)]">
+            สร้าง Routine แรกจากฟอร์มด้านบน — ระบบจะรันบน Cloud Scheduler ทุก 5 นาทีพร้อม Spend Guard
+          </div>
+        </div>
+      ) : (
       <div className="grid gap-3 md:grid-cols-2">
         {routines.map((rt) => (
           <div
@@ -146,7 +157,7 @@ export default function RoutinesPage() {
               <button
                 type="button"
                 onClick={() => handleToggle(rt)}
-                className="rounded-[6px] bg-[var(--wb-panel)] border border-[var(--wb-line)] px-3 py-1 text-[11.5px] font-medium text-[var(--wb-fg)] hover:bg-[var(--wb-hover)]"
+                className="min-h-[40px] sm:min-h-0 rounded-[6px] bg-[var(--wb-panel)] border border-[var(--wb-line)] px-3 py-1.5 text-[11.5px] font-medium text-[var(--wb-fg)] hover:bg-[var(--wb-hover)]"
               >
                 {rt.status === "active" ? "Pause Routine" : "Resume Routine"}
               </button>
@@ -154,6 +165,7 @@ export default function RoutinesPage() {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

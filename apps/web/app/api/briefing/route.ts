@@ -17,26 +17,38 @@ export async function GET(req: NextRequest) {
     prisma.connectedApp.findMany({ where: { userId } }),
   ]);
 
-  const connected = apps.filter((a: any) => a.connected);
+  const connected = apps.filter((a: any) => a.status === "connected");
   const needsAction = tasks.filter((t: any) =>
     ["waiting_for_user", "queued", "reviewing", "paused", "in_progress"].includes(t.status),
   );
   const completed = tasks.filter((t: any) => t.status === "completed");
   const failed = tasks.filter((t: any) => t.status === "failed" || t.status === "partially_completed");
 
-  const items = needsAction.slice(0, 5).map((t: any) => ({
-    id: t.id,
-    type: "task" as const,
-    title: `${t.title} — ${String(t.status).replace(/_/g, " ")}`,
-    detail:
-      t.status === "waiting_for_user"
-        ? `รออนุมัติ · ประเมิน $${(t.estimate?.cost ?? 0).toFixed(2)}${t.estimate?.minutes ? ` (~${t.estimate.minutes} นาที)` : ""}`
-        : t.status === "reviewing"
-          ? "อยู่ระหว่างตรวจสอบผลงาน — เปิดแท็บ Verification เพื่อดูหลักฐาน"
-          : `ความคืบหน้า ${t.progress ?? 0}% · ${t.workKind || "work"}`,
-    priority: t.status === "waiting_for_user" ? "high" : "medium",
-    taskId: t.id,
-  }));
+  const items = needsAction.slice(0, 5).map((t: any) => {
+    // estimate is stored as a JSON string — parse it so the shown cost is the
+    // real stored estimate, never a fabricated 0.
+    let est: any = null;
+    try {
+      est = typeof t.estimate === "string" ? JSON.parse(t.estimate) : t.estimate;
+    } catch {
+      est = null;
+    }
+    const estCost = Number(est?.cost ?? est?.estimatedCost ?? 0);
+    const estMinutes = Number(est?.minutes ?? est?.estimatedMinutes ?? 0);
+    return {
+      id: t.id,
+      type: "task" as const,
+      title: `${t.title} — ${String(t.status).replace(/_/g, " ")}`,
+      detail:
+        t.status === "waiting_for_user"
+          ? `รออนุมัติ · ประเมิน $${estCost.toFixed(2)}${estMinutes ? ` (~${estMinutes} นาที)` : ""}`
+          : t.status === "reviewing"
+            ? "อยู่ระหว่างตรวจสอบผลงาน — เปิดแท็บ Verification เพื่อดูหลักฐาน"
+            : `ความคืบหน้า ${t.progress ?? 0}% · ${t.workKind || "work"}`,
+      priority: t.status === "waiting_for_user" ? "high" : "medium",
+      taskId: t.id,
+    };
+  });
 
   const proactive: { id: string; title: string; detail: string; action: string }[] = [];
 

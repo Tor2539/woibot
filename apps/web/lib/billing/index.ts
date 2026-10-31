@@ -55,16 +55,38 @@ export function estimateTask(kind: WorkKind, opts?: { pages?: number; seconds?: 
 
 // --- Quota checks (cost isolation) ---
 
+/**
+ * Increment monthlyUsed safely. The Postgres delegate does not implement
+ * Prisma-style `{ increment }` operators (it jsonb-merges them literally,
+ * which corrupts the row: monthlyUsed became {"increment":1.25} in prod).
+ * We therefore read-modify-write a plain number, and coerce any corrupted
+ * non-numeric value back to 0 so the row self-heals on the next event.
+ */
+export async function incrementWorkUsed(userId: string, cost: number): Promise<{ monthlyUsed: number; monthlyCap: number } | null> {
+  const quota = await prisma.workQuota.findUnique({ where: { userId } });
+  if (!quota) return null;
+  const current = Number(quota.monthlyUsed);
+  const safeCurrent = Number.isFinite(current) ? current : 0;
+  const nextUsed = Math.round((safeCurrent + cost) * 100) / 100;
+  await prisma.workQuota.update({
+    where: { id: quota.id },
+    data: { monthlyUsed: nextUsed },
+  });
+  return { monthlyUsed: nextUsed, monthlyCap: Number(quota.monthlyCap) };
+}
+
 export async function canAffordWork(userId: string, estimatedCost: number): Promise<{ ok: boolean; reason?: string; quota?: { monthlyCap: number; monthlyUsed: number; perTaskCap: number } }> {
   const quota = await prisma.workQuota.findUnique({ where: { userId } });
   if (!quota) return { ok: true, quota: { monthlyCap: 50, monthlyUsed: 0, perTaskCap: 5 } };
+  const used = Number(quota.monthlyUsed);
+  const monthlyUsed = Number.isFinite(used) ? used : 0;
   if (estimatedCost > quota.perTaskCap) {
-    return { ok: false, reason: `เกินวงเงินต่อครั้ง (cap $${quota.perTaskCap.toFixed(2)}, ประเมิน $${estimatedCost.toFixed(2)}) — ปรับวงเงินหรือลดขอบเขตงาน`, quota: { monthlyCap: quota.monthlyCap, monthlyUsed: quota.monthlyUsed, perTaskCap: quota.perTaskCap } };
+    return { ok: false, reason: `เกินวงเงินต่อครั้ง (cap $${quota.perTaskCap.toFixed(2)}, ประเมิน $${estimatedCost.toFixed(2)}) — ปรับวงเงินหรือลดขอบเขตงาน`, quota: { monthlyCap: quota.monthlyCap, monthlyUsed, perTaskCap: quota.perTaskCap } };
   }
-  if (quota.monthlyUsed + estimatedCost > quota.monthlyCap) {
-    return { ok: false, reason: `เกินวงเงินรายเดือน (cap $${quota.monthlyCap.toFixed(2)}, ใช้แล้ว $${quota.monthlyUsed.toFixed(2)}, ประเมิน $${estimatedCost.toFixed(2)})`, quota: { monthlyCap: quota.monthlyCap, monthlyUsed: quota.monthlyUsed, perTaskCap: quota.perTaskCap } };
+  if (monthlyUsed + estimatedCost > quota.monthlyCap) {
+    return { ok: false, reason: `เกินวงเงินรายเดือน (cap $${quota.monthlyCap.toFixed(2)}, ใช้แล้ว $${monthlyUsed.toFixed(2)}, ประเมิน $${estimatedCost.toFixed(2)})`, quota: { monthlyCap: quota.monthlyCap, monthlyUsed, perTaskCap: quota.perTaskCap } };
   }
-  return { ok: true, quota: { monthlyCap: quota.monthlyCap, monthlyUsed: quota.monthlyUsed, perTaskCap: quota.perTaskCap } };
+  return { ok: true, quota: { monthlyCap: quota.monthlyCap, monthlyUsed, perTaskCap: quota.perTaskCap } };
 }
 
 // --- Usage recording with ledger separation ---
@@ -106,10 +128,8 @@ export async function recordUsage(userId: string, data: {
 
   // Only Work increments WorkQuota (cost isolation: Teammate never touches Work ledger)
   if (data.product === "work") {
-    await prisma.workQuota.updateMany({
-      where: { userId },
-      data: { monthlyUsed: { increment: data.cost } },
-    });
+    // Plain read-modify-write — the pg delegate cannot handle { increment }.
+    await incrementWorkUsed(userId, data.cost);
   }
 
   return event;
@@ -151,13 +171,18 @@ export async function getUsageSummary(userId: string, opts?: { days?: number; li
   }
 
   const plan = subscription ? (PLANS[subscription.plan as PlanId] || PLANS.starter) : PLANS.starter;
+  // monthlyUsed may be a corrupted non-number from the old { increment } bug —
+  // treat it as 0 so remaining/cap math stays finite (the row self-heals on the
+  // next recorded event via incrementWorkUsed).
+  const usedRaw = quota ? Number(quota.monthlyUsed) : 0;
+  const monthlyUsed = quota ? (Number.isFinite(usedRaw) ? usedRaw : 0) : 0;
   const quotaInfo = quota ? {
     monthlyCap: quota.monthlyCap,
     perTaskCap: quota.perTaskCap,
-    monthlyUsed: quota.monthlyUsed,
-    remaining: Math.max(0, quota.monthlyCap - quota.monthlyUsed),
+    monthlyUsed,
+    remaining: Math.max(0, Number(quota.monthlyCap) - monthlyUsed),
     alertThreshold: quota.alertThreshold,
-    isNearCap: quota.monthlyUsed / quota.monthlyCap >= quota.alertThreshold,
+    isNearCap: monthlyUsed / Number(quota.monthlyCap) >= quota.alertThreshold,
     periodStart: quota.periodStart,
   } : null;
 

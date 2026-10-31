@@ -2,27 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FolderOpen, Download, Eye, FileCode2, FileText, Clapperboard, Layers } from "lucide-react";
+import { Download, Eye } from "lucide-react";
 
 export default function FilesLibraryPage() {
   const router = useRouter();
   const [artifacts, setArtifacts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [previewItem, setPreviewItem] = useState<any | null>(null);
 
   useEffect(() => {
     fetch("/api/artifacts")
       .then((r) => r.json())
       .then((res) => setArtifacts(res?.artifacts || []))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
-
-  const staticDeliverables = [
-    { id: "del_crm_zip", title: "crm-enterprise-v1.zip", subKind: "Runnable Next.js CRM + Prisma + Playwright", origin: "work", size: "4.2 MB", content: "Archive contents:\n- apps/crm/app/pipeline/page.tsx\n- apps/crm/prisma/schema.prisma\n- apps/crm/lib/verification/crm.spec.ts\n- verification_report.json (5/5 passed)" },
-    { id: "del_vid_169", title: "woibot-launch-16x9-1080p.mp4", subKind: "H.264 1080p + Bilingual TH/EN Subtitles", origin: "work", size: "14.8 MB", content: "FFprobe Stream Verified:\nResolution: 1920x1080 @ 60fps\nAudio: AAC 48kHz (-14.1 LUFS)\nSubtitles: TH + EN synced (0ms drift)" },
-    { id: "del_vid_proj", title: "remotion-launch-bundle.zip", subKind: "Editable Video Project Timeline", origin: "work", size: "6.0 MB", content: "Remotion editable project bundle with 5 scenes and subtitle tracks." },
-  ];
-
-  const allItems = [...staticDeliverables, ...artifacts];
 
   return (
     <div className="p-4 lg:p-6 space-y-5">
@@ -42,45 +36,64 @@ export default function FilesLibraryPage() {
         </button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {allItems.map((item) => (
-          <div
-            key={item.id}
-            className="flex flex-col justify-between rounded-[12px] p-4 space-y-3"
-            style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
-          >
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="rounded bg-[#2b66e0]/20 px-2 py-0.5 font-semibold uppercase text-[#7cb0ff]">
-                  {item.origin === "work" ? "Work Deliverable" : "Teammate File"}
-                </span>
-                <span className="font-mono text-[var(--wb-muted)]">{item.size || "Verified"}</span>
-              </div>
-              <div className="text-[14px] font-semibold truncate">{item.title}</div>
-              <div className="text-[11.5px] text-[var(--wb-muted)]">{item.subKind}</div>
-            </div>
-
-            <div className="flex items-center gap-2 pt-2" style={{ borderTop: "1px solid var(--wb-line)" }}>
-              <button
-                type="button"
-                onClick={() => setPreviewItem(item)}
-                className="min-h-[40px] sm:min-h-0 flex-1 inline-flex items-center justify-center gap-1.5 rounded-[7px] py-1.5 text-[12px] font-medium hover:bg-[var(--wb-hover)]"
-                style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
-              >
-                <Eye className="h-3.5 w-3.5" />
-                <span>Preview</span>
-              </button>
-              <a
-                href={`/api/artifacts?download=${item.id}`}
-                className="min-h-[40px] sm:min-h-0 flex-1 inline-flex items-center justify-center gap-1.5 rounded-[7px] bg-[#2b66e0] hover:bg-[#2458c6] py-1.5 text-[12px] font-medium text-white"
-              >
-                <Download className="h-3.5 w-3.5" />
-                <span>Download</span>
-              </a>
-            </div>
+      {loading ? (
+        <div
+          className="rounded-[12px] px-4 py-8 text-center text-[12.5px] text-[var(--wb-muted)]"
+          style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
+        >
+          กำลังโหลดไฟล์...
+        </div>
+      ) : artifacts.length === 0 ? (
+        <div
+          className="rounded-[12px] px-4 py-8 text-center space-y-1.5"
+          style={{ backgroundColor: "var(--wb-raised)", border: "1px dashed var(--wb-line-strong)" }}
+        >
+          <div className="text-[13px] font-semibold">ยังไม่มีไฟล์ในคลังของคุณ</div>
+          <div className="text-[11.5px] text-[var(--wb-muted)]">
+            ไฟล์จริงจะปรากฏที่นี่เมื่อ Teammate หรือ Work สร้างและตรวจสอบเสร็จ — หน้านี้ไม่แสดงไฟล์ตัวอย่างที่สร้างขึ้นเอง
           </div>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {artifacts.map((item) => (
+            <div
+              key={item.id}
+              className="flex flex-col justify-between rounded-[12px] p-4 space-y-3"
+              style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
+            >
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="rounded bg-[#2b66e0]/20 px-2 py-0.5 font-semibold uppercase text-[#7cb0ff]">
+                    {item.origin === "work" ? "Work Deliverable" : "Teammate File"}
+                  </span>
+                  <span className="font-mono text-[var(--wb-muted)]">{item.status || "artifact"}</span>
+                </div>
+                <div className="text-[14px] font-semibold break-words">{item.title}</div>
+                <div className="text-[11.5px] text-[var(--wb-muted)] break-words">{item.subKind}</div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2" style={{ borderTop: "1px solid var(--wb-line)" }}>
+                <button
+                  type="button"
+                  onClick={() => setPreviewItem(item)}
+                  className="min-h-[40px] sm:min-h-0 flex-1 inline-flex items-center justify-center gap-1.5 rounded-[7px] py-1.5 text-[12px] font-medium hover:bg-[var(--wb-hover)]"
+                  style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  <span>Preview</span>
+                </button>
+                <a
+                  href={`/api/artifacts?download=${item.id}`}
+                  className="min-h-[40px] sm:min-h-0 flex-1 inline-flex items-center justify-center gap-1.5 rounded-[7px] bg-[#2b66e0] hover:bg-[#2458c6] py-1.5 text-[12px] font-medium text-white"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span>Download</span>
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {previewItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65">

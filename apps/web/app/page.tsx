@@ -163,7 +163,7 @@ export default function LandingPage() {
             </div>
 
             {/* KPI Row (Tabular Numerals) */}
-            <div className="grid grid-cols-3 gap-3 pt-2 tabular-nums">
+            <div className="grid grid-cols-1 gap-3 pt-2 tabular-nums sm:grid-cols-3">
               {[
                 { label: "Cloud Computer", val: "24/7", sub: "Persistent Linux + CDP :9222" },
                 { label: "Work Studio Areas", val: "Code · Video · Artifacts", sub: "Verified Deliverables" },
@@ -207,18 +207,22 @@ export default function LandingPage() {
                   onClick={() => setPreviewMode("teammate")}
                   className={`wb-mode-tab !h-[26px] !text-[12px] ${previewMode === "teammate" ? "is-active" : ""}`}
                 >
-                  <span>Teammate (Daily Cloud Assistant)</span>
+                  <span>
+                    Teammate<span className="hidden sm:inline"> (Daily Cloud Assistant)</span>
+                  </span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setPreviewMode("work")}
                   className={`wb-mode-tab !h-[26px] !text-[12px] ${previewMode === "work" ? "is-active" : ""}`}
                 >
-                  <span>Work (Code · Video · Artifacts)</span>
+                  <span>
+                    Work<span className="hidden sm:inline"> (Code · Video · Artifacts)</span>
+                  </span>
                 </button>
               </div>
 
-              <span className="font-mono text-[10.5px] text-emerald-400">LIVE PREVIEW</span>
+              <span className="hidden md:inline font-mono text-[10.5px] text-emerald-400">PRODUCT PREVIEW</span>
             </div>
 
             {previewMode === "teammate" ? (
@@ -268,14 +272,14 @@ export default function LandingPage() {
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="font-semibold">Work Studio · Code | Video | Artifacts</span>
                   <span className="rounded bg-[#2b66e0]/20 px-2 py-0.5 text-[10.5px] text-[#7cb0ff]">
-                    5/5 Verification Gates Passed
+                    Verified Files + verification_report.json
                   </span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-[11.5px]">
                   <Link
                     href="/work?area=code"
-                    className="rounded-lg p-2.5 hover:border-[#3b82f6]"
+                    className="min-w-0 rounded-lg p-2.5 hover:border-[#3b82f6]"
                     style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
                   >
                     <div className="font-semibold text-[#7cb0ff]">1. Code</div>
@@ -285,17 +289,17 @@ export default function LandingPage() {
                   </Link>
                   <Link
                     href="/work?area=video"
-                    className="rounded-lg p-2.5 hover:border-[#3b82f6]"
+                    className="min-w-0 rounded-lg p-2.5 hover:border-[#3b82f6]"
                     style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
                   >
                     <div className="font-semibold text-emerald-400">2. Video</div>
                     <div className="mt-0.5 text-[11px] text-[var(--wb-muted)]">
-                      Storyboard + FFmpeg + TH/EN Subs
+                      วิเคราะห์/ประกอบคลิปจริงด้วย FFmpeg + ffprobe
                     </div>
                   </Link>
                   <Link
                     href="/work?area=artifacts"
-                    className="rounded-lg p-2.5 hover:border-[#3b82f6]"
+                    className="min-w-0 rounded-lg p-2.5 hover:border-[#3b82f6]"
                     style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
                   >
                     <div className="font-semibold text-amber-400">3. Artifacts</div>
@@ -309,8 +313,8 @@ export default function LandingPage() {
                   className="rounded-[10px] p-3 font-mono text-[11px] space-y-1"
                   style={{ backgroundColor: "#090a0f", border: "1px solid var(--wb-line)", color: "#d2d3d8" }}
                 >
-                  <div className="text-emerald-400">✓ verification_report.json signed (trace_crm_9821a)</div>
-                  <div>• typecheck: 0 errors | vitest: 14/14 passed | playwright: 1440px & 390px green</div>
+                  <div className="text-emerald-400">✓ verification_report.json (mode: live)</div>
+                  <div>• typecheck ✓ · renders_in_chromium ✓ (screenshot เป็นหลักฐาน) · ไฟล์ส่งมอบดาวน์โหลดได้จริง</div>
                 </div>
               </div>
             )}
@@ -345,6 +349,10 @@ export default function LandingPage() {
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-emerald-400 shrink-0" />
                 <span>Teach-by-Demonstration: ทำขั้นตอนให้ดูบนจอ 1 ครั้ง บันทึกเป็น Routine ทันที</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+                <span>Voice Command: สั่งงานด้วยเสียงได้ในห้องแชท (รันคำสั่งจริงบน Cloud Computer)</span>
               </li>
             </ul>
           </div>
@@ -514,7 +522,7 @@ export default function LandingPage() {
             <div className="text-xs font-bold uppercase tracking-wider text-[var(--wb-muted)]">Work Studio</div>
             <ul className="space-y-1.5">
               <li><Link href="/work?area=code" className="hover:text-[var(--wb-fg)]">Autonomous Coding</Link></li>
-              <li><Link href="/work?area=video" className="hover:text-[var(--wb-fg)]">Video Production & Subs</Link></li>
+              <li><Link href="/work?area=video" className="hover:text-[var(--wb-fg)]">Video Analysis & Compose (FFmpeg)</Link></li>
               <li><Link href="/work?area=artifacts" className="hover:text-[var(--wb-fg)]">Artifacts & Designer Mode</Link></li>
               <li><Link href="/tasks" className="hover:text-[var(--wb-fg)]">Unified Tasks (10 States)</Link></li>
             </ul>

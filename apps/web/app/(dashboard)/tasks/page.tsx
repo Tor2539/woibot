@@ -28,6 +28,8 @@ const TEN_STATUSES = [
   "cancelled",
 ] as const;
 
+const RUNNABLE_STATUSES = ["queued", "failed", "partially_completed", "paused", "waiting_for_user"] as const;
+
 export default function UnifiedTasksPage() {
   const router = useRouter();
   const [tasks, setTasks] = useState<any[]>([]);
@@ -84,6 +86,11 @@ export default function UnifiedTasksPage() {
       setBusyId(null);
       loadTasks();
     }
+  };
+
+  const fmtEstimate = (t: any) => {
+    const est = t?.estimate;
+    return est?.cost != null ? `$${Number(est.cost).toFixed(2)}` : "—";
   };
 
   const filtered = tasks.filter((t) => {
@@ -177,6 +184,21 @@ export default function UnifiedTasksPage() {
       </div>
 
       {/* Responsive Table (Desktop) + Stacked Cards (Mobile <768px) */}
+      {filtered.length === 0 ? (
+        <div
+          className="rounded-[12px] px-4 py-8 text-center space-y-1.5"
+          style={{ backgroundColor: "var(--wb-raised)", border: "1px dashed var(--wb-line-strong)" }}
+        >
+          <div className="text-[13px] font-semibold">
+            {tasks.length === 0 ? "ยังไม่มีงานในศูนย์งานรวม" : "ไม่พบงานที่ตรงกับตัวกรองที่เลือก"}
+          </div>
+          <div className="text-[11.5px] text-[var(--wb-muted)]">
+            {tasks.length === 0
+              ? "สั่งงานผ่าน Teammate หรือกด New Work Project ด้านบนเพื่อเริ่มงานแรก — สถานะจะแสดงจากระบบจริงทั้ง 10 สถานะ"
+              : "ลองเลือกสถานะหรือผลิตภัณฑ์ (All / Teammate / Work) ใหม่"}
+          </div>
+        </div>
+      ) : (
       <div
         className="overflow-hidden rounded-[12px]"
         style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
@@ -198,7 +220,6 @@ export default function UnifiedTasksPage() {
             </thead>
             <tbody className="divide-y divide-[var(--wb-line)] text-[12.5px]">
               {filtered.map((t) => {
-                const est = t.estimate || {};
                 return (
                   <tr key={t.id} className="hover:bg-[var(--wb-hover)] transition-colors">
                     <td className="py-3 px-4 max-w-[360px]">
@@ -230,14 +251,14 @@ export default function UnifiedTasksPage() {
                         }`}
                       >
                         <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                        {t.status.replace(/_/g, " ")} ({t.progress ?? 100}%)
+                        {t.status.replace(/_/g, " ")} ({t.progress ?? 0}%)
                       </span>
                     </td>
                     <td className="py-3 px-3 font-mono text-[11.5px] text-[var(--wb-muted)] whitespace-nowrap">
                       {t.traceId}
                     </td>
                     <td className="py-3 px-3 text-right font-mono tabular-nums whitespace-nowrap">
-                      {t.product === "work" ? `$${(est.actualCost ?? est.estimatedCost ?? 2.4).toFixed(2)}` : "Included"}
+                      {t.product === "work" ? fmtEstimate(t) : "Included"}
                     </td>
                     <td className="py-3 px-4 text-right whitespace-nowrap space-x-1.5">
                       {t.status === "waiting_for_user" && (
@@ -290,31 +311,53 @@ export default function UnifiedTasksPage() {
         {/* Mobile Key/Value Cards (<768px) */}
         <div className="md:hidden divide-y divide-[var(--wb-line)]">
           {filtered.map((t) => {
-            const est = t.estimate || {};
             return (
               <div key={t.id} className="p-3.5 space-y-2">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="font-semibold text-[13px]">{t.title}</div>
-                  <span className="font-mono text-[11.5px] text-[#7cb0ff] tabular-nums">
-                    {t.product === "work" ? `$${(est.actualCost ?? est.estimatedCost ?? 2.4).toFixed(2)}` : "Included"}
+                  <div className="font-semibold text-[13px] min-w-0">{t.title}</div>
+                  <span className="shrink-0 font-mono text-[11.5px] text-[#7cb0ff] tabular-nums">
+                    {t.product === "work" ? fmtEstimate(t) : "Included"}
                   </span>
                 </div>
                 <div className="text-[11.5px] text-[var(--wb-muted)]">{t.goal}</div>
                 <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
-                  <span className="font-mono text-[var(--wb-muted)]">{t.traceId}</span>
-                  <span className="capitalize text-emerald-400">{t.status.replace(/_/g, " ")}</span>
+                  <span className="font-mono text-[var(--wb-muted)] break-all">{t.traceId}</span>
+                  <span
+                    className={`capitalize ${
+                      t.status === "completed" || t.status === "partially_completed"
+                        ? "text-emerald-400"
+                        : t.status === "failed" || t.status === "cancelled"
+                        ? "text-red-400"
+                        : t.status === "waiting_for_user" || t.status === "paused"
+                        ? "text-amber-400"
+                        : "text-[var(--wb-fg-soft)]"
+                    }`}
+                  >
+                    {t.status.replace(/_/g, " ")}
+                  </span>
                 </div>
                 <div className="flex flex-col gap-2 pt-1 sm:flex-row">
                   {t.status === "waiting_for_user" && (
                     <button
                       type="button"
+                      disabled={busyId === t.id}
                       onClick={async () => {
                         await handleTransition(t.id, "queued", true);
                         await handleRun(t.id);
                       }}
-                      className="min-h-[40px] flex-1 rounded-[6px] bg-amber-500 py-2 text-[11.5px] font-semibold text-black"
+                      className="min-h-[40px] flex-1 rounded-[6px] bg-amber-500 py-2 text-[11.5px] font-semibold text-black disabled:opacity-50"
                     >
                       Approve
+                    </button>
+                  )}
+                  {RUNNABLE_STATUSES.includes(t.status as (typeof RUNNABLE_STATUSES)[number]) && (
+                    <button
+                      type="button"
+                      disabled={busyId === t.id}
+                      onClick={() => handleRun(t.id)}
+                      className="min-h-[40px] flex-1 rounded-[6px] bg-emerald-600 py-2 text-[11.5px] font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
+                    >
+                      {busyId === t.id ? "Running…" : "Run"}
                     </button>
                   )}
                   <button
@@ -330,6 +373,7 @@ export default function UnifiedTasksPage() {
           })}
         </div>
       </div>
+      )}
 
       {/* Handoff Packet Drawer Modal */}
       {selectedTask && (

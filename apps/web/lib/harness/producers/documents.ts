@@ -23,7 +23,50 @@ import { callWoibotLLM } from "../../llm";
 /** Anything smaller than this is a broken artefact, not a deliverable. */
 const MIN_BYTES = 1000;
 
-const LO = "HOME=/tmp soffice -env:UserInstallation=file:///tmp/lo --headless";
+/**
+ * LibreOffice headless command. The profile dir MUST be unique per call:
+ * every invocation used to share ONE profile (file:///tmp/lo), so when two
+ * tasks converted at the same time the second soffice silently lost the
+ * profile lock and exited without producing anything — the only log line was
+ * "Warning: failed to launch javaldx", and a perfectly good task failed at
+ * DOCX→PDF. A fresh profile per call makes concurrent conversions independent.
+ */
+function soffice(): string {
+  const profile = `file:///tmp/lo-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  return `HOME=/tmp soffice -env:UserInstallation=${profile} --headless`;
+}
+
+/**
+ * Convert a workspace file to `target` (docx|pdf) and verify the output file
+ * really appeared with at least `minBytes` bytes. A conversion that produced
+ * nothing (transient boot race, soffice crash) is retried with a fresh
+ * profile; after the last attempt the failure is loud and carries both output
+ * streams. No fake success: callers never get an ok without a real file.
+ */
+async function convertLO(
+  userId: string,
+  src: string,
+  outName: string,
+  target: "docx" | "pdf",
+  minBytes: number,
+  what: string,
+  attempts = 3,
+): Promise<number> {
+  let log = "";
+  for (let i = 1; i <= attempts; i++) {
+    const r = await execInContainer(
+      userId,
+      `cd ${WORK_DIR} && ${soffice()} --convert-to ${target} --outdir . ${shellQuote(src)} 2>&1 | tail -3`,
+    );
+    log = [r.stdout, r.stderr].filter((x) => x && x.trim()).join(" | ").trim();
+    const size = await statSize(userId, outName);
+    if (size >= minBytes) return size;
+    if (i < attempts) await new Promise((res) => setTimeout(res, 4000));
+  }
+  throw new Error(
+    `${what} ล้มเหลว (ไม่พบ ${outName} ที่ใช้ได้หลังลอง ${attempts} ครั้ง): ${log.slice(0, 300) || "ไม่มี output จาก LibreOffice"}`,
+  );
+}
 
 export type ProducerResult = AgentResult;
 
@@ -65,6 +108,35 @@ function unfence(text: string) {
     .replace(/^```[a-zA-Z]*\s*/m, "")
     .replace(/```\s*$/m, "")
     .trim();
+}
+
+/**
+ * File stem for this task's deliverables. The shared slugFor() in agent.ts
+ * keeps only ASCII characters, so a Thai title like
+ * "สร้างเอกสารรายงานแผนการตลาดไตรมาส 4 ให้หน่อย" degraded to "4.docx" —
+ * meaningless on disk and collidable: every Thai doc task whose title keeps
+ * the same lone digit writes the SAME file names into the same workspace and
+ * can clobber a concurrently running task's artefacts. Producers own their
+ * file names: a readable latin stem when the brief carries real words, a
+ * kind-based fallback otherwise, plus a short hash of the task id so two
+ * tasks can never overwrite each other's files.
+ */
+function deliverableSlug(ctx: AgentContext, fallback: string): string {
+  const words = [...new Set(
+    `${ctx.title} ${ctx.goal}`
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean),
+  )];
+  const stem = words.join("").length >= 4 ? words.slice(0, 6).join("-").slice(0, 48) : fallback;
+  const hash = Math.abs(
+    [...(ctx.taskId || "tsk")].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) | 0, 7),
+  )
+    .toString(36)
+    .slice(0, 6);
+  return `${stem}-${hash}`;
 }
 
 /* --------------------------------------------------------------- documents */
@@ -1153,14 +1225,15 @@ async function hasWordDocumentXml(userId: string, slug: string): Promise<boolean
   return r.exitCode === 0 && Number(r.stdout.trim()) >= 1;
 }
 
-export async function produceDocxAndPdf(ctx: AgentContext, slug: string): Promise<ProducerResult> {
+export async function produceDocxAndPdf(ctx: AgentContext, _slug: string): Promise<ProducerResult> {
   const notes: string[] = [];
+  const base = deliverableSlug(ctx, "report");
 
   /* (a) outline */
   await ctx.onProgress?.(8, "outline", "ให้ AI ออกแบบโครงเอกสาร (8-14 หัวข้อ)");
   const outline = await fetchOutline(ctx);
   must(
-    await writeWorkspaceFile(ctx.userId, `${slug}.outline.json`, JSON.stringify(outline, null, 2)),
+    await writeWorkspaceFile(ctx.userId, `${base}.outline.json`, JSON.stringify(outline, null, 2)),
     "เขียนไฟล์โครงเอกสาร",
   );
   notes.push(`outline: ${outline.sections.length} sections, ${outline.language}`);
@@ -1184,39 +1257,44 @@ export async function produceDocxAndPdf(ctx: AgentContext, slug: string): Promis
   const words = countDocWords(frags.join("\n"));
   notes.push(`${outline.sections.length} sections, ~${words} words`);
 
-  // remove any stale artefacts from an earlier run with the same slug, so a
+  // remove any stale artefacts from an earlier run of the SAME task, so a
   // failed conversion can never be masked by an old file
   await execInContainer(
     ctx.userId,
-    `rm -f ${shellQuote(`${WORK_DIR}/${slug}.docx`)} ${shellQuote(`${WORK_DIR}/${slug}.pdf`)}`,
+    `rm -f ${shellQuote(`${WORK_DIR}/${base}.docx`)} ${shellQuote(`${WORK_DIR}/${base}.pdf`)}`,
   );
 
   /* (c) premium HTML (also a deliverable) */
   await ctx.onProgress?.(58, "layout", "ประกอบเอกสารสำหรับสิ่งพิมพ์ (ปก + สารบัญ + เนื้อหา)");
   const html = assembleDocumentHtml(outline, frags);
-  must(await writeWorkspaceFile(ctx.userId, `${slug}.html`, html), "เขียนไฟล์ HTML");
-  notes.push(`${slug}.html ${html.length} chars`);
+  must(await writeWorkspaceFile(ctx.userId, `${base}.html`, html), "เขียนไฟล์ HTML");
+  notes.push(`${base}.html ${html.length} chars`);
 
-  /* (d) HTML -> DOCX with LibreOffice, python3 fallback when the filter is missing */
+  /* (d) HTML -> DOCX with LibreOffice, python3 fallback when the filter is
+       missing. A single attempt here: when the export filter is missing the
+       failure is deterministic (retrying cannot help), and when it is a
+       transient race the python builder below produces the same document. */
   await ctx.onProgress?.(64, "docx", "แปลง HTML → DOCX ด้วย LibreOffice");
   let docxVia = "LibreOffice HTML→DOCX";
-  const convDocx = await execInContainer(
-    ctx.userId,
-    `cd ${WORK_DIR} && ${LO} --convert-to docx --outdir . ${shellQuote(`${slug}.html`)} 2>&1 | tail -3`,
-  );
-  const docxSize = await statSize(ctx.userId, `${slug}.docx`);
-  if (docxSize < 2000 || !(await hasWordDocumentXml(ctx.userId, slug))) {
+  let loDocxLog = "";
+  let loDocxBytes = -1;
+  try {
+    loDocxBytes = await convertLO(ctx.userId, `${base}.html`, `${base}.docx`, "docx", 2000, "แปลง HTML → DOCX", 1);
+  } catch (e) {
+    loDocxLog = e instanceof Error ? e.message : String(e);
+  }
+  if (loDocxBytes < 2000 || !(await hasWordDocumentXml(ctx.userId, base))) {
     docxVia = "python3 OOXML (LibreOffice HTML→DOCX filter unavailable)";
     must(await writeWorkspaceFile(ctx.userId, "_mkdocx.py", DOCX_FROM_HTML), "เขียนสคริปต์ docx (ตัวสำรอง)");
     const build = await runScript(
       ctx.userId,
-      `cd ${WORK_DIR} && python3 _mkdocx.py ${shellQuote(`${slug}.html`)} ${shellQuote(`${slug}.docx`)} ${shellQuote(
+      `cd ${WORK_DIR} && python3 _mkdocx.py ${shellQuote(`${base}.html`)} ${shellQuote(`${base}.docx`)} ${shellQuote(
         JSON.stringify({ title: outline.title, lang: outline.language }),
       )} 2>&1`,
     );
     if (build.exitCode !== 0) {
       throw new Error(
-        `สร้าง .docx ไม่สำเร็จ (LibreOffice: ${(convDocx.stdout || convDocx.stderr || "-").slice(0, 160)} | ตัวสำรอง: ${(
+        `สร้าง .docx ไม่สำเร็จ (LibreOffice: ${loDocxLog.slice(0, 160) || "-"} | ตัวสำรอง: ${(
           build.stderr || build.stdout
         ).slice(0, 240)})`,
       );
@@ -1226,7 +1304,7 @@ export async function produceDocxAndPdf(ctx: AgentContext, slug: string): Promis
 
   // footer page numbers (no-op when the document already carries a footer)
   must(await writeWorkspaceFile(ctx.userId, "_docx_footer.py", DOCX_FOOTER), "เขียนสคริปต์เลขหน้า");
-  const foot = await runScript(ctx.userId, `cd ${WORK_DIR} && python3 _docx_footer.py ${shellQuote(`${slug}.docx`)} 2>&1`);
+  const foot = await runScript(ctx.userId, `cd ${WORK_DIR} && python3 _docx_footer.py ${shellQuote(`${base}.docx`)} 2>&1`);
   if (foot.exitCode === 0) {
     notes.push(foot.stdout.trim().split("\n").pop() || "");
   } else {
@@ -1235,29 +1313,23 @@ export async function produceDocxAndPdf(ctx: AgentContext, slug: string): Promis
 
   const listing = await execInContainer(
     ctx.userId,
-    `cd ${WORK_DIR} && unzip -l ${shellQuote(`${slug}.docx`)} 2>&1 | grep -c 'word/document.xml'`,
+    `cd ${WORK_DIR} && unzip -l ${shellQuote(`${base}.docx`)} 2>&1 | grep -c 'word/document.xml'`,
   );
   if (listing.exitCode !== 0 || Number(listing.stdout.trim()) < 1) {
     throw new Error(`ไฟล์ .docx ไม่ใช่แพ็กเกจ OOXML ที่ถูกต้อง (ไม่พบ word/document.xml): ${listing.stdout.slice(0, 200)}`);
   }
-  const docxBytes = await requireFile(ctx.userId, `${slug}.docx`, "สร้างเอกสาร DOCX", 2000);
-  notes.push(`${slug}.docx ${docxBytes} bytes via ${docxVia}`);
+  const docxBytes = await requireFile(ctx.userId, `${base}.docx`, "สร้างเอกสาร DOCX", 2000);
+  notes.push(`${base}.docx ${docxBytes} bytes via ${docxVia}`);
 
-  /* (e) DOCX -> PDF with LibreOffice */
+  /* (e) DOCX -> PDF with LibreOffice — no fallback exists for this step, so a
+       conversion that produced nothing is retried with a fresh profile before
+       the task is allowed to fail */
   await ctx.onProgress?.(80, "pdf", "แปลง DOCX → PDF ด้วย LibreOffice");
-  const convPdf = await execInContainer(
-    ctx.userId,
-    `cd ${WORK_DIR} && ${LO} --convert-to pdf --outdir . ${shellQuote(`${slug}.docx`)} 2>&1 | tail -3`,
-  );
-  const pdfBytes = await requireFile(ctx.userId, `${slug}.pdf`, "แปลง DOCX → PDF").catch((e) => {
-    throw new Error(
-      `แปลง DOCX → PDF ไม่ได้: ${(convPdf.stdout || convPdf.stderr || (e as Error).message).slice(0, 300)}`,
-    );
-  });
-  notes.push(`${slug}.pdf ${pdfBytes} bytes`);
+  const pdfBytes = await convertLO(ctx.userId, `${base}.docx`, `${base}.pdf`, "pdf", MIN_BYTES, "แปลง DOCX → PDF", 3);
+  notes.push(`${base}.pdf ${pdfBytes} bytes`);
 
   await ctx.onProgress?.(93, "verify", "ตรวจขนาดไฟล์จริงใน workspace");
-  return { ok: true, files: [`${slug}.docx`, `${slug}.pdf`, `${slug}.html`], notes };
+  return { ok: true, files: [`${base}.docx`, `${base}.pdf`, `${base}.html`], notes };
 }
 
 /* ------------------------------------------------------------ spreadsheets */
@@ -1307,20 +1379,27 @@ async function fetchTableSpec(
       (opts.minCols ? `\n- Use at least ${opts.minCols} base columns.` : "") +
       (opts.minFormula ? `\n- Include at least ${opts.minFormula} formula_columns.` : ""),
     user: `Build a spreadsheet for: ${ctx.goal}\nTitle: ${ctx.title}`,
-    maxTokens: 5000,
+    maxTokens: 6000,
   });
 
+  // A spec is only usable when it actually carries enough data rows: a reply
+  // truncated by the reasoning budget can still parse into a JSON object with
+  // 2-3 rows, and that must go through the retries instead of failing later.
+  const minRowsNeeded = Math.min(8, minRows);
+  const usableSpec = (s: TableSpec | null): s is TableSpec =>
+    !!s && Array.isArray(s.rows) && s.rows.filter((r) => Array.isArray(r)).length >= minRowsNeeded;
+
   let spec = extractJson<TableSpec>(draft.text);
-  if (!spec) {
+  if (!usableSpec(spec)) {
     const retry = await callWoibotLLM({
       system: "You generate spreadsheet specs. Reply with a single JSON object only — no prose, no markdown, starting with {.",
       user: `Build a spreadsheet for: ${ctx.goal}\nTitle: ${ctx.title}\nKeep it compact: at most ${Math.min(minRows, 15)} data rows.`,
-      maxTokens: 5000,
+      maxTokens: 6000,
       temperature: 0.2,
     });
     spec = extractJson<TableSpec>(retry.text);
   }
-  if (!spec) {
+  if (!usableSpec(spec)) {
     // Last resort: ask for a small table — short replies never hit the output
     // budget, so this succeeds even when bigger attempts were truncated.
     const small = await callWoibotLLM({
@@ -1343,8 +1422,8 @@ async function fetchTableSpec(
   const rows = (Array.isArray(spec.rows) ? spec.rows : [])
     .filter((r): r is (string | number | null)[] => Array.isArray(r))
     .slice(0, 40);
-  if (rows.length < Math.min(8, minRows)) {
-    throw new Error(`AI ให้ข้อมูลเพียง ${rows.length} แถว (ต้องการอย่างน้อย ${Math.min(8, minRows)}) — ไม่พอทำสเปรดชีตจริง`);
+  if (rows.length < minRowsNeeded) {
+    throw new Error(`AI ให้ข้อมูลเพียง ${rows.length} แถว (ต้องการอย่างน้อย ${minRowsNeeded}) — ไม่พอทำสเปรดชีตจริง`);
   }
 
   const formulaColumns = (Array.isArray(spec.formula_columns) ? spec.formula_columns : [])
@@ -1711,20 +1790,21 @@ print(json.dumps({"rows": len(out_rows), "cols": width}))
  * Real .xlsx: styled header, frozen panes, autofilter, real formulas,
  * computed TOTAL row, tuned column widths and a formula-driven Summary sheet.
  */
-export async function produceSpreadsheet(ctx: AgentContext, slug: string): Promise<ProducerResult> {
+export async function produceSpreadsheet(ctx: AgentContext, _slug: string): Promise<ProducerResult> {
   const notes: string[] = [];
+  const base = deliverableSlug(ctx, "spreadsheet");
 
   await ctx.onProgress?.(20, "spec", "ให้ AI ออกแบบโครงสร้างตารางและสูตร");
   const spec = await fetchTableSpec(ctx, 18);
   notes.push(`${spec.columns.length} cols × ${spec.rows.length} rows, ${spec.formula_columns?.length || 0} formula columns`);
 
   await ctx.onProgress?.(45, "write", "เขียนสคริปต์ openpyxl และสร้างไฟล์ .xlsx จริง");
-  must(await writeWorkspaceFile(ctx.userId, `${slug}.spec.json`, JSON.stringify(spec, null, 2)), "เขียน spec");
+  must(await writeWorkspaceFile(ctx.userId, `${base}.spec.json`, JSON.stringify(spec, null, 2)), "เขียน spec");
   must(await writeWorkspaceFile(ctx.userId, "_build_xlsx.py", XLSX_BUILD), "เขียนสคริปต์ xlsx");
 
   const run = await runScript(
     ctx.userId,
-    `cd ${WORK_DIR} && python3 _build_xlsx.py ${shellQuote(`${slug}.spec.json`)} ${shellQuote(`${slug}.xlsx`)} 2>&1`,
+    `cd ${WORK_DIR} && python3 _build_xlsx.py ${shellQuote(`${base}.spec.json`)} ${shellQuote(`${base}.xlsx`)} 2>&1`,
   );
   if (run.exitCode !== 0) {
     throw new Error(`สร้าง .xlsx ด้วย openpyxl ไม่สำเร็จ: ${(run.stderr || run.stdout).slice(0, 300)}`);
@@ -1732,34 +1812,35 @@ export async function produceSpreadsheet(ctx: AgentContext, slug: string): Promi
   notes.push(run.stdout.trim().split("\n").pop() || "");
 
   await ctx.onProgress?.(85, "verify", "ตรวจว่าไฟล์เปิดได้จริงและมีขนาดถูกต้อง");
-  const bytes = await requireFile(ctx.userId, `${slug}.xlsx`, "สร้างสเปรดชีต");
-  notes.push(`${slug}.xlsx ${bytes} bytes`);
+  const bytes = await requireFile(ctx.userId, `${base}.xlsx`, "สร้างสเปรดชีต");
+  notes.push(`${base}.xlsx ${bytes} bytes`);
 
-  return { ok: true, files: [`${slug}.xlsx`, `${slug}.spec.json`], notes };
+  return { ok: true, files: [`${base}.xlsx`, `${base}.spec.json`], notes };
 }
 
 /** Same tabular source, exported as UTF-8 (BOM) CSV with a computed TOTAL row. */
-export async function produceCsv(ctx: AgentContext, slug: string): Promise<ProducerResult> {
+export async function produceCsv(ctx: AgentContext, _slug: string): Promise<ProducerResult> {
   const notes: string[] = [];
+  const base = deliverableSlug(ctx, "data");
 
   await ctx.onProgress?.(20, "spec", "ให้ AI เตรียมข้อมูลตาราง");
   const spec = await fetchTableSpec(ctx, 24, { minCols: 6, minFormula: 2 });
 
   await ctx.onProgress?.(55, "write", "เขียนไฟล์ CSV ด้วย csv module");
-  must(await writeWorkspaceFile(ctx.userId, `${slug}.spec.json`, JSON.stringify(spec, null, 2)), "เขียน spec");
+  must(await writeWorkspaceFile(ctx.userId, `${base}.spec.json`, JSON.stringify(spec, null, 2)), "เขียน spec");
   must(await writeWorkspaceFile(ctx.userId, "_build_csv.py", CSV_BUILD), "เขียนสคริปต์ csv");
 
   const run = await runScript(
     ctx.userId,
-    `cd ${WORK_DIR} && python3 _build_csv.py ${shellQuote(`${slug}.spec.json`)} ${shellQuote(`${slug}.csv`)} 2>&1`,
+    `cd ${WORK_DIR} && python3 _build_csv.py ${shellQuote(`${base}.spec.json`)} ${shellQuote(`${base}.csv`)} 2>&1`,
   );
   if (run.exitCode !== 0) {
     throw new Error(`สร้างไฟล์ CSV ไม่สำเร็จ: ${(run.stderr || run.stdout).slice(0, 300)}`);
   }
   notes.push(run.stdout.trim().split("\n").pop() || "");
 
-  const bytes = await requireFile(ctx.userId, `${slug}.csv`, "สร้างไฟล์ CSV");
-  notes.push(`${slug}.csv ${bytes} bytes`);
+  const bytes = await requireFile(ctx.userId, `${base}.csv`, "สร้างไฟล์ CSV");
+  notes.push(`${base}.csv ${bytes} bytes`);
 
-  return { ok: true, files: [`${slug}.csv`], notes };
+  return { ok: true, files: [`${base}.csv`], notes };
 }

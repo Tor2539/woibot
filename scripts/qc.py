@@ -71,7 +71,7 @@ class Client:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default=os.environ.get("QC_BASE", "https://woibot.com"))
-    ap.add_argument("--only", default="", help="comma separated subset: doc,xlsx,csv,pdf,image,video,research,coding,chat,voice,team,computer,memory")
+    ap.add_argument("--only", default="", help="comma separated subset: doc,xlsx,csv,pdf,image,video,research,coding,chat,voice,team,computer,memory,router,race")
     args = ap.parse_args()
     only = {s.strip() for s in args.only.split(",") if s.strip()}
     c = Client(args.base)
@@ -100,23 +100,25 @@ def main():
             f"steps={len(steps)} summary={str((u or {}).get('summary'))[:80]}")
 
     kinds = []
-    if not only or "doc" in only: kinds.append(("doc", "QC — รายงานผู้บริหาร", "เขียนรายงานผู้บริหารฉบับเต็มสำหรับผู้บริหารระดับสูง มีตาราง KPI และแผนก้าวต่อไปที่ชัดเจน"))
-    if not only or "xlsx" in only: kinds.append(("data", "QC — ตาราง Excel ยอดขาย", "สร้างไฟล์ Excel (xlsx) สรุปยอดขายพร้อมสูตรและกราฟ"))
-    if not only or "csv" in only: kinds.append(("data", "QC — ไฟล์ CSV ลูกค้า", "สร้างไฟล์ csv รายชื่อลูกค้าพร้อมคอลัมน์พื้นฐาน"))
-    if not only or "research" in only: kinds.append(("research", "QC — วิเคราะห์ตลาด AI teammate", "เปรียบเทียบผู้เล่นหลักและอ้างอิงแหล่งข้อมูล"))
-    if not only or "video" in only: kinds.append(("video_analysis", "QC — วิเคราะห์คลิป", "ตรวจวิดีโอใน workspace และตัดไฮไลต์"))
-    if not only or "coding" in only: kinds.append(("coding", "QC — หน้า landing เล็ก", "สร้างหน้า HTML เดียวที่ใช้งานได้"))
+    # (workKind, label, title, goal) — xlsx and csv are both workKind "data",
+    # so results are keyed by a distinct label instead of colliding on "data".
+    if not only or "doc" in only: kinds.append(("doc", "doc", "QC — รายงานผู้บริหาร", "เขียนรายงานผู้บริหารฉบับเต็มสำหรับผู้บริหารระดับสูง มีตาราง KPI และแผนก้าวต่อไปที่ชัดเจน"))
+    if not only or "xlsx" in only: kinds.append(("data", "xlsx", "QC — ตาราง Excel ยอดขาย", "สร้างไฟล์ Excel (xlsx) สรุปยอดขายพร้อมสูตรและกราฟ"))
+    if not only or "csv" in only: kinds.append(("data", "csv", "QC — ไฟล์ CSV ลูกค้า", "สร้างไฟล์ csv รายชื่อลูกค้าพร้อมคอลัมน์พื้นฐาน"))
+    if not only or "research" in only: kinds.append(("research", "research", "QC — วิเคราะห์ตลาด AI teammate", "เปรียบเทียบผู้เล่นหลักและอ้างอิงแหล่งข้อมูล"))
+    if not only or "video" in only: kinds.append(("video_analysis", "video", "QC — วิเคราะห์คลิป", "ตรวจวิดีโอใน workspace และตัดไฮไลต์"))
+    if not only or "coding" in only: kinds.append(("coding", "coding", "QC — หน้า landing เล็ก", "สร้างหน้า HTML เดียวที่ใช้งานได้"))
 
     task_ids = {}
-    for kind, title, goal in kinds:
+    for kind, label, title, goal in kinds:
         st, res, _ = c.call("/api/tasks", {"title": title, "product": "work", "workKind": kind, "goal": goal})
         data = (res or {}).get("data") or res or {}
         tid = data.get("id") or (data.get("task") or {}).get("id")
         if st >= 300 or not tid:
-            rec(f"task.create.{kind}", False, res)
+            rec(f"task.create.{label}", False, res)
             continue
-        task_ids[kind] = tid
-        rec(f"task.create.{kind}", True, tid)
+        task_ids[label] = tid
+        rec(f"task.create.{label}", True, tid)
 
         # the doc pipeline runs 10+ sequential LLM calls, give it room
         run_timeout = 900 if kind == "doc" else 300
@@ -125,13 +127,13 @@ def main():
         task = (fresh or {}).get("data") or (fresh or {}).get("task") or (run or {}).get("task") or {}
         ver = (run or {}).get("verification") or {}
         files = [d.get("fileName") for d in task.get("deliverables", [])]
-        rec(f"task.run.{kind}", task.get("status") == "completed", f"status={task.get('status')} err={(run or {}).get('error')}")
-        rec(f"task.files.{kind}", len(files) > 0, files)
-        rec(f"task.verify.{kind}", ver.get("mode") == "live" and bool(ver.get("passed")), ver.get("summary"))
+        rec(f"task.run.{label}", task.get("status") == "completed", f"status={task.get('status')} err={(run or {}).get('error')}")
+        rec(f"task.files.{label}", len(files) > 0, files)
+        rec(f"task.verify.{label}", ver.get("mode") == "live" and bool(ver.get("passed")), ver.get("summary"))
 
         if files:
             st, blob, headers = c.call(f"/api/tasks/{tid}/deliverable?path={urllib.parse.quote(files[0])}", raw=True)
-            rec(f"task.download.{kind}", st == 200 and len(blob) > 80, f"{len(blob)} bytes {headers.get('Content-Type')}")
+            rec(f"task.download.{label}", st == 200 and len(blob) > 80, f"{len(blob)} bytes {headers.get('Content-Type')}")
 
         # document quality gate: the doc pipeline must produce a LONG report
         # (cover + TOC + 8-14 page-broken sections >= 7 pages; 8-14 sections
@@ -249,6 +251,43 @@ def main():
                             created[kind] = t.get("status")
             time.sleep(4)
         rec("router.tasks.created", len(created) == 3, json.dumps(created))
+
+    if "race" in only:
+        # Regression gate (opt-in only): two document tasks converting at the
+        # SAME time used to share one LibreOffice profile dir; the loser lost
+        # the profile lock, exited without producing a file ("Warning: failed
+        # to launch javaldx" was the only error) and a perfectly good task
+        # failed at DOCX->PDF. Producers now use a fresh profile per call, so
+        # run both tasks in parallel and require BOTH to complete with live
+        # verification.
+        from concurrent.futures import ThreadPoolExecutor
+
+        def run_doc_task(i):
+            try:
+                cc = Client(args.base)
+                st, body, _ = cc.call("/api/auth/login", {"email": EMAIL, "password": PASSWORD})
+                if st != 200:
+                    st, body, _ = cc.call("/api/auth/signup", {"email": EMAIL, "password": PASSWORD, "name": "QC"})
+                    if st != 200:
+                        return i, None, {"status": f"login_failed:{st}"}, {}
+                st, res, _ = cc.call("/api/tasks", {"title": f"QC — race doc {i}", "product": "work",
+                                                    "workKind": "doc",
+                                                    "goal": "สร้างเอกสารรายงานทดสอบการทำงานขนานสองชุดพร้อมกัน"})
+                data = (res or {}).get("data") or res or {}
+                tid = data.get("id") or (data.get("task") or {}).get("id")
+                if st >= 300 or not tid:
+                    return i, None, {"status": f"create_failed:{st}"}, {}
+                st, run, _ = cc.call(f"/api/tasks/{tid}/run", {}, timeout=900)
+                task = (run or {}).get("task") or {}
+                ver = (run or {}).get("verification") or {}
+                return i, tid, task, ver
+            except Exception as e:  # noqa: BLE001 — a thread must never crash the gate
+                return i, None, {"status": f"error:{e}"}, {}
+
+        with ThreadPoolExecutor(max_workers=2) as ex:
+            for i, tid, task, ver in ex.map(run_doc_task, (1, 2)):
+                ok = task.get("status") == "completed" and ver.get("mode") == "live" and bool(ver.get("passed"))
+                rec(f"race.doc.{i}", ok, f"task={tid} status={task.get('status')} verify={ver.get('mode')}/{ver.get('passed')}")
 
     ok = sum(1 for _, o, _ in results if o)
     total = len(results)

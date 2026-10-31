@@ -8,13 +8,9 @@ import {
   Layers,
   Cloud,
   Laptop,
-  Play,
-  Pause,
   CheckCircle2,
-  Clock,
   AlertTriangle,
   Download,
-  ArrowUpRight,
   Plus,
   Terminal,
   FileCode2,
@@ -22,7 +18,6 @@ import {
   ShieldCheck,
   XCircle,
   Sparkles,
-  SlidersHorizontal,
   Maximize2,
   Minimize2,
   FileText,
@@ -31,65 +26,11 @@ import {
   BarChart3,
   Box,
   Share2,
-  Check,
   RefreshCw,
 } from "lucide-react";
 
 type WorkArea = "code" | "video" | "artifacts";
 type ArtifactCategory = "all" | "shared" | "docs" | "slides" | "design" | "dashboard" | "3d";
-
-const CODE_DIFF_FILES = [
-  {
-    path: "apps/crm/app/pipeline/page.tsx",
-    additions: 84,
-    deletions: 6,
-    diff: `@@ -1,12 +1,42 @@
-+"use client";
-+import React, { useState } from "react";
-+import { DealKanbanBoard } from "@/components/DealKanbanBoard";
-+import { RevenueForecastChart } from "@/components/RevenueForecastChart";
-+
- export default function SalesPipelinePage() {
-+  const [quarter, setQuarter] = useState<"Q3" | "Q4">("Q4");
-   return (
--    <div>Pipeline placeholder</div>
-+    <div className="min-h-screen bg-[#0e0e10] text-[#ececee] p-6 space-y-6">
-+      <header className="flex items-center justify-between border-b border-[#25262c] pb-4">
-+        <h1 className="text-lg font-semibold">Enterprise Sales Pipeline ({quarter})</h1>
-+        <span className="font-mono text-sm text-emerald-400 tabular-nums">฿14,820,000 ARR</span>
-+      </header>
-+      <RevenueForecastChart quarter={quarter} />
-+      <DealKanbanBoard quarter={quarter} />
-+    </div>
-   );
- }`,
-  },
-  {
-    path: "apps/crm/lib/verification/crm.spec.ts",
-    additions: 48,
-    deletions: 0,
-    diff: `@@ -0,0 +1,24 @@
-+import { test, expect } from "@playwright/test";
-+
-+test("Sales CRM end-to-end journey: login -> pipeline -> create deal -> export CSV", async ({ page }) => {
-+  await page.goto("http://localhost:3000/pipeline");
-+  await expect(page.locator("h1")).toContainText("Enterprise Sales Pipeline");
-+  await page.click("button:has-text('+ New Deal')");
-+  await page.fill("input[name='company']", "ACME Corporation");
-+  await page.fill("input[name='value']", "1250000");
-+  await page.click("button:has-text('Save Deal')");
-+  await expect(page.locator("text=ACME Corporation")).toBeVisible();
-+});`,
-  },
-];
-
-const VIDEO_SCENES = [
-  { id: "s1", shot: "01", time: "00:00 – 00:05", title: "Hook: The Overwhelmed Executive Desk", camera: "35mm Dolly In · Dark Studio", subTh: "ทำไมต้องสลับหลายแอป เมื่อคุณมีทีม AI ส่วนตัวที่ลงมือทำจนจบ?", subEn: "Why juggle 10 tools when your Personal AI Team actually finishes the job?" },
-  { id: "s2", shot: "02", time: "00:05 – 00:11", title: "Teammate 08:00 Cloud Computer Briefing", camera: "Macro UI Capture · 60fps", subTh: "Teammate ดูแลอีเมล ตารางประชุม และงานประจำตลอด 24 ชั่วโมงบนคลาวด์", subEn: "Teammate handles VIP inbox, calendar & routines 24/7 on its own Cloud Computer." },
-  { id: "s3", shot: "03", time: "00:11 – 00:18", title: "Seamless Handoff Packet → Work Studio", camera: "Split Screen Transition", subTh: "งานหนักส่งต่อให้ Work ทันทีโดยไม่ต้องก๊อปปี้บริบท พร้อมใบประเมินงบโปร่งใส", subEn: "Heavy work hands off to Work with zero copy-paste and transparent cost gates." },
-  { id: "s4", shot: "04", time: "00:18 – 00:25", title: "Verified Deliverables: Code, Docs, Video & 3D", camera: "Dynamic Grid Zoom", subTh: "ทุกผลงานผ่านระบบตรวจสอบคุณภาพ เปิดใช้และแก้ไขต่อได้จริง", subEn: "Every deliverable passes automated verification — openable and editable." },
-  { id: "s5", shot: "05", time: "00:25 – 00:30", title: "Outro Lockup: woibot.com", camera: "Center Hero Lockup", subTh: "woibot.com — สั่งงานกับ Teammate ให้ Work ลุยงานหนักแทนคุณ", subEn: "woibot.com — Talk to your Teammate. Let Work handle the heavy lifting." },
-];
 
 function WorkStudioInner() {
   const router = useRouter();
@@ -99,9 +40,11 @@ function WorkStudioInner() {
   const [area, setArea] = useState<WorkArea>(areaParam);
   const [execMode, setExecMode] = useState<"cloud" | "local">("cloud");
   const [tasks, setTasks] = useState<any[]>([]);
-  const [selectedTaskId, setSelectedTaskId] = useState<string>("tsk_crm_code");
-  const [codeRightTab, setCodeRightTab] = useState<"preview" | "diff" | "terminal" | "verify">("preview");
-  const [selectedDiffIdx, setSelectedDiffIdx] = useState(0);
+  const [selectedTaskId, setSelectedTaskId] = useState<string>("");
+  const [codeRightTab, setCodeRightTab] = useState<"preview" | "terminal" | "verify">("preview");
+
+  // Live Work Ledger (real spend/caps from /api/usage — cost isolation)
+  const [usage, setUsage] = useState<any | null>(null);
 
   // New Work Job Builder + Estimate Gate
   const [newGoal, setNewGoal] = useState("");
@@ -110,11 +53,11 @@ function WorkStudioInner() {
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
   const [runNotice, setRunNotice] = useState<string>("");
 
-  // Video Studio state
-  const [videoRatio, setVideoRatio] = useState<"16:9" | "9:16" | "1:1">("16:9");
-  const [activeSceneIdx, setActiveSceneIdx] = useState(0);
-  const [videoPlaying, setVideoPlaying] = useState(false);
-  const [scenes, setScenes] = useState(VIDEO_SCENES);
+  // Video Work state (real video_analysis / video_gen tasks — no fake storyboard)
+  const [videoKind, setVideoKind] = useState<"video_analysis" | "video_gen">("video_analysis");
+  const [videoGoal, setVideoGoal] = useState("");
+  const [videoBusy, setVideoBusy] = useState(false);
+  const [videoError, setVideoError] = useState("");
 
   // Artifacts Studio state (Claude Desktop Artifacts Gallery + Designer Mode)
   const [artifacts, setArtifacts] = useState<any[]>([]);
@@ -173,6 +116,13 @@ function WorkStudioInner() {
   useEffect(() => {
     loadArtifacts();
   }, [artCategory, artOrigin]);
+
+  useEffect(() => {
+    fetch("/api/usage")
+      .then((r) => r.json())
+      .then((res) => setUsage(res?.data || res))
+      .catch(() => {});
+  }, []);
 
   const switchArea = (next: WorkArea) => {
     setArea(next);
@@ -289,7 +239,46 @@ function WorkStudioInner() {
   };
 
   const activeTask = tasks.find((t) => t.id === selectedTaskId) || tasks[0];
-  const currentScene = scenes[activeSceneIdx] || scenes[0];
+  const videoTasks = tasks.filter((t) => t.workKind === "video_analysis" || t.workKind === "video_gen");
+
+  const fmtUsd = (v: unknown) => (typeof v === "number" ? `$${v.toFixed(2)}` : "—");
+  const workUsed = usage?.work?.quota?.monthlyUsed;
+  const workMonthlyCap = usage?.guardrails?.monthlyCap;
+  const workPerTaskCap = usage?.guardrails?.perTaskCap;
+
+  const handleCreateVideoJob = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!videoGoal.trim() || videoBusy) return;
+    setVideoBusy(true);
+    setVideoError("");
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: videoGoal.trim().slice(0, 72),
+          goal: videoGoal.trim(),
+          product: "work",
+          workKind: videoKind,
+          executionMode: execMode,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || json?.ok === false) {
+        setVideoError(String(json?.error || `สร้างงานไม่สำเร็จ (${res.status})`));
+        return;
+      }
+      const created = json?.data?.id ? json.data : json?.task;
+      if (created) {
+        setTasks((prev) => [created, ...prev]);
+        setVideoGoal("");
+      }
+    } catch {
+      setVideoError("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ — ลองใหม่อีกครั้ง");
+    } finally {
+      setVideoBusy(false);
+    }
+  };
 
   return (
     <div className="flex min-h-[calc(100vh-48px)] lg:min-h-screen flex-col w-full">
@@ -360,7 +349,7 @@ function WorkStudioInner() {
             className="rounded-[7px] px-2.5 py-1 font-mono text-[11.5px]"
             style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
           >
-            Work Ledger: <strong className="text-[#7cb0ff]">$5.75</strong> / $50.00 cap
+            Work Ledger: <strong className="text-[#7cb0ff]">{usage ? fmtUsd(workUsed) : "…"}</strong> / {usage ? fmtUsd(workMonthlyCap) : "…"} cap
           </span>
         </div>
       </header>
@@ -398,7 +387,7 @@ function WorkStudioInner() {
                 <span className="rounded bg-[#2b66e0]/20 px-2 py-0.5 text-[#7cb0ff]">
                   Est. Cost: ~${estimatedCost.toFixed(2)}
                 </span>
-                <span className="text-[var(--wb-muted)]">Per-task cap: $5.00 ✓</span>
+                <span className="text-[var(--wb-muted)]">Per-task cap: {usage ? fmtUsd(workPerTaskCap) : "…"}</span>
               </div>
             </div>
 
@@ -443,7 +432,6 @@ function WorkStudioInner() {
               <div className="space-y-2">
                 {tasks.map((t) => {
                   const selected = activeTask?.id === t.id;
-                  const est = t.estimate || {};
                   const ver = t.verification;
                   return (
                     <div
@@ -473,8 +461,8 @@ function WorkStudioInner() {
                           </div>
                           <p className="mt-1 line-clamp-2 text-[11.5px] text-[var(--wb-muted)]">{t.goal}</p>
                         </div>
-                        <span className="shrink-0 font-mono text-[11.5px] font-semibold text-[#7cb0ff] tabular-nums">
-                          ${(est.actualCost ?? est.estimatedCost ?? 2.4).toFixed(2)}
+                        <span className="shrink-0 font-mono text-[11.5px] font-semibold text-[#7cb0ff] tabular-nums" title="Estimate (จากระบบ)">
+                          {t.estimate?.cost != null ? `$${Number(t.estimate.cost).toFixed(2)}` : "—"}
                         </span>
                       </div>
 
@@ -488,7 +476,7 @@ function WorkStudioInner() {
                           </span>
                         </div>
                         <span className="font-medium capitalize text-[var(--wb-fg-soft)]">
-                          {t.status.replace(/_/g, " ")} ({t.progress ?? 100}%)
+                          {t.status.replace(/_/g, " ")} ({t.progress ?? 0}%)
                         </span>
                       </div>
 
@@ -504,14 +492,18 @@ function WorkStudioInner() {
                           >
                             {verifyingId === t.id
                               ? "Executing & Running Verification..."
-                              : `Approve Estimate ($${est.estimatedCost ?? 1.15}) & Run Now`}
+                              : t.estimate?.cost != null
+                              ? `Approve Estimate ($${Number(t.estimate.cost).toFixed(2)}) & Run Now`
+                              : "Approve Estimate & Run Now"}
                           </button>
                         </div>
                       )}
 
                       {ver && ver.passed && (
                         <div className="flex items-center justify-between rounded-md bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-1 text-[11px] text-emerald-400">
-                          <span>✓ Verified ({ver.checks?.length || 5} checks passed)</span>
+                          <span>
+                            ✓ Verified{Array.isArray(ver.checks) && ver.checks.length > 0 ? ` (${ver.checks.length} checks passed)` : ""}
+                          </span>
                           <span className="font-mono">report.json</span>
                         </div>
                       )}
@@ -540,7 +532,7 @@ function WorkStudioInner() {
                       </span>
                     </div>
                     <div className="mt-0.5 text-[11.5px] text-[var(--wb-muted)] font-mono">
-                      Trace: {activeTask.traceId} · Mode: {activeTask.executionMode.toUpperCase()} · Deliverable Ready
+                      Trace: {activeTask.traceId} · Mode: {activeTask.executionMode.toUpperCase()} · Deliverables: {(((activeTask as any).deliverables as any[]) || []).length}
                     </div>
                   </div>
 
@@ -554,13 +546,6 @@ function WorkStudioInner() {
                       <RefreshCw className={`h-3.5 w-3.5 ${verifyingId === activeTask.id ? "animate-spin" : ""}`} />
                       <span>Re-Verify</span>
                     </button>
-                    <a
-                      href={`/api/artifacts?download=del_crm_zip`}
-                      className="min-h-[40px] sm:min-h-0 inline-flex items-center gap-1.5 rounded-[7px] bg-[#2b66e0] hover:bg-[#2458c6] px-3 py-1.5 text-[11.5px] font-medium text-white"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      <span>Download .ZIP</span>
-                    </a>
                   </div>
                 </div>
 
@@ -656,34 +641,6 @@ function WorkStudioInner() {
                           </a>
                         </div>
                       )}
-                    </div>
-                  )}
-
-                  {codeRightTab === "diff" && (
-                    <div className="space-y-3">
-                      <div className="flex flex-wrap gap-2">
-                        {CODE_DIFF_FILES.map((f, idx) => (
-                          <button
-                            key={f.path}
-                            type="button"
-                            onClick={() => setSelectedDiffIdx(idx)}
-                            className={`rounded-[7px] px-3 py-1.5 font-mono text-[11.5px] ${
-                              selectedDiffIdx === idx
-                                ? "bg-[#2b66e0] text-white"
-                                : "bg-[var(--wb-panel)] text-[var(--wb-muted)] border border-[var(--wb-line)]"
-                            }`}
-                          >
-                            {f.path} <span className="text-emerald-300">+{f.additions}</span>{" "}
-                            <span className="text-red-300">-{f.deletions}</span>
-                          </button>
-                        ))}
-                      </div>
-                      <pre
-                        className="overflow-x-auto rounded-[10px] p-4 font-mono text-[12px] leading-relaxed"
-                        style={{ backgroundColor: "#0a0b0e", border: "1px solid var(--wb-line)", color: "#d2d3d8" }}
-                      >
-                        {CODE_DIFF_FILES[selectedDiffIdx].diff}
-                      </pre>
                     </div>
                   )}
 
@@ -785,166 +742,186 @@ function WorkStudioInner() {
       )}
 
       {/* =====================================================================
-          AREA 2: WORK › VIDEO (Full Video Creation, Editing & Subtitle Studio)
+          AREA 2: WORK › VIDEO (real video_analysis / video_gen tasks on Cloud Computer)
          ===================================================================== */}
       {area === "video" && (
         <div className="flex-1 p-4 lg:p-5 space-y-4">
-          <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-            {/* Left: Video Stage + Aspect Ratio + Burned-in TH/EN Subtitle Preview */}
-            <div
-              className="rounded-[12px] p-4 space-y-3"
-              style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line-strong)" }}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <div className="text-[14px] font-semibold">
-                    30s Product Launch Promo — Multi-Scene Timeline & Bilingual Subs
-                  </div>
-                  <div className="text-[11.5px] text-[var(--wb-muted)]">
-                    FFmpeg/ffprobe จริงใน Cloud Computer · ตรวจสเปกไฟล์อัตโนมัติ
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  {(["16:9", "9:16", "1:1"] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setVideoRatio(r)}
-                      className={`rounded-[6px] px-2.5 py-1 font-mono text-[11.5px] ${
-                        videoRatio === r
-                          ? "bg-[#2b66e0] text-white"
-                          : "bg-[var(--wb-panel)] text-[var(--wb-muted)] border border-[var(--wb-line)]"
-                      }`}
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
+          {/* Create Video Work Job */}
+          <form
+            onSubmit={handleCreateVideoJob}
+            className="rounded-[12px] p-4 space-y-3"
+            style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line-strong)" }}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Clapperboard className="h-4 w-4 text-[#3b82f6]" />
+                <span className="text-[13.5px] font-semibold">
+                  สร้างงานวิดีโอใหม่ — ประมวลผลจริงด้วย FFmpeg/ffprobe บน Cloud Computer
+                </span>
               </div>
-
-              {/* Interactive Video Stage */}
-              <div
-                className="relative flex flex-col justify-between overflow-hidden rounded-[12px] p-6 min-h-[300px]"
-                style={{
-                  background: "radial-gradient(circle at 25% 20%, #1e3a8a 0%, #090a0f 70%)",
-                  border: "1px solid var(--wb-line-strong)",
-                }}
-              >
-                <div className="flex flex-wrap items-center justify-between gap-1.5 text-[11.5px] font-mono text-white/80">
-                  <span className="rounded bg-black/50 px-2.5 py-1">
-                    SHOT {currentScene.shot} · {currentScene.time} · {videoRatio}
-                  </span>
-                  <span className="rounded bg-emerald-500/20 border border-emerald-400/40 px-2.5 py-0.5 text-emerald-300">
-                    1080p 60fps · LUFS -14.1 dB
-                  </span>
-                </div>
-
-                <div className="my-6 text-center space-y-2">
-                  <div className="text-[12px] uppercase tracking-widest text-[#7cb0ff] font-semibold">
-                    {currentScene.camera}
-                  </div>
-                  <div className="text-[22px] sm:text-[26px] font-bold text-white tracking-tight">
-                    {currentScene.title}
-                  </div>
-                </div>
-
-                {/* Bilingual Subtitle Burn-in Box */}
-                <div className="mx-auto max-w-[600px] rounded-xl bg-black/75 backdrop-blur-md px-4 py-2.5 text-center space-y-1 border border-white/15">
-                  <div className="text-[14px] font-semibold text-white">{currentScene.subTh}</div>
-                  <div className="text-[12px] text-white/75">{currentScene.subEn}</div>
-                </div>
-              </div>
-
-              {/* Timeline Transport & Scene Strip */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setVideoPlaying((p) => !p)}
-                  className="min-h-[40px] sm:min-h-0 inline-flex items-center gap-1.5 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] px-4 py-2 text-[12.5px] font-semibold text-white"
-                >
-                  {videoPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  <span>{videoPlaying ? "Pause Preview" : "Play 30s Master"}</span>
-                </button>
-                <div className="flex flex-wrap items-center gap-2">
-                  <a
-                    href="/api/artifacts?download=del_vid_169"
-                    className="inline-flex items-center gap-1.5 rounded-[8px] px-3 py-2 text-[12px] font-medium hover:bg-[var(--wb-hover)]"
-                    style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    <span>Export MP4 ({videoRatio})</span>
-                  </a>
-                  <a
-                    href="/api/artifacts?download=del_vid_proj"
-                    className="inline-flex items-center gap-1.5 rounded-[8px] px-3 py-2 text-[12px] font-medium hover:bg-[var(--wb-hover)]"
-                    style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
-                  >
-                    <span>Source project (.zip)</span>
-                  </a>
-                </div>
-              </div>
+              <span className="rounded bg-[#2b66e0]/20 px-2 py-0.5 font-mono text-[11.5px] tabular-nums text-[#7cb0ff]">
+                {videoKind === "video_analysis" ? "Est. ~$3.00" : "Est. ~$1.20"}
+              </span>
             </div>
 
-            {/* Right: Editable Storyboard & Video Verification Report */}
-            <div className="space-y-3">
-              <div
-                className="rounded-[12px] p-4 space-y-2.5"
-                style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <select
+                value={videoKind}
+                onChange={(e) => setVideoKind(e.target.value as "video_analysis" | "video_gen")}
+                className="min-h-[40px] sm:min-h-0 rounded-[8px] px-3 py-2 text-[12.5px] bg-[var(--wb-panel)] border border-[var(--wb-line)]"
               >
-                <div className="text-[13px] font-semibold">Scene Storyboard & Subtitle Editor (Click to Select)</div>
-                <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
-                  {scenes.map((sc, idx) => (
-                    <div
-                      key={sc.id}
-                      onClick={() => setActiveSceneIdx(idx)}
-                      className={`cursor-pointer rounded-[9px] p-2.5 space-y-1 transition-all ${
-                        activeSceneIdx === idx ? "ring-1 ring-[#3b82f6]" : ""
-                      }`}
-                      style={{
-                        backgroundColor: activeSceneIdx === idx ? "var(--wb-active)" : "var(--wb-panel)",
-                        border: "1px solid var(--wb-line)",
-                      }}
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-1">
-                        <span className="font-mono font-bold text-[#7cb0ff]">
-                          SHOT {sc.shot} ({sc.time})
-                        </span>
-                        <span className="text-[var(--wb-muted)]">{sc.camera}</span>
+                <option value="video_analysis">Video Analysis — ตรวจวิดีโอ/ตัดไฮไลต์ + รายงาน (ffmpeg + scene detect)</option>
+                <option value="video_gen">Video Compose — ประกอบคลิป/ title cards + เสียง เป็น MP4</option>
+              </select>
+              <input
+                type="text"
+                value={videoGoal}
+                onChange={(e) => setVideoGoal(e.target.value)}
+                placeholder="อธิบายงานวิดีโอ เช่น วิเคราะห์คลิป meeting-recording.mp4 แล้วตัดไฮไลต์ 5 ช่วงสำคัญ..."
+                className="min-h-[40px] sm:min-h-0 flex-1 rounded-[8px] px-3.5 py-2 text-[13px] bg-[var(--wb-panel)] border border-[var(--wb-line)] text-[var(--wb-fg)] placeholder:text-[var(--wb-muted)]"
+              />
+              <button
+                type="submit"
+                disabled={!videoGoal.trim() || videoBusy}
+                className="min-h-[40px] sm:min-h-0 inline-flex items-center justify-center gap-1.5 rounded-[8px] bg-[#2b66e0] hover:bg-[#2458c6] disabled:opacity-40 px-4 py-2 text-[12.5px] font-semibold text-white shrink-0"
+              >
+                <Plus className="h-4 w-4" />
+                <span>{videoBusy ? "Creating..." : "สร้างงานวิดีโอ"}</span>
+              </button>
+            </div>
+
+            {videoError && (
+              <div
+                className="flex items-start gap-2 rounded-[8px] px-3 py-2 text-[12px] text-[var(--wb-danger)]"
+                style={{ backgroundColor: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.3)" }}
+              >
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span className="min-w-0 break-words">{videoError}</span>
+              </div>
+            )}
+
+            <p className="text-[11px] text-[var(--wb-muted)]">
+              ทุกงานผ่าน Estimate Gate ก่อนรัน — เมื่อเสร็จจะส่งมอบไฟล์จริง (MP4 / รายงาน) พร้อม verification_report.json ที่ตรวจด้วย ffprobe ในเครื่องของคุณ
+            </p>
+          </form>
+
+          {/* Real Video Task Queue */}
+          <div className="space-y-2">
+            <div className="text-[11.5px] font-semibold uppercase tracking-wider text-[var(--wb-muted)] px-1">
+              Video Work Queue ({videoTasks.length})
+            </div>
+            {videoTasks.length === 0 ? (
+              <div
+                className="rounded-[12px] px-4 py-8 text-center space-y-1.5"
+                style={{ backgroundColor: "var(--wb-raised)", border: "1px dashed var(--wb-line-strong)" }}
+              >
+                <div className="text-[13px] font-semibold">ยังไม่มีงานวิดีโอในคิวของคุณ</div>
+                <div className="text-[11.5px] text-[var(--wb-muted)]">
+                  สร้างงานจากฟอร์มด้านบน — หน้านี้แสดงเฉพาะงานจริงและไฟล์จริงที่ระบบสร้าง ไม่มี storyboard ตัวอย่างปลอม
+                </div>
+              </div>
+            ) : (
+              videoTasks.map((t) => {
+                const dels = ((t as any).deliverables as any[]) || [];
+                const ver = t.verification;
+                return (
+                  <div
+                    key={t.id}
+                    className="rounded-[12px] p-4 space-y-2.5"
+                    style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span
+                            className={`h-2 w-2 rounded-full shrink-0 ${
+                              t.status === "completed"
+                                ? "bg-emerald-400"
+                                : t.status === "waiting_for_user"
+                                ? "bg-amber-400 animate-pulse"
+                                : t.status === "failed" || t.status === "cancelled"
+                                ? "bg-red-400"
+                                : "bg-[#3b82f6]"
+                            }`}
+                          />
+                          <span className="text-[13px] font-semibold break-words">{t.title}</span>
+                          <span className="rounded bg-[#2b66e0]/15 px-1.5 py-0.5 text-[10px] uppercase text-[#7cb0ff]">
+                            {t.workKind}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-[11.5px] text-[var(--wb-muted)] line-clamp-2">{t.goal}</p>
                       </div>
-                      <div className="text-[12.5px] font-semibold">{sc.title}</div>
-                      <input
-                        type="text"
-                        value={sc.subTh}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setScenes((prev) => prev.map((item, i) => (i === idx ? { ...item, subTh: val } : item)));
-                        }}
-                        className="mt-1 w-full rounded px-2 py-1 text-[11.5px] bg-[var(--wb-raised)] border border-[var(--wb-line)]"
-                      />
+                      <div className="shrink-0 text-right space-y-1">
+                        <div className="font-mono text-[11.5px] tabular-nums text-[#7cb0ff]">
+                          {t.estimate?.cost != null ? `$${Number(t.estimate.cost).toFixed(2)}` : "—"}
+                        </div>
+                        <div className="text-[10.5px] capitalize text-[var(--wb-fg-soft)]">
+                          {t.status.replace(/_/g, " ")} ({t.progress ?? 0}%)
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* Video Verification Card */}
-              <div
-                className="rounded-[12px] p-4 space-y-2"
-                style={{ backgroundColor: "var(--wb-raised)", border: "1px solid var(--wb-line)" }}
-              >
-                <div className="flex flex-wrap items-center justify-between gap-1.5">
-                  <span className="text-[12.5px] font-semibold text-emerald-400">
-                    ✓ Video Verification Report (ffprobe + Subtitles)
-                  </span>
-                  <span className="font-mono text-[11px] text-[var(--wb-muted)]">4/4 Checks</span>
-                </div>
-                <div className="grid grid-cols-2 gap-1.5 text-[11px] text-[var(--wb-muted)] font-mono">
-                  <div className="rounded bg-[var(--wb-panel)] p-2">Codec: H.264 / AAC 48kHz</div>
-                  <div className="rounded bg-[var(--wb-panel)] p-2">Duration: 30.00s Exact</div>
-                  <div className="rounded bg-[var(--wb-panel)] p-2">Subtitle Drift: 0ms (TH/EN)</div>
-                  <div className="rounded bg-[var(--wb-panel)] p-2">Editable: source files</div>
-                </div>
-              </div>
-            </div>
+                    <div className="font-mono text-[10.5px] text-[var(--wb-muted)] break-all">{t.traceId}</div>
+
+                    {dels.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {dels.map((d: any) => (
+                          <a
+                            key={d.id || d.fileName}
+                            href={d.fileUrl || "#"}
+                            className="flex items-center justify-between gap-3 rounded-[9px] px-3 py-2 transition-colors hover:brightness-110"
+                            style={{ backgroundColor: "var(--wb-panel)", border: "1px solid var(--wb-line)" }}
+                          >
+                            <div className="flex min-w-0 items-center gap-2.5">
+                              <FileCode2 className="h-3.5 w-3.5 shrink-0 text-[#7cb0ff]" />
+                              <span className="truncate text-[12px] font-medium">{d.fileName || "deliverable"}</span>
+                            </div>
+                            <Download className="h-3.5 w-3.5 shrink-0 text-[var(--wb-muted)]" />
+                          </a>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-[9px] px-3 py-2 text-[11.5px] text-[var(--wb-muted)]" style={{ backgroundColor: "var(--wb-panel)", border: "1px dashed var(--wb-line)" }}>
+                        ยังไม่มีไฟล์ส่งมอบ — ไฟล์จริงจะปรากฏที่นี่เมื่องานรันเสร็จและผ่านการตรวจ
+                      </div>
+                    )}
+
+                    {ver && (
+                      <div
+                        className="flex items-center gap-2 rounded-md px-2.5 py-1 text-[11px]"
+                        style={{
+                          backgroundColor: ver.passed ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)",
+                          border: `1px solid ${ver.passed ? "rgba(16,185,129,0.28)" : "rgba(239,68,68,0.28)"}`,
+                          color: ver.passed ? "#34d399" : "#f87171",
+                        }}
+                      >
+                        {ver.passed ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> : <XCircle className="h-3.5 w-3.5 shrink-0" />}
+                        <span className="min-w-0 break-words">
+                          {ver.passed ? "ผ่านการตรวจ" : "ไม่ผ่านการตรวจ"}
+                          {Array.isArray(ver.checks) && ver.checks.length > 0 ? ` · ${ver.checks.length} checks` : ""}
+                          {ver.mode ? ` · mode ${ver.mode}` : ""}
+                        </span>
+                      </div>
+                    )}
+
+                    {t.status === "waiting_for_user" && (
+                      <button
+                        type="button"
+                        onClick={() => handleApproveAndRunTask(t)}
+                        disabled={verifyingId === t.id}
+                        className="min-h-[40px] sm:min-h-0 w-full rounded-[7px] bg-amber-500 hover:bg-amber-400 py-1.5 text-[11.5px] font-semibold text-black disabled:opacity-50"
+                      >
+                        {verifyingId === t.id
+                          ? "Executing & Running Verification..."
+                          : t.estimate?.cost != null
+                          ? `Approve Estimate ($${Number(t.estimate.cost).toFixed(2)}) & Run Now`
+                          : "Approve Estimate & Run Now"}
+                      </button>
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       )}

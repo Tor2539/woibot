@@ -18,7 +18,7 @@ export default function ConnectedAppsVaultPage() {
   const [apps, setApps] = useState<any[]>([]);
   const [secrets, setSecrets] = useState<any[]>([]);
   const [secName, setSecName] = useState("");
-  const [secHost, setSecHost] = useState("*.acmecorp.co.th");
+  const [secHost, setSecHost] = useState("");
   const [secVal, setSecVal] = useState("");
 
   const loadData = () => {
@@ -72,6 +72,17 @@ export default function ConnectedAppsVaultPage() {
       </div>
 
       {/* Connected OAuth Services Grid */}
+      {apps.length === 0 ? (
+        <div
+          className="rounded-[12px] px-4 py-8 text-center space-y-1.5"
+          style={{ backgroundColor: "var(--wb-raised)", border: "1px dashed var(--wb-line-strong)" }}
+        >
+          <div className="text-[13px] font-semibold">ยังไม่มีรายการ Connected Apps</div>
+          <div className="text-[11.5px] text-[var(--wb-muted)]">
+            เชื่อมต่อ Gmail, Calendar, Slack, GitHub และบริการอื่น ๆ ได้เมื่อผู้ดูแลเปิดให้ใช้งาน — สถานะจะแสดงที่นี่จาก API จริงเท่านั้น
+          </div>
+        </div>
+      ) : (
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {apps.map((app) => {
           const meta = CATALOG_META[app.provider] || {
@@ -123,6 +134,7 @@ export default function ConnectedAppsVaultPage() {
           );
         })}
       </div>
+      )}
 
       {/* Secure Vault Logins & Secrets Section (Grok Bot §2.5) */}
       <div
@@ -172,7 +184,11 @@ export default function ConnectedAppsVaultPage() {
         </form>
 
         <div className="grid gap-2.5 sm:grid-cols-2">
-          {secrets.map((sec) => (
+          {secrets.length === 0 ? (
+            <div className="rounded-[9px] px-3.5 py-4 text-[11.5px] text-[var(--wb-muted)] sm:col-span-2" style={{ backgroundColor: "var(--wb-panel)", border: "1px dashed var(--wb-line)" }}>
+              ยังไม่มี Secret ใน Vault — เพิ่มรหัสผ่านจากฟอร์มด้านบน (เก็บแบบ Write-Only AI จะไม่เห็นค่าจริง)
+            </div>
+          ) : secrets.map((sec) => (
             <div
               key={sec.id}
               className="flex items-center justify-between gap-2 rounded-[9px] px-3.5 py-2.5"
