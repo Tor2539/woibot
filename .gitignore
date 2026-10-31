@@ -19,3 +19,5 @@ prisma/dev.db
 dist
 .cache
 
+scripts/__pycache__/
+apps/web/tsconfig.tsbuildinfo
